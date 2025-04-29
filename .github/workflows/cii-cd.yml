@@ -17,11 +17,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 🥟 Install Bun
-        run: |
-          curl -fsSL https://bun.sh/install | bash
-          export PATH="$HOME/.bun/bin:$PATH"
-          bun --version
+      # - name: 🥟 Install Bun
+      #   run: |
+      #     curl -fsSL https://bun.sh/install | bash
+      #     export PATH="$HOME/.bun/bin:$PATH"
+      #     bun --version
 
       - name: 📥 Install Dependencies
         run: |
