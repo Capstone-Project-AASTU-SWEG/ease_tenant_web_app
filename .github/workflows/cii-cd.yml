@@ -33,7 +33,7 @@ jobs:
       #   run: bun test
 
       - name: 🏗️ Build Production Files
-        run: bun run build
+        run: bunx next build
 
       - name: Clean up old build
         uses: appleboy/ssh-action@v1
