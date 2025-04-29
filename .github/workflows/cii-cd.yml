@@ -24,7 +24,9 @@ jobs:
           echo "$HOME/.bun/bin" >> $GITHUB_PATH
 
       - name: 📥 Install Dependencies
-        run: bun install
+        run: |
+          bun install
+          bun add framer-motion
 
       # Optional: Run tests
       # - name: ✅ Run Tests
