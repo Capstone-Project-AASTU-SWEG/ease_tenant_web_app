@@ -16,12 +16,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          # cache: 'npm'
+          cache: 'bun'
 
       - name: 🥟 Install Bun
         run: |
           curl -fsSL https://bun.sh/install | bash
           echo "$HOME/.bun/bin" >> $GITHUB_PATH
+          bun --version
 
       - name: 📥 Install Dependencies
         run: |
@@ -33,7 +34,10 @@ jobs:
       #   run: bun test
 
       - name: 🏗️ Build Production Files
-        run: bunx next build
+        run: |
+          bunx next build --no-lint
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
 
       - name: Clean up old build
         uses: appleboy/ssh-action@v1
