@@ -35,13 +35,13 @@ const TOAST_CONFIG: Record<ToastType, ToastConfig> = {
 };
 
 // Toast variant styles using `cva` for better theming
-const toastVariants = cva("!border-l-4", {
+const toastVariants = cva("!border-l-4 rounded-sm", {
   variants: {
     type: {
-      success: "!bg-green-50 !border-l-green-500",
-      error: "!bg-red-50 !border-l-red-500",
-      warning: "!bg-yellow-50 !border-l-yellow-500",
-      info: "!bg-blue-50 !border-l-blue-500",
+      success: "!bg-white !border-l-green-500",
+      error: "!bg-white !border-l-red-500",
+      warning: "!bg-white !border-l-yellow-500",
+      info: "!bg-white !border-l-blue-500",
     },
   },
   defaultVariants: {
@@ -54,8 +54,8 @@ const createToast = (type: ToastType) => {
   const { icon: Icon, iconClassName } = TOAST_CONFIG[type];
 
   return (
-    message: string,
-    options?: { description?: string; duration?: number },
+    message?: string,
+    options?: { title?: string; description?: string; duration?: number },
   ) => {
     toast(
       <div
@@ -65,14 +65,16 @@ const createToast = (type: ToastType) => {
       >
         <Icon className={`h-5 w-5 ${iconClassName}`} />
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-gray-900">{message}</span>
+          <span className="text-sm font-medium text-gray-900">
+            {message || options?.title}
+          </span>
           {options?.description && (
             <span className="text-xs text-gray-600">{options.description}</span>
           )}
         </div>
       </div>,
       {
-        duration: options?.duration || 50000,
+        duration: options?.duration || 2000,
         // closeButton: true,
         classNames: {
           toast: toastVariants({ type }),

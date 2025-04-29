@@ -1,5 +1,7 @@
+import { cn } from "@/lib/utils";
+import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { ReactNode } from "react";
+import React from "react";
 
 // Define variants using cva
 const stackVariants = cva("flex", {
@@ -37,31 +39,46 @@ const stackVariants = cva("flex", {
 });
 
 // Define props interface
-interface StackProps extends VariantProps<typeof stackVariants> {
-  children?: ReactNode;
-  className?: string;
+
+export interface StackProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof stackVariants> {
+  asChild?: boolean;
 }
 
-// Stack component
-export const Stack = ({
-  children,
-  direction,
-  spacing,
-  align,
-  justify,
-  className,
-}: StackProps) => {
-  return (
-    <div
-      className={stackVariants({
-        direction,
-        spacing,
-        align,
-        justify,
-        className,
-      })}
-    >
-      {children}
-    </div>
-  );
-};
+const Stack = React.forwardRef<HTMLDivElement, StackProps>(
+  (
+    {
+      className,
+      direction,
+      spacing,
+      align,
+      justify,
+      asChild = false,
+      ...props
+    },
+    ref,
+  ) => {
+    const Comp = asChild ? Slot : "div";
+    return (
+      <Comp
+        className={cn(
+          stackVariants({
+            direction,
+            spacing,
+            align,
+            justify,
+            className,
+          }),
+        )}
+        ref={ref}
+        {...props}
+      />
+    );
+  },
+);
+
+Stack.displayName = "Stack";
+
+export default Stack;
+export { Stack };
