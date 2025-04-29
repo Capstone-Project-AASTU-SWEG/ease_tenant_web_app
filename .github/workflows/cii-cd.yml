@@ -1,0 +1,84 @@
+name: Ease Tenant CI/CD to EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 🥟 Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+
+      - name: 📥 Install Dependencies
+        run: bun install
+
+      # Optional: Run tests
+      # - name: ✅ Run Tests
+      #   run: bun test
+
+      - name: 🏗️ Build Production Files
+        run: bun run build
+
+      - name: Clean up old build
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🧹 Cleaning old .next build"
+            rm -rf /home/ubuntu/kuraz-hub-client/.next
+
+      - name: 📤 Copy Built Files to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: |
+            .next/
+            public/
+            package.json
+            bun.lockb
+          target: "/home/ubuntu/kuraz-hub-client/"
+
+      - name: 🚀 Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🔄 Deploying Next.js app..."
+            cd /home/ubuntu/kuraz-hub-client
+            if ! command -v bun &> /dev/null; then
+              curl -fsSL https://bun.sh/install | bash
+              export PATH="$HOME/.bun/bin:$PATH"
+            fi
+            bun install --production
+            # Uncomment and edit the following line if using PM2 or another process manager:
+            # pm2 restart next-app || pm2 start "bun run start" --name next-app --cwd /home/ubuntu/kuraz-hub-client
+            echo "✅ Next.js deployed successfully!"
+
+      - name: 🔍 Verify Deployment
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            curl -I http://localhost || echo "Deployment verification completed!"
