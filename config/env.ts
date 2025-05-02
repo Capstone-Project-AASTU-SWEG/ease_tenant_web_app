@@ -18,7 +18,10 @@ const ENV = {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   BACKEND_BASE_URL,
+  NEXT_PUBLIC_BACKEND_BASE_URL: process.env.NEXT_PUBLIC_BACKEND_BASE_URL,
 };
+
+console.log({ ENV });
 
 export default ENV;
 export { ENV };

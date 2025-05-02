@@ -45,17 +45,13 @@ export default function SignupLayout({
   return (
     <div className="relative min-h-screen px-6">
       {/* Decorative background elements */}
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background"></div>
-      <div className="fixed -right-40 -top-40 h-80 w-80 rounded-full bg-primary/5 blur-3xl"></div>
-      <div className="fixed -bottom-40 -left-40 h-80 w-80 rounded-full bg-indigo-500/5 blur-3xl"></div>
-
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3 }}
       >
         <Link
-          href="/sign-up_v2"
+          href="/auth/sign-up"
           className="my-6 flex items-center text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
         >
           <motion.div
@@ -92,7 +88,7 @@ export default function SignupLayout({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3, duration: 0.4 }}
-                  className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
+                  className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-2xl text-transparent"
                 >
                   {title}
                 </MotionCardTitle>
@@ -100,6 +96,7 @@ export default function SignupLayout({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4, duration: 0.4 }}
+                  className="text-md"
                 >
                   {description}
                 </MotionCardDescription>

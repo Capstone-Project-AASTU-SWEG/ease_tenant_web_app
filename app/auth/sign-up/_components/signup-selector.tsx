@@ -15,9 +15,10 @@ import {
   Home,
   PenToolIcon as Tool,
   ShoppingBag,
-  Sparkles,
   ChevronRight,
   LucideProps,
+  Building,
+  Building2,
 } from "lucide-react";
 import Stack from "@/components/custom/stack";
 import { Title } from "@/components/custom/title";
@@ -82,7 +83,7 @@ const TitleSection = ({
               ease: "easeInOut",
             }}
           >
-            <Sparkles className="h-6 w-6 text-primary" />
+            <Building className="h-6 w-6 text-primary" />
           </motion.div>
         </motion.div>
       </div>
@@ -173,7 +174,7 @@ const UserTypeCard = ({
       }
       className={`group relative border-2 backdrop-blur-md ${type.borderColor} transition-all duration-300 ${
         type.color
-      } cursor-pointer overflow-hidden rounded-2xl ${isFocused ? "w-full max-w-xl" : "w-[120px] md:w-[150px]"}`}
+      } cursor-pointer overflow-hidden rounded-md ${isFocused ? "w-full max-w-xl" : "w-[120px] md:w-[150px]"}`}
       style={{
         zIndex: isFocused ? 10 : 5 - index,
       }}
@@ -326,6 +327,19 @@ const userTypes = [
     iconBg: "bg-emerald-500/20",
     iconColor: "text-emerald-500",
     buttonGradient: "bg-gradient-to-r from-emerald-500 to-emerald-500/80",
+  },
+  {
+    id: "manager",
+    title: "Property Manager",
+    description:
+      "Register as a property manager to oversee properties, manage tenants, and streamline building operations.",
+    icon: Building2,
+    color: "bg-gradient-to-br from-indigo-500/5 to-indigo-500/20",
+    borderColor: "border-indigo-500/30",
+    hoverBorderColor: "group-hover:border-indigo-500/60",
+    iconBg: "bg-indigo-500/20",
+    iconColor: "text-indigo-500",
+    buttonGradient: "bg-gradient-to-r from-indigo-500 to-indigo-500/80",
   },
 ];
 

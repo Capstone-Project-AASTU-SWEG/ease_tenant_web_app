@@ -30,41 +30,33 @@ import {
 import { FileUploader } from "@/components/custom/file-upload";
 import { TagInput } from "@/components/custom/tag-input";
 
-import { Unit, UNIT_STATUS, UNIT_TYPE } from "@/types";
+import { UNIT_STATUS, UNIT_TYPE } from "@/types";
 import { TAB_TYPES, TAB_TYPES_LIST, useCreateUnitContext } from "./_contexts";
 import { unitSchema, UnitSchema } from "./_validations";
-import {
-  getSelectedBuilding,
-  useBuildingStore,
-} from "../../../_hooks/useBuildings";
-import { addUnit } from "../../../_hooks/useUnits";
+
 import PageHeader from "@/components/custom/page-header";
+import { useCreateUnitMutation } from "@/app/quries/useUnits";
+import LogJSON from "@/components/custom/log-json";
+import { useGetBuildingQuery } from "@/app/quries/useBuildings";
 
 const Page = () => {
   const { activeTab, onTabChange } = useCreateUnitContext();
-  // const router = useRouter();
 
   // Get building ID from URL parameters
   const params = useParams();
   const buildingID = params["id"] as string;
 
-  // Get building store actions
-  const { setSelectedBuilding } = useBuildingStore();
+  const createUnitMutation = useCreateUnitMutation();
+
+  const getBuildingQuery = useGetBuildingQuery(buildingID);
+  const building = getBuildingQuery.data;
 
   const router = useRouter();
-
-  // Set selected building on component mount
-  useEffect(() => {
-    if (buildingID) setSelectedBuilding(buildingID);
-  }, [buildingID, setSelectedBuilding]);
-
-  // Get the selected building
-  const building = getSelectedBuilding();
 
   const form = useForm<UnitSchema>({
     resolver: zodResolver(unitSchema),
     defaultValues: {
-      buildingId: building?.id,
+      buildingId: buildingID,
       floorNumber: 1,
       unitNumber: "001",
       sizeSqFt: 100,
@@ -72,8 +64,7 @@ const Page = () => {
       status: UNIT_STATUS.AVAILABLE,
       monthlyRent: 100,
       amenities: [],
-      allowedUses: [],
-      notes: "",
+      description: "",
     },
   });
 
@@ -96,7 +87,6 @@ const Page = () => {
     });
 
     form.setValue("images", [...images]);
-    form.setValue("videos", [...videos]);
   };
 
   const onSubmit = (data: UnitSchema) => {
@@ -106,37 +96,15 @@ const Page = () => {
   const handleSubmit = () => {
     const data: UnitSchema = form.getValues();
 
-    // create binary data
-    const imageUrls =
-      data.images?.map((file) => URL.createObjectURL(file)) || [];
-    const videoUrls =
-      data.videos?.map((file) => URL.createObjectURL(file)) || [];
-
-    // Create the final unit object
-    const unitData: Unit = {
-      ...data,
-      id: crypto.randomUUID(),
-      imageUrls,
-      videoUrls,
-      status: UNIT_STATUS.AVAILABLE,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    console.log("Unit added:", unitData);
-
-    addUnit(unitData);
-
-    successToast("Unit Added", {
-      description: `Unit ${data.unitNumber} has been successfully added to the system.`,
+    createUnitMutation.mutate({
+      buildingId: buildingID,
+      unit: data,
     });
-
-    // TODO: Make API request to add unit
-    router.push(`/dashboard/buildings/${buildingID}?unit=${unitData.id}`);
   };
 
   const handleNext = async () => {
     // Validate current tab fields before proceeding
+
     switch (activeTab) {
       case TAB_TYPES.BASIC: {
         const isValid = await form.trigger([
@@ -148,6 +116,7 @@ const Page = () => {
           "sizeSqFt",
           "monthlyRent",
         ]);
+
         if (isValid) {
           onTabChange(TAB_TYPES.FEATURES);
         }
@@ -155,7 +124,7 @@ const Page = () => {
       }
 
       case TAB_TYPES.FEATURES: {
-        const isValid = await form.trigger(["amenities", "allowedUses"]);
+        const isValid = await form.trigger(["amenities"]);
         if (isValid) {
           onTabChange(TAB_TYPES.MEDIA);
         }
@@ -174,8 +143,34 @@ const Page = () => {
     }
   };
 
+  useEffect(() => {
+    if (createUnitMutation.isSuccess) {
+      successToast("Unit created successfully");
+      router.push(`/dashboard/buildings/${buildingID}/units`);
+    }
+
+    if (createUnitMutation.isError) {
+      infoToast(createUnitMutation.error.message);
+    }
+  }, [
+    buildingID,
+    createUnitMutation.error?.message,
+    createUnitMutation.isError,
+    createUnitMutation.isSuccess,
+    router,
+  ]);
+
+  if (!buildingID) {
+    return (
+      <section>
+        <p>No Building ID provided.</p>
+      </section>
+    );
+  }
+
   return (
     <PageWrapper className="py-0">
+      <LogJSON data={{ buildingID }} />
       <PageHeader
         title={`Add Unit to ${building?.name}`}
         description=" Add a new unit to your property management system"
@@ -272,9 +267,9 @@ const Page = () => {
 
                 <TextareaFormField<UnitSchema>
                   control={form.control}
-                  name="notes"
-                  label="Notes"
-                  placeholder="Enter any additional notes about this unit"
+                  name="description"
+                  label="Description"
+                  placeholder="Enter a description of the unit"
                   rows={3}
                 />
               </TabsContent>
@@ -301,29 +296,11 @@ const Page = () => {
                   ]}
                 />
 
-                <TagInput
-                  label="Allowed Uses"
-                  placeholder="Add allowed uses (e.g., Office, Retail)"
-                  onChange={(tags) => {
-                    form.setValue("allowedUses", tags);
-                  }}
-                  tags={form.watch("allowedUses") || []}
-                  suggestions={[
-                    "Office",
-                    "Retail",
-                    "Food Service",
-                    "Medical",
-                    "Educational",
-                    "Storage",
-                    "Manufacturing",
-                    "Creative",
-                    "Technology",
-                  ]}
-                />
                 <FileUploader
                   onFilesChange={handleFiles}
                   showPreview
                   maxFiles={10}
+                  acceptedFormats={["image/png", "image/jpeg", "image/jpg"]}
                 />
               </TabsContent>
             </Tabs>
@@ -341,7 +318,11 @@ const Page = () => {
                   Next <ChevronRight className="ml-1" />
                 </Button>
               ) : (
-                <Button type="button" onClick={handleSubmit}>
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={createUnitMutation.isPending}
+                >
                   Submit <Save className="ml-2 h-4 w-4" />
                 </Button>
               )}

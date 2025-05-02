@@ -20,14 +20,13 @@ import {
   MapPin,
   MoreVertical,
   Home,
-  Percent,
   Calendar,
-  DollarSign,
   Clock,
   Star,
   Settings,
   Ruler,
   Wrench,
+  Trash,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -41,9 +40,9 @@ import SearchInput from "@/components/custom/search-input";
 
 import { Group } from "@/components/custom/group";
 
-import { getBuildings } from "./_hooks/useBuildings";
+import { getBuildings, setBuildings } from "./_hooks/useBuildings";
 import ASSETS from "@/app/auth/_assets";
-import { USER_TYPE, type Building } from "@/types";
+import { USER_TYPE} from "@/types";
 import PageHeader from "@/components/custom/page-header";
 import {
   DropdownMenu,
@@ -52,12 +51,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@radix-ui/react-select";
-import { Progress } from "@/components/custom/progress";
+// import { Progress } from "@/components/custom/progress";
 import { authUserType } from "@/app/auth/_hooks/useAuth";
+import {
+  BuildingWithStat,
+  useGetAllBuildingsQuery,
+} from "@/app/quries/useBuildings";
+import LogJSON from "@/components/custom/log-json";
+import { errorToast } from "@/components/custom/toasts";
 
 // Extended building type with calculated fields
-type ExtendedBuilding = Building & {
-  occupancy: number;
+type ExtendedBuilding = BuildingWithStat & {
   formattedAddress: string;
 };
 
@@ -65,6 +69,8 @@ export default function BuildingsPage() {
   const buildings = getBuildings();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+
+  const getAllBuildings = useGetAllBuildingsQuery();
 
   const userRole = authUserType();
 
@@ -74,24 +80,17 @@ export default function BuildingsPage() {
   const [favoriteBuildings, setFavoriteBuildings] = useState<string[]>([]);
 
   // Calculate occupancy rate and format address for each building
-  const extendedBuildings: ExtendedBuilding[] = useMemo(
-    () =>
-      buildings.map((building) => {
-        const occupancy = Math.round(
-          ((building.totalUnits - building.availableUnits) /
-            building.totalUnits) *
-            100,
-        );
-
-        return {
-          ...building,
-          occupancy,
-          formattedAddress: `${building.address.street}, ${building.address.city}, ${building.address.state}`,
-          // Add placeholder images and videos if none exist
-        };
-      }),
-    [buildings],
-  );
+  const extendedBuildings: ExtendedBuilding[] = useMemo(() => {
+    if (!getAllBuildings.data) {
+      return [];
+    }
+    return getAllBuildings.data?.map((building) => {
+      return {
+        ...building,
+        formattedAddress: `${building.address.street}, ${building.address.city}, ${building.address.state}`,
+      };
+    });
+  }, [getAllBuildings.data]);
 
   // Filter buildings based on search query and active tab
   const filteredBuildings = useMemo(
@@ -126,6 +125,18 @@ export default function BuildingsPage() {
     });
   };
 
+  useEffect(() => {
+    if (getAllBuildings.isSuccess) {
+      setBuildings(getAllBuildings.data || []);
+    }
+  }, [getAllBuildings.data, getAllBuildings.isSuccess]);
+
+  useEffect(() => {
+    if (getAllBuildings.isError) {
+      errorToast(getAllBuildings.error.message);
+    }
+  }, [getAllBuildings.error?.message, getAllBuildings.isError]);
+
   return (
     <PageWrapper className="py-0">
       <motion.div
@@ -134,7 +145,6 @@ export default function BuildingsPage() {
         className="relative"
       >
         {/* Background elements */}
-        {/* <BackgroundDots /> */}
         <PageHeader
           title="Buildings"
           description={
@@ -164,6 +174,13 @@ export default function BuildingsPage() {
           }
         />
 
+        <LogJSON
+          data={{
+            buildings: getAllBuildings.data,
+            error: getAllBuildings.error,
+          }}
+        />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -182,22 +199,13 @@ export default function BuildingsPage() {
               className="w-full sm:w-auto"
             >
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger
-                  value="all"
-                  className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-                >
+                <TabsTrigger value="all" className="">
                   All
                 </TabsTrigger>
-                <TabsTrigger
-                  value="high"
-                  className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-                >
+                <TabsTrigger value="high" className="">
                   High Occupancy
                 </TabsTrigger>
-                <TabsTrigger
-                  value="low"
-                  className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-                >
+                <TabsTrigger value="low" className="">
                   Low Occupancy
                 </TabsTrigger>
               </TabsList>
@@ -362,6 +370,12 @@ const BuildingCard = ({
                       Edit building
                     </DropdownMenuItem>
                   )}
+                  {isAdmin && (
+                    <DropdownMenuItem className="cursor-pointer text-red-500">
+                      <Trash className="mr-2 h-4 w-4" />
+                      Delete building
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </Group>
@@ -459,7 +473,7 @@ const EmptyBuildings = ({ isAdmin }: { isAdmin: boolean }) => {
 };
 
 interface BuildingInfoProps {
-  building: Building;
+  building: BuildingWithStat;
 }
 
 const getStatusColor = (status: string) => {
@@ -480,7 +494,7 @@ const getStatusColor = (status: string) => {
 };
 
 export const BuildingInfo = ({ building }: BuildingInfoProps) => {
-  const statusColor = getStatusColor(building.maintenanceStatus);
+  const statusColor = getStatusColor(building.status);
 
   const formatCurrency = (value: string | number) => {
     if (typeof value === "string") return value;
@@ -518,7 +532,7 @@ export const BuildingInfo = ({ building }: BuildingInfoProps) => {
                 </div>
               </div>
               <Badge className={`${statusColor} font-medium text-white`}>
-                {building.maintenanceStatus}
+                {building.status}
               </Badge>
             </div>
           </CardHeader>
@@ -561,43 +575,23 @@ export const BuildingInfo = ({ building }: BuildingInfoProps) => {
                   {building.availableUnits}
                 </p>
               </div>
-
-              {building.occupancyRate !== undefined && (
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Percent className="mr-2 h-4 w-4 text-slate-500" />
-                    <span>Occupancy</span>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-semibold">
-                      {building.occupancyRate}%
-                    </p>
-                    <Progress
-                      value={building.occupancyRate}
-                      className="mt-2 h-2"
-                    />
-                  </div>
-                </div>
-              )}
             </div>
 
             <Separator className="my-5" />
 
             {/* Construction and Financial Info */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              {building.constructionYear && (
+              {building.yearBuilt && (
                 <div className="space-y-2">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Calendar className="mr-2 h-4 w-4 text-slate-500" />
                     <span>Built</span>
                   </div>
-                  <p className="text-lg font-medium">
-                    {building.constructionYear}
-                  </p>
+                  <p className="text-lg font-medium">{building.yearBuilt}</p>
                 </div>
               )}
 
-              {building.monthlyRevenue !== undefined && (
+              {/* {building.monthlyRevenue !== undefined && (
                 <div className="space-y-2">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <DollarSign className="mr-2 h-4 w-4 text-slate-500" />
@@ -607,7 +601,7 @@ export const BuildingInfo = ({ building }: BuildingInfoProps) => {
                     {formatCurrency(building.monthlyRevenue)}
                   </p>
                 </div>
-              )}
+              )} */}
 
               <div className="space-y-2">
                 <div className="flex items-center text-sm text-muted-foreground">
@@ -711,7 +705,7 @@ export const BuildingInfo = ({ building }: BuildingInfoProps) => {
                       className={`h-2.5 w-2.5 rounded-full ${statusColor} mr-2`}
                     ></div>
                     <p className="font-medium text-slate-900">
-                      {building.maintenanceStatus}
+                      {building.status}
                     </p>
                   </div>
                 </div>

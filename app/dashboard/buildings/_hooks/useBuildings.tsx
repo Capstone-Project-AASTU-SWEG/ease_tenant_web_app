@@ -10,6 +10,7 @@ type BuildingState = {
 };
 
 type BuildingActions = {
+  setBuildings: (buildings: Building[]) => void;
   addBuilding: (building: Building) => void;
   updateBuilding: (id: string, updates: Partial<Building>) => void;
   removeBuilding: (id: string) => void;
@@ -26,6 +27,11 @@ export const useBuildingStore = create<BuildingState & BuildingActions>()(
   devtools(
     immer((set, get) => ({
       ...initialState,
+
+      setBuildings: (buildings) =>
+        set((state) => {
+          state.buildings = buildings;
+        }),
 
       addBuilding: (building) =>
         set((state) => {
@@ -79,3 +85,6 @@ export const getBuildingByID = (ID: string) => {
 
 export const addBuilding = (building: Building) =>
   useBuildingStore.getState().addBuilding(building);
+
+export const setBuildings = (buildings: Building[]) =>
+  useBuildingStore.getState().setBuildings(buildings);

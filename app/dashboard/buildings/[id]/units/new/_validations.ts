@@ -15,10 +15,8 @@ export const unitSchema = z.object({
   monthlyRent: z.coerce.number().min(0, "Monthly rent cannot be negative"),
   amenities: z.array(z.string()),
   images: z.array(z.instanceof(File)),
-  videos: z.array(z.instanceof(File)),
-  allowedUses: z.array(z.string()).optional(),
   lastRenovationDate: z.date().optional(),
-  notes: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export type UnitSchema = z.infer<typeof unitSchema>;

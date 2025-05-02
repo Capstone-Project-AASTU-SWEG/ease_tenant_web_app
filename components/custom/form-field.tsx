@@ -26,6 +26,7 @@ import { PopoverTrigger } from "@radix-ui/react-popover";
 import { Button } from "../ui/button";
 import { format } from "date-fns";
 import { Calendar } from "../ui/calendar";
+import { Checkbox } from "../ui/checkbox";
 
 interface TextFormFieldProps<T extends FieldValues> {
   control: UseFormReturn<T>["control"];
@@ -266,6 +267,7 @@ export const SelectFormField = <T extends FieldValues>({
           <FormControl className={cn("relative", classNames?.formControl)}>
             <Select
               value={field.value}
+              defaultValue={field.value}
               onValueChange={(value) => {
                 field.onChange(value);
               }}
@@ -273,7 +275,10 @@ export const SelectFormField = <T extends FieldValues>({
               <SelectTrigger
                 className={cn("w-full border p-2", classNames?.input)}
               >
-                <SelectValue placeholder={placeholder} />
+                <SelectValue
+                  placeholder={placeholder}
+                  defaultValue={field.value || options[0].value}
+                />
               </SelectTrigger>
               <SelectContent>
                 {options.map((option) => (
@@ -396,6 +401,51 @@ export const PasswordFormField = <T extends FieldValues>({
                 )}
               </button>
             </div>
+          </FormControl>
+          {error && (
+            <FormMessage className="font-light">{error.message}</FormMessage>
+          )}
+        </FormItem>
+      )}
+    />
+  );
+};
+
+interface CheckboxFormFieldProps<T extends FieldValues> {
+  control: UseFormReturn<T>["control"];
+  name: Path<T>;
+  label: string;
+  placeholder?: string;
+  classNames?: {
+    formItem?: ClassValue;
+    formLabel?: ClassValue;
+    formControl?: ClassValue;
+    input?: ClassValue;
+  };
+}
+
+export const CheckboxFormField = <T extends FieldValues>({
+  control,
+  name,
+  label,
+  classNames,
+}: CheckboxFormFieldProps<T>) => {
+  return (
+    <HookFormField
+      control={control}
+      name={name}
+      render={({ field, fieldState: { error } }) => (
+        <FormItem className={cn("w-full", classNames?.formItem)}>
+          <FormControl
+            className={cn(
+              "relative flex items-center gap-3",
+              classNames?.formControl,
+            )}
+          >
+            <Checkbox className={cn("", classNames?.input)} {...field} />
+            <span className={cn("font-normal", classNames?.formLabel)}>
+              {label}
+            </span>
           </FormControl>
           {error && (
             <FormMessage className="font-light">{error.message}</FormMessage>

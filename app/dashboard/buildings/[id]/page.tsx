@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,11 +17,6 @@ import {
   Scissors,
   Building as BuildingIcon,
   FileSignature,
-  Receipt,
-  Shield,
-  Coffee,
-  ParkingMeterIcon as Parking,
-  CableCarIcon as Elevator,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,137 +29,61 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { TenantsTable } from "../_components/tenants-table";
 import { useParams, useRouter } from "next/navigation";
 
 import { Group } from "@/components/custom/group";
 import EnhancedFloorPlan from "../_components/floor-plan";
-import { MAINTENANCE_STATUS } from "@/types";
-import {
-  getBuildings,
-  getSelectedBuilding,
-  useBuildingStore,
-} from "../_hooks/useBuildings";
 import { UnitSplitDialog } from "./_components/unit-split-dialog";
 import { UnitMergeDialog } from "./_components/unit-merge-dialog";
+import { useGetBuildingQuery } from "@/app/quries/useBuildings";
+import LogJSON from "@/components/custom/log-json";
+import { getOccupancyColor, getOccupancyTextColor } from "@/utils";
 
 // Main Page Component
 const Page = () => {
   // Get building ID from URL parameters
   const params = useParams();
   const buildingID = params["id"] as string;
-
-  // Get building store actions
-  const { setSelectedBuilding, updateBuilding } = useBuildingStore();
-
   const router = useRouter();
-
-  // Set selected building on component mount
-  useEffect(() => {
-    if (buildingID) setSelectedBuilding(buildingID);
-  }, [buildingID, setSelectedBuilding]);
-
-  // Get the selected building
-  const building = getSelectedBuilding();
-
-  // Calculate occupancy rate
-  const occupancyRate = building
-    ? Math.round(
-        ((building.totalUnits - building.availableUnits) /
-          building.totalUnits) *
-          100,
-      )
-    : 0;
 
   // Dialog state management
   const [isEditBuildingOpen, setIsEditBuildingOpen] = useState(false);
 
   const [isSplitUnitOpen, setIsSplitUnitOpen] = useState(false);
   const [isMergeUnitsOpen, setIsMergeUnitsOpen] = useState(false);
-  const [isLeaseManagementOpen, setIsLeaseManagementOpen] = useState(false);
-  const [isFinancialReportsOpen, setIsFinancialReportsOpen] = useState(false);
+
   const [activeTab, setActiveTab] = useState("floors");
 
-  // Form state for edit building
-  const [editForm, setEditForm] = useState({
-    name: building?.name || "",
-    description: building?.description || "",
-    street: building?.address?.street || "",
-    city: building?.address?.city || "",
-    country: building?.address?.country || "",
-    totalFloors: building?.totalFloors || 0,
-    totalUnits: building?.totalUnits || 0,
-    amenities: building?.amenities || [],
-    maintenanceStatus: building?.maintenanceStatus || MAINTENANCE_STATUS.GOOD,
-  });
+  const getBuildingQuery = useGetBuildingQuery(buildingID);
 
-  // Update form when building changes
-  useEffect(() => {
-    if (building) {
-      setEditForm({
-        name: building.name,
-        description: building.description || "",
-        street: building.address.street,
-        city: building.address.city,
-        country: building.address.country,
-        totalFloors: building.totalFloors,
-        totalUnits: building.totalUnits,
-        amenities: building.amenities,
-        maintenanceStatus: building.maintenanceStatus,
-      });
-    }
-  }, [building]);
-
-  // Handle building update
-  const handleUpdateBuilding = () => {
-    if (building) {
-      updateBuilding(building.id, {
-        name: editForm.name,
-        description: editForm.description,
-        address: {
-          street: editForm.street,
-          city: editForm.city,
-          country: editForm.country,
-        },
-        totalFloors: editForm.totalFloors,
-        totalUnits: editForm.totalUnits,
-        amenities: editForm.amenities,
-        maintenanceStatus: editForm.maintenanceStatus,
-        updatedAt: new Date(),
-      });
-      setIsEditBuildingOpen(false);
-    }
-  };
-
-  // Toggle amenity in edit form
-  const toggleAmenity = (amenity: string) => {
-    setEditForm((prev) => {
-      const amenities = prev.amenities.includes(amenity)
-        ? prev.amenities.filter((a) => a !== amenity)
-        : [...prev.amenities, amenity];
-      return { ...prev, amenities };
-    });
-  };
-
-  if (!buildingID)
+  if (!buildingID) {
     return <div className="p-8 text-center">Building ID not provided</div>;
-
-  if (!building) {
-    return <div className="p-8 text-center">Building not found</div>;
   }
 
-  console.log({ sb: getSelectedBuilding(), bg: getBuildings(), buildingID });
+  if (getBuildingQuery.isPending) {
+    return (
+      <div>
+        <p>Getting building data</p>
+      </div>
+    );
+  }
+
+  if (getBuildingQuery.isError) {
+    return (
+      <div>
+        <p>{getBuildingQuery.error?.message}</p>
+      </div>
+    );
+  }
+
+  const building = getBuildingQuery.data;
+
+  // Calculate occupancy rate
+  const occupancyRate = building
+    ? Math.round((building.occupancy / building.totalUnits) * 100)
+    : 0;
 
   return (
     <motion.main
@@ -172,6 +91,7 @@ const Page = () => {
       animate={{ opacity: 1 }}
       className="relative flex-1 overflow-hidden p-4 md:p-6"
     >
+      <LogJSON data={{ building }} />
       {/* Header with building name and back button */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -206,8 +126,8 @@ const Page = () => {
           </motion.div>
         </Group>
         <p className="mt-1 flex items-center text-muted-foreground">
-          <Home className="mr-1 h-3 w-3" /> {building.address.street},{" "}
-          {building.address.city}, {building.address.country}
+          <Home className="mr-1 h-3 w-3" /> {building.address?.street},{" "}
+          {building.address?.city}, {building.address?.country}
         </p>
       </motion.div>
 
@@ -284,7 +204,7 @@ const Page = () => {
                   </div>
                   <div className="text-sm">
                     <span className="font-medium">
-                      {building.totalUnits - building.availableUnits}
+                      {building.availableUnits}
                     </span>{" "}
                     Occupied Units
                   </div>
@@ -299,10 +219,8 @@ const Page = () => {
                     <Tool className="h-4 w-4 text-amber-500" />
                   </div>
                   <div className="text-sm">
-                    <span className="font-medium">
-                      {building.maintenanceStatus}
-                    </span>{" "}
-                    Maintenance Status
+                    <span className="font-medium">{building.status}</span>{" "}
+                    Building Status
                   </div>
                 </motion.div>
               </div>
@@ -357,13 +275,13 @@ const Page = () => {
                 }}
                 index={4}
               />
-              <QuickActionButton
+              {/* <QuickActionButton
                 icon={<Receipt className="h-5 w-5" />}
                 label="Finacial Reports"
                 variant="outline"
                 onClick={() => setIsFinancialReportsOpen(true)}
                 index={5}
-              />
+              /> */}
             </div>
           </CardContent>
         </Card>
@@ -381,17 +299,11 @@ const Page = () => {
           onValueChange={setActiveTab}
           className="relative z-10"
         >
-          <TabsList className="rounded-full bg-background/50 backdrop-blur-sm">
-            <TabsTrigger
-              value="floors"
-              className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-            >
+          <TabsList className="">
+            <TabsTrigger value="floors" className="">
               Floor Plans
             </TabsTrigger>
-            <TabsTrigger
-              value="tenants"
-              className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-            >
+            <TabsTrigger value="tenants" className="">
               Tenants
             </TabsTrigger>
           </TabsList>
@@ -427,221 +339,8 @@ const Page = () => {
               Update the details for {building.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {/* Basic Information Section */}
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Basic Information
-              </h3>
-              <div className="h-px w-full bg-border" />
-            </div>
+          <div>UPDATE BUILDING DIALOG</div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="building-name">Building Name</Label>
-              <Input
-                id="building-name"
-                value={editForm.name}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, name: e.target.value })
-                }
-                className="bg-background/60"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="building-description">Description</Label>
-              <Textarea
-                id="building-description"
-                className="bg-background/60"
-                value={editForm.description}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, description: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Address Section */}
-            <div className="space-y-1 pt-2">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Address
-              </h3>
-              <div className="h-px w-full bg-border" />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="building-street">Street</Label>
-              <Input
-                id="building-street"
-                value={editForm.street}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, street: e.target.value })
-                }
-                className="bg-background/60"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="building-city">City</Label>
-                <Input
-                  id="building-city"
-                  value={editForm.city}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, city: e.target.value })
-                  }
-                  className="bg-background/60"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="building-country">Country</Label>
-                <Input
-                  id="building-country"
-                  value={editForm.country}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, country: e.target.value })
-                  }
-                  className="bg-background/60"
-                />
-              </div>
-            </div>
-
-            {/* Building Details Section */}
-            <div className="space-y-1 pt-2">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Building Details
-              </h3>
-              <div className="h-px w-full bg-border" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="building-floors">Total Floors</Label>
-                <Input
-                  id="building-floors"
-                  type="number"
-                  value={editForm.totalFloors}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      totalFloors: Number.parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="bg-background/60"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="building-units">Total Units</Label>
-                <Input
-                  id="building-units"
-                  type="number"
-                  value={editForm.totalUnits}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      totalUnits: Number.parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="bg-background/60"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="building-maintenance">Maintenance Status</Label>
-              <Select
-                value={editForm.maintenanceStatus}
-                onValueChange={(value) =>
-                  setEditForm({
-                    ...editForm,
-                    maintenanceStatus: value as MAINTENANCE_STATUS,
-                  })
-                }
-              >
-                <SelectTrigger
-                  id="building-maintenance"
-                  className="bg-background/60"
-                >
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={MAINTENANCE_STATUS.GOOD}>Good</SelectItem>
-                  <SelectItem value={MAINTENANCE_STATUS.NEEDS_REPAIR}>
-                    Need Repair
-                  </SelectItem>
-                  <SelectItem value={MAINTENANCE_STATUS.UNDER_MAINTENANCE}>
-                    Under Maintenance
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Amenities Section */}
-            <div className="space-y-1 pt-2">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Amenities
-              </h3>
-              <div className="h-px w-full bg-border" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="amenity-parking"
-                  checked={editForm.amenities.includes("parking")}
-                  onCheckedChange={() => toggleAmenity("parking")}
-                />
-                <Label
-                  htmlFor="amenity-parking"
-                  className="flex items-center gap-1.5"
-                >
-                  <Parking className="h-4 w-4 text-muted-foreground" />
-                  Parking
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="amenity-elevator"
-                  checked={editForm.amenities.includes("elevator")}
-                  onCheckedChange={() => toggleAmenity("elevator")}
-                />
-                <Label
-                  htmlFor="amenity-elevator"
-                  className="flex items-center gap-1.5"
-                >
-                  <Elevator className="h-4 w-4 text-muted-foreground" />
-                  Elevator
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="amenity-security"
-                  checked={editForm.amenities.includes("security")}
-                  onCheckedChange={() => toggleAmenity("security")}
-                />
-                <Label
-                  htmlFor="amenity-security"
-                  className="flex items-center gap-1.5"
-                >
-                  <Shield className="h-4 w-4 text-muted-foreground" />
-                  Security
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="amenity-cafeteria"
-                  checked={editForm.amenities.includes("cafeteria")}
-                  onCheckedChange={() => toggleAmenity("cafeteria")}
-                />
-                <Label
-                  htmlFor="amenity-cafeteria"
-                  className="flex items-center gap-1.5"
-                >
-                  <Coffee className="h-4 w-4 text-muted-foreground" />
-                  Cafeteria
-                </Label>
-              </div>
-            </div>
-          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -649,7 +348,12 @@ const Page = () => {
             >
               Cancel
             </Button>
-            <Button type="submit" onClick={handleUpdateBuilding}>
+            <Button
+              type="submit"
+              onClick={() => {
+                alert("UPDATING BUILDING");
+              }}
+            >
               Save Changes
             </Button>
           </DialogFooter>
@@ -734,19 +438,5 @@ const QuickActionButton = ({
   );
 };
 
-// Helper functions for occupancy indicators
-const getOccupancyColor = (occupancy: number) => {
-  if (occupancy >= 90) return "bg-green-500";
-  if (occupancy >= 70) return "bg-blue-500";
-  if (occupancy >= 50) return "bg-amber-500";
-  return "bg-red-500";
-};
-
-const getOccupancyTextColor = (occupancy: number) => {
-  if (occupancy >= 90) return "text-green-600";
-  if (occupancy >= 70) return "text-blue-600";
-  if (occupancy >= 50) return "text-amber-600";
-  return "text-red-600";
-};
 
 export default Page;

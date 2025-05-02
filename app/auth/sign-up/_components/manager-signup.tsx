@@ -1,23 +1,33 @@
 "use client";
 
-import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import SignupLayout from "./signup-layout";
+import { Form } from "@/components/ui/form";
+import { Group } from "@/components/custom/group";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+  DateFormField,
+  EmailFormField,
+  NumberFormField,
+  PasswordFormField,
+  TextFormField,
+} from "@/components/custom/form-field";
+
+import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
+import { useManagerSignUp } from "../../_queries/useAuth";
+import { useEffect } from "react";
 import { errorToast, successToast } from "@/components/custom/toasts";
+import Stack from "@/components/custom/stack";
+import { Label } from "@/components/ui/label";
+import { DataListInput } from "@/components/custom/data-list-input";
+
+const buttonVariants = {
+  initial: { scale: 1 },
+  hover: { scale: 1.05, boxShadow: "0 5px 15px rgba(0, 0, 0, 0.1)" },
+  tap: { scale: 0.98 },
+};
 
 const managerFormSchema = z
   .object({
@@ -31,20 +41,13 @@ const managerFormSchema = z
     phone: z
       .string()
       .min(10, { message: "Please enter a valid phone number." }),
-    companyName: z
-      .string()
-      .min(2, { message: "Company name must be at least 2 characters." }),
-    companyAddress: z
-      .string()
-      .min(5, { message: "Please enter a valid address." }),
-    licenseNumber: z.string().optional(),
+    assignedBuildingId: z.string().optional(),
+    employmentDate: z.date().optional(),
+    salary: z.coerce.number().min(0).optional(),
     password: z
       .string()
-      .min(8, { message: "Password must be at least 8 characters." }),
+      .min(4, { message: "Password must be at least 4 characters." }),
     confirmPassword: z.string(),
-    termsAccepted: z.boolean().refine((val) => val === true, {
-      message: "You must accept the terms and conditions.",
-    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -52,8 +55,6 @@ const managerFormSchema = z
   });
 
 export default function ManagerSignup() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const form = useForm<z.infer<typeof managerFormSchema>>({
     resolver: zodResolver(managerFormSchema),
     defaultValues: {
@@ -61,40 +62,44 @@ export default function ManagerSignup() {
       lastName: "",
       email: "",
       phone: "",
-      companyName: "",
-      companyAddress: "",
-      licenseNumber: "",
       password: "",
       confirmPassword: "",
-      termsAccepted: false,
     },
   });
 
+  const managerSignUpMutation = useManagerSignUp();
+
   async function onSubmit(values: z.infer<typeof managerFormSchema>) {
-    setIsSubmitting(true);
-
-    try {
-      // This would be replaced with your actual API call
-      console.log("Manager signup data:", values);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      successToast("Account created!", {
-        description:
-          "You've successfully created your property manager account.",
-      });
-
-      // Reset form
-      form.reset();
-    } catch (_) {
-      errorToast("", {
-        description: "There was a problem creating your account.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    managerSignUpMutation.mutate({
+      firstName: values.firstName,
+      lastName: values.lastName,
+      email: values.email,
+      password: values.password,
+      phone: values.phone,
+      assignedBuildingId: values.assignedBuildingId,
+      employmentDate: values.employmentDate,
+      salary: values.salary,
+    });
   }
+
+  useEffect(() => {
+    if (managerSignUpMutation.isSuccess) {
+      successToast("Manager account created successfully!");
+    }
+  }, [managerSignUpMutation.isSuccess]);
+
+  useEffect(() => {
+    if (managerSignUpMutation.isError) {
+      errorToast(
+        managerSignUpMutation.error?.message ||
+          "An error occurred while creating the account. Please try again.",
+      );
+    }
+  }, [
+    form,
+    managerSignUpMutation.error?.message,
+    managerSignUpMutation.isError,
+  ]);
 
   return (
     <SignupLayout
@@ -103,176 +108,103 @@ export default function ManagerSignup() {
       userType="manager"
     >
       <Form {...form}>
-        <form
-          id="manager-signup-form"
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-6"
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+        <form id="manager-signup-form" onSubmit={form.handleSubmit(onSubmit)}>
+          <section className="h-[calc(100vh-20rem)] space-y-6">
+            {/* Building info */}
+            <Stack spacing={"xs"}>
+              <Label className="text-sm font-normal">Select Building</Label>
+              <DataListInput
+                maxItems={1}
+                items={[
+                  {
+                    label: "Building Name 01",
+                    value: "01",
+                  },
+                  {
+                    label: "Building Name 02",
+                    value: "02",
+                  },
+                ]}
+              />
+            </Stack>
+            <Group align={"start"} className="grid sm:grid-cols-2">
+              <TextFormField
+                control={form.control}
+                name="firstName"
+                label="First Name"
+                placeholder="John"
+              />
+              <TextFormField
+                control={form.control}
+                name="lastName"
+                label="Last Name"
+                placeholder="Doe"
+              />
+            </Group>
 
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="john.doe@example.com"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <Group align={"start"} className="grid sm:grid-cols-2">
+              <EmailFormField
+                control={form.control}
+                name="email"
+                label="Email"
+                placeholder="john.doe@acmecorp.com"
+              />
+              <TextFormField
+                control={form.control}
+                name="phone"
+                label="Phone Number"
+                placeholder="(123) 456-7890"
+              />
+            </Group>
 
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone Number</FormLabel>
-                <FormControl>
-                  <Input type="tel" placeholder="(123) 456-7890" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <Group align={"start"} className="grid sm:grid-cols-2">
+              <DateFormField
+                control={form.control}
+                name="employmentDate"
+                label="Employment Date"
+              />
+              <NumberFormField
+                control={form.control}
+                name="salary"
+                label="Salary"
+                placeholder="50,000"
+              />
+            </Group>
 
-          <FormField
-            control={form.control}
-            name="companyName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Acme Property Management" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="companyAddress"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company Address</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="123 Main St, City, State, ZIP"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="licenseNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>License Number (Optional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="PM12345678" {...field} />
-                </FormControl>
-                <FormDescription>
-                  If applicable, enter your property management license number.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Password must be at least 8 characters long.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
-                <FormControl>
-                  <Input type="password" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="termsAccepted"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>
-                    I accept the{" "}
-                    <a href="/terms" className="text-primary underline">
-                      terms and conditions
-                    </a>
-                  </FormLabel>
-                  <FormMessage />
-                </div>
-              </FormItem>
-            )}
-          />
+            <Group align={"start"} className="grid sm:grid-cols-2">
+              <PasswordFormField
+                control={form.control}
+                name="password"
+                label="Password"
+                placeholder="••••••••"
+              />
+              <PasswordFormField
+                control={form.control}
+                name="confirmPassword"
+                label="Confirm Password"
+                placeholder="••••••••"
+              />
+            </Group>
+          </section>
+          <section className="mt-10 flex items-center justify-end">
+            <SubmitButton isSubmitting={false} />
+          </section>
         </form>
       </Form>
     </SignupLayout>
   );
 }
+
+const SubmitButton = ({ isSubmitting }: { isSubmitting: boolean }) => (
+  <motion.button
+    type="submit"
+    className="flex items-center space-x-2 rounded-full bg-gradient-to-r from-primary to-primary/80 px-6 py-2 text-primary-foreground shadow-md"
+    disabled={isSubmitting}
+    variants={buttonVariants}
+    whileHover="hover"
+    whileTap="tap"
+  >
+    <span>{isSubmitting ? "Creating Account..." : "Create Account"}</span>
+    <Sparkles className="h-4 w-4" />
+  </motion.button>
+);

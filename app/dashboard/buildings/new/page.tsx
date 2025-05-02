@@ -19,8 +19,12 @@ import {
   ChevronLeft,
   BuildingIcon,
 } from "lucide-react";
-import { Building, MAINTENANCE_STATUS, PAYMENT_FREQUENCY } from "@/types";
-import { infoToast, successToast } from "@/components/custom/toasts";
+import { Building, BUILDING_STATUS, PAYMENT_FREQUENCY } from "@/types";
+import {
+  errorToast,
+  infoToast,
+  successToast,
+} from "@/components/custom/toasts";
 import PageWrapper from "@/components/custom/page-wrapper";
 import { Stack } from "@/components/custom/stack";
 import { buildingSchema, BuildingSchema } from "./_validations";
@@ -32,6 +36,7 @@ import {
 import { ClassValue } from "clsx";
 import { Group } from "@/components/custom/group";
 import {
+  CheckboxFormField,
   NumberFormField,
   SelectFormField,
   TextareaFormField,
@@ -43,10 +48,13 @@ import { addBuilding } from "../_hooks/useBuildings";
 import { useRouter } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import PageHeader from "@/components/custom/page-header";
-import { CommercialAmenities } from "./_constants";
+import { AccessibilityFeatures, CommercialAmenities } from "./_constants";
+import { useCreateBuildingMutation } from "@/app/quries/useBuildings";
+import { useEffect } from "react";
 
 const Page = () => {
   const { activeTab, onTabChange } = useCreateBuildingContext();
+  const createBuildingMutation = useCreateBuildingMutation();
 
   const router = useRouter();
 
@@ -68,7 +76,13 @@ const Page = () => {
       totalFloors: 2,
       totalUnits: 10,
       amenities: [],
-      maintenanceStatus: MAINTENANCE_STATUS.GOOD,
+      elevators: 0,
+      accessibilityFeatures: [],
+      emergencyExits: 0,
+      fireSafetyCertified: false,
+      status: BUILDING_STATUS.ACTIVE,
+      operatingHours: "",
+      parkingSpaces: 0,
       leaseTerms: {
         minLeasePeriodMonths: 3,
         maxLeasePeriodMonths: 12,
@@ -103,36 +117,61 @@ const Page = () => {
     form.setValue("videos", [...videos]);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const data: BuildingSchema = form.getValues();
     // Convert File objects to URLs for the API
 
-    // create binary data
-    const imageUrls =
-      data.images?.map((file) => URL.createObjectURL(file)) || [];
-    const videoUrls =
-      data.videos?.map((file) => URL.createObjectURL(file)) || [];
+    const formData = new FormData();
 
-    // Create the final building object
-    const buildingData: Building = {
-      ...data,
-      availableUnits: data.totalUnits,
-      imageUrls,
-      videoUrls,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      id: crypto.randomUUID(),
-    };
+    // do appending for each fields
+    formData.append("name", data.name);
+    formData.append("description", data.description || "");
+    if (data.managerId) {
+      formData.append("managerId", data.managerId);
+    }
 
-    console.log("Form submitted:", buildingData);
-    successToast("Building Added", {
-      description: `${data.name} has been successfully added to the system.`,
+    formData.append("totalFloors", data.totalFloors.toString());
+    formData.append("totalUnits", data.totalUnits.toString());
+    formData.append("status", data.status);
+    formData.append("operatingHours", data.operatingHours || "");
+    formData.append("elevators", data.elevators.toString());
+    formData.append("parkingSpaces", data.parkingSpaces.toString());
+    formData.append("emergencyExits", data.emergencyExits.toString());
+    formData.append(
+      "fireSafetyCertified",
+      data.fireSafetyCertified ? "true" : "false",
+    );
+
+    formData.append(
+      "address",
+      JSON.stringify({
+        ...data.address,
+        latitude: data.address.latitude || 0,
+        longitude: data.address.longitude || 0,
+      }),
+    );
+    formData.append("leaseTerms", JSON.stringify(data.leaseTerms));
+
+    data.images?.forEach((file) => {
+      formData.append(`images`, file);
     });
 
-    // TODO: FIX THIS SHIT
-    addBuilding({ ...buildingData });
-    // TODO: MAKE API REQUEST
-    router.push("/dashboard/buildings");
+    data.accessibilityFeatures?.forEach((feature) => {
+      formData.append(`accessibilityFeatures`, feature);
+    });
+    data.amenities?.forEach((amenity) => {
+      formData.append(`amenities`, amenity);
+    });
+
+    data.regulationDocuments?.forEach((file) => {
+      formData.append("regulationDocuments", file.file);
+    });
+
+    formData.append("buildingType", "commercial");
+
+    console.log("Form data:", formData);
+
+    await createBuildingMutation.mutateAsync(formData);
   };
 
   const handleNext = async () => {
@@ -167,9 +206,12 @@ const Page = () => {
         const isValid = await form.trigger([
           "totalFloors",
           "totalUnits",
-          "constructionYear",
-          "maintenanceStatus",
+          "yearBuilt",
+          "status",
           "amenities",
+          "accessibilityFeatures",
+          "elevators",
+          "emergencyExits",
         ]);
         if (isValid) {
           onTabChange(TAB_TYPES.LEASE_TERMS);
@@ -188,6 +230,60 @@ const Page = () => {
       onTabChange(TAB_TYPES_LIST[currentIndex - 1]);
     }
   };
+
+  useEffect(() => {
+    if (createBuildingMutation.isSuccess) {
+      const data = form.getValues();
+      const imageUrls =
+        data.images?.map((file) => URL.createObjectURL(file)) || [];
+      const videoUrls =
+        data.videos?.map((file) => URL.createObjectURL(file)) || [];
+
+      const regulationDocuments = data.regulationDocuments?.map((file) => ({
+        name: file.name,
+        url: URL.createObjectURL(file.file),
+      }));
+
+      const responseData = createBuildingMutation.data;
+      console.log({ data });
+
+      if (!responseData) {
+        errorToast("Building creation failed");
+        return;
+      }
+
+      // Create the final building object
+      const buildingDataTemp: Building = {
+        ...data,
+        imageUrls,
+        videoUrls,
+        regulationDocuments,
+        operatingHours: data.operatingHours || "",
+        leaseTerms: {
+          ...data.leaseTerms,
+          maxLeasePeriodMonths: data.leaseTerms.maxLeasePeriodMonths || 0,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        id: responseData._id,
+      };
+
+      successToast("Building created successfully");
+      addBuilding(buildingDataTemp);
+      router.push("/dashboard/buildings");
+    }
+  }, [
+    createBuildingMutation.data,
+    createBuildingMutation.isSuccess,
+    form,
+    router,
+  ]);
+
+  useEffect(() => {
+    if (createBuildingMutation.isError) {
+      errorToast(createBuildingMutation.error.message);
+    }
+  }, [createBuildingMutation.error?.message, createBuildingMutation.isError]);
 
   return (
     <PageWrapper className="py-0">
@@ -245,7 +341,11 @@ const Page = () => {
                   />
 
                   {/* Image Upload Section */}
-                  <FileUploader onFilesChange={handleFiles} showPreview />
+                  <FileUploader
+                    acceptedFormats={["image/png", "image/jpg", "image/jpeg"]}
+                    onFilesChange={handleFiles}
+                    showPreview
+                  />
                 </TabsContent>
 
                 <TabsContent value={TAB_TYPES.ADDRESS} className="space-y-4">
@@ -341,31 +441,77 @@ const Page = () => {
                   >
                     <NumberFormField<BuildingSchema>
                       control={form.control}
-                      name="constructionYear"
-                      label="Construction Year"
+                      name="yearBuilt"
+                      label="Year Built"
                       placeholder="e.g. 2010"
                     />
                     <SelectFormField<BuildingSchema>
                       control={form.control}
-                      name="maintenanceStatus"
-                      label="Maintenance Status"
+                      name="status"
+                      label="Building Status"
                       options={[
                         {
-                          value: MAINTENANCE_STATUS.GOOD,
-                          label: "Good",
+                          value: BUILDING_STATUS.ACTIVE,
+                          label: "Active",
                         },
                         {
-                          value: MAINTENANCE_STATUS.NEEDS_REPAIR,
-                          label: "Needs Repair",
+                          value: BUILDING_STATUS.UNDER_RENOVATION,
+                          label: "Under Renovation",
                         },
                         {
-                          value: MAINTENANCE_STATUS.UNDER_MAINTENANCE,
-                          label: "Under Maintenance",
+                          value: BUILDING_STATUS.DEMOLISHED,
+                          label: "Demolished",
                         },
                       ]}
                     />
                   </Group>
 
+                  <Group className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <NumberFormField<BuildingSchema>
+                      control={form.control}
+                      name="elevators"
+                      label="Number of Elevators"
+                      placeholder="e.g. 2"
+                    />
+
+                    <NumberFormField<BuildingSchema>
+                      control={form.control}
+                      name="parkingSpaces"
+                      label="Parking Spaces"
+                      placeholder="e.g. 20"
+                    />
+                  </Group>
+
+                  <Group className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <NumberFormField<BuildingSchema>
+                      control={form.control}
+                      name="emergencyExits"
+                      label="Emergency Exits"
+                      placeholder="e.g. 2"
+                    />
+
+                    <CheckboxFormField
+                      control={form.control}
+                      name="fireSafetyCertified"
+                      label="Fire Safety Certified"
+                    />
+                  </Group>
+
+                  <TextFormField<BuildingSchema>
+                    control={form.control}
+                    name="operatingHours"
+                    label="Operating Hours"
+                    placeholder="e.g. 9 AM - 5 PM"
+                  />
+
+                  <TagInput
+                    label="Accessibility Features"
+                    suggestions={AccessibilityFeatures}
+                    onChange={(tags) => {
+                      form.setValue("accessibilityFeatures", tags);
+                    }}
+                    tags={form.watch("accessibilityFeatures")}
+                  />
                   {/* Amenities Section */}
                   <TagInput
                     label="Amenities"
@@ -447,6 +593,23 @@ const Page = () => {
                     placeholder="Enter pet policy details"
                     rows={5}
                   />
+
+                  <FileUploader
+                    onFilesChange={(files) => {
+                      const regulationDocuments = Array.from(files).map(
+                        (file) => ({
+                          name: file.name,
+                          file,
+                        }),
+                      );
+                      form.setValue("regulationDocuments", [
+                        ...regulationDocuments,
+                      ]);
+                    }}
+                    showPreview
+                    label="Regulation Documents"
+                    acceptedFormats={["application/pdf"]}
+                  />
                 </TabsContent>
               </Tabs>
               <Group justify={"between"} className="mt-auto">
@@ -477,6 +640,7 @@ const Page = () => {
                 ) : (
                   <Button
                     type="button"
+                    disabled={createBuildingMutation.isPending}
                     onClick={() => {
                       handleSubmit();
                     }}

@@ -39,7 +39,7 @@ export const TagInput: React.FC<TagInputProps> = ({
           !tags.includes(suggestion),
       );
     }
-    return suggestions.filter((s) => !tags.includes(s));
+    return suggestions.filter((s) => !tags?.includes(s));
   }, [tag, suggestions, tags]);
 
   useEffect(() => {

@@ -1,15 +1,21 @@
-// types.ts - Comprehensive Commercial Real Estate Types
+export type CommonUserData = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+};
 
 export type Tenant = {
   // Personal Information
   firstName: string;
   lastName: string;
   fullName?: string;
-  title: string;
+  occupation: string;
   email: string;
   phone: string;
-  secondaryEmail: string;
-  secondaryPhone?: string;
+  emergencyContact?: string;
+  workPhoneNumber?: string;
 
   // Business Information
   businessName: string;
@@ -17,8 +23,28 @@ export type Tenant = {
   businessDescription?: string;
   businessWebsite: string;
   taxId?: string;
+  businessRegistrationNumber: string;
+};
 
-  termsAccepted: true;
+export type ServiceProvider = {
+  firstName: string;
+  lastName: string;
+  fullName?: string;
+  email: string;
+  phone: string;
+  company: string;
+  serviceType: string;
+  contractDetails?: string;
+};
+
+export type MaintenanceWorker = {
+  firstName: string;
+  lastName: string;
+  fullName?: string;
+  email: string;
+  phone: string;
+  specialization: string;
+  availability?: string;
 };
 
 export enum USER_TYPE {
@@ -26,16 +52,25 @@ export enum USER_TYPE {
   MANAGER = "Manager",
   OWNER = "Owner",
   UNKNOWN = "Unknown",
+  SERVICE_PROVIDER = "Service Provider",
+  MAINTENANCE = "Maintenance Personal",
 }
 
-export type User = Tenant | Manager | Owner;
+export type User =
+  | Tenant
+  | Manager
+  | Owner
+  | ServiceProvider
+  | MaintenanceWorker;
 
 export type Manager = {
   firstName: string;
   lastName: string;
-  fullName?: string;
   email: string;
   phone: string;
+  assignedBuildingId?: string;
+  employmentDate?: Date;
+  salary?: number;
 };
 
 export type Owner = {
@@ -125,44 +160,28 @@ export type Unit = {
   monthlyRent: number;
   tenantId?: string;
   amenities: string[];
-  imageUrls?: string[];
-  videoUrls?: string[];
-  allowedUses?: string[];
-  zoningType?: string;
+  images?: string[];
+  videos?: string[];
   lastRenovationDate?: Date;
-  notes?: string;
+  description?: string;
   createdAt: Date;
   updatedAt: Date;
 };
 
 /* ========== LEASE TYPES ========== */
 export enum PAYMENT_FREQUENCY {
-  MONTHLY = "Monthly",
-  QUARTERLY = "Quarterly",
-  SEMI_ANNUALLY = "Semi-Annually",
-  ANNUALLY = "Annually",
+  MONTHLY = "MONTHLY",
+  QUARTERLY = "QUARTERLY",
+  SEMI_ANNUALLY = "SEMI-ANNUALLY",
+  ANNUALLY = "ANNUALLY",
 }
 
 // Enum representing different types of lease agreements in commercial real estate
 export enum LEASE_TYPE {
-  // Full Service Lease: Landlord covers all operating expenses including property taxes,
-  // insurance, and maintenance. Tenant typically just pays rent.
   FULL_SERVICE = "Full Service",
-
-  // Modified Gross Lease: Tenant and landlord share operating expenses.
-  // Usually, the tenant pays base rent and a portion of expenses like utilities or janitorial.
   MODIFIED_GROSS = "Modified Gross",
-
-  // Triple Net (NNN) Lease: Tenant pays base rent plus all property expenses
-  // (taxes, insurance, and maintenance). Common in retail or industrial leases.
   TRIPLE_NET = "Triple Net (NNN)",
-
-  // Percentage Lease: Tenant pays base rent plus a percentage of their business’s
-  // gross sales. Common in shopping malls or retail centers.
   PERCENTAGE = "Percentage Lease",
-
-  // Gross Lease: Similar to Full Service, landlord covers most expenses,
-  // but some utilities or services might be separately metered and billed to the tenant.
   GROSS = "Gross Lease",
 }
 
@@ -229,6 +248,12 @@ export enum MAINTENANCE_TYPE {
   UPGRADE = "Upgrade",
 }
 
+export enum BUILDING_STATUS {
+  ACTIVE = "Active",
+  UNDER_RENOVATION = "Under renovation",
+  DEMOLISHED = "Demolished",
+}
+
 // Building Types
 export type Building = {
   id: string;
@@ -236,16 +261,24 @@ export type Building = {
   description?: string;
   address: Address;
   managerId?: string;
+  manager?: Manager;
   totalFloors: number;
   totalUnits: number;
-  availableUnits: number;
   amenities: string[];
-  constructionYear?: number;
-  maintenanceStatus: MAINTENANCE_STATUS;
-  occupancyRate?: number;
-  monthlyRevenue?: number;
+  elevators: number;
+  parkingSpaces: number;
+  emergencyExits: number;
+  yearBuilt?: number;
+  regulationDocuments: {
+    name: string;
+    url: string;
+  }[];
+  status: BUILDING_STATUS;
   imageUrls?: string[];
   videoUrls?: string[];
+  operatingHours: string;
+  accessibilityFeatures?: string[];
+  fireSafetyCertified: boolean;
   leaseTerms: LeaseTerms;
   createdAt: Date;
   updatedAt: Date;

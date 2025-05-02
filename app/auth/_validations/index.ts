@@ -13,26 +13,25 @@ export const tenantFormSchema = z
       .url("Please enter a valid URL")
       .or(z.literal("")),
     taxId: z.string().min(9, "Tax ID must be at least 9 characters").optional(),
+    businessRegistrationNumber: z
+      .string()
+      .min(2, "Please enter a valid business registration number"),
 
     //  Information
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
-    title: z.string().min(2, "Please enter your job title"),
+    occupation: z.string().min(2, "Please enter your job occupation"),
     email: z.string().email("Please enter a valid email address"),
     phone: z.string().min(10, "Please enter a valid phone number"),
-    secondaryEmail: z
-      .string()
-      .email("Please enter a valid email")
-      .or(z.literal("")),
-    secondaryPhone: z.string().optional(),
+    workPhoneNumber: z.string().optional(),
+    emergencyContact: z.string().optional(),
 
     // Account Information
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z.string().min(8, "Passwpord must be at least 8 characters"),
     confirmPassword: z.string(),
     termsAccepted: z.boolean().refine((val) => val === true, {
       message: "You must accept the terms and conditions",
     }),
-    marketingOptIn: z.boolean().default(false),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",

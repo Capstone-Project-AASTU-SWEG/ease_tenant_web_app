@@ -37,5 +37,23 @@ export const CommercialAmenities = [
   "Valet Parking",
   "Video Surveillance",
   "Visitor Parking",
-  "WiFi Throughout"
+  "WiFi Throughout",
+];
+
+export const AccessibilityFeatures = [
+  "Accessible Parking",
+  "Accessible Restrooms",
+  "Automatic Doors",
+  "Braille Signage",
+  "Elevator Access",
+  "Handrails",
+  "Hearing Loop System",
+  "Large Print Signage",
+  "Low Vision Aids",
+  "Mobility Assistance",
+  "Non-Slip Floors",
+  "Ramps",
+  "Service Animal Friendly",
+  "Sign Language Interpreters Available",
+  "Visual Alarm Systems",
 ];

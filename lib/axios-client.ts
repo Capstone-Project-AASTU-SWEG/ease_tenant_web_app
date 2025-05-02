@@ -2,7 +2,7 @@ import ENV from "@/config/env";
 import axios from "axios";
 
 const axiosClient = axios.create({
-  baseURL: ENV.BACKEND_BASE_URL,
+  baseURL: ENV.NEXT_PUBLIC_BACKEND_BASE_URL,
 });
 
 axiosClient.interceptors.request.use(
