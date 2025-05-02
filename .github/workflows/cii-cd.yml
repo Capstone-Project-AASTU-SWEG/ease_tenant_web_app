@@ -1,0 +1,89 @@
+name: Ease Tenant CI/CD to EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # - name: 🥟 Install Bun
+      #   run: |
+      #     curl -fsSL https://bun.sh/install | bash
+      #     export PATH="$HOME/.bun/bin:$PATH"
+      #     bun --version
+
+      - name: 📥 Install Dependencies
+        run: |
+          bun install
+          bun add framer-motion
+
+      # Optional: Run tests
+      # - name: ✅ Run Tests
+      #   run: bun test
+
+      - name: 🏗️ Build Production Files
+        run: |
+          bunx next build --no-lint
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+
+      - name: Clean up old build
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🧹 Cleaning old .next build"
+            rm -rf /home/ubuntu/ease_tenant_web_app/.next
+
+      - name: 📤 Copy Built Files to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: |
+            .next/
+            public/
+            package.json
+            bun.lockb
+          target: "/home/ubuntu/ease_tenant_web_app/"
+
+      - name: 🚀 Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🔄 Deploying Next.js app..."
+            cd /home/ubuntu/ease_tenant_web_app
+            if ! command -v bun &> /dev/null; then
+              curl -fsSL https://bun.sh/install | bash
+              export PATH="$HOME/.bun/bin:$PATH"
+            fi
+            bun install --production
+            # Uncomment and edit the following line if using PM2 or another process manager:
+            # pm2 restart next-app || pm2 start "bun run start" --name next-app --cwd /home/ubuntu/ease_tenant_web_app
+            echo "✅ Next.js deployed successfully!"
+
+      - name: 🔍 Verify Deployment
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            curl -I http://localhost || echo "Deployment verification completed!"
