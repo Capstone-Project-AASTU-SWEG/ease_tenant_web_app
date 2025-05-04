@@ -42,10 +42,10 @@ const createLeaseSchema = z.object({
   templateId: z.string().min(1, "Template is required"),
   unitId: z.string().min(1, "Unit is required"),
   tenantId: z.string().min(1, "Tenant is required"),
-  startDate: z.date(),
+  startDate: z.coerce.date(),
   endDate: z.date(),
-  monthlyRent: z.number().min(1, "Monthly rent is required"),
-  securityDeposit: z.number().min(0),
+  monthlyRent: z.coerce.number().min(1, "Monthly rent is required"),
+  securityDeposit: z.coerce.number().min(0),
   notes: z.string().optional(),
   sendImmediately: z.boolean().default(false),
 });

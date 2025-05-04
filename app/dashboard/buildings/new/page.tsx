@@ -588,7 +588,11 @@ const Page = () => {
                     Next <ChevronRight />
                   </Button>
                 ) : (
-                  <Button type="submit" onClick={handleSubmit}>
+                  <Button
+                    type="submit"
+                    disabled={createBuildingMutation.isPending}
+                    onClick={handleSubmit}
+                  >
                     Submit <BuildingIcon />
                   </Button>
                 )}

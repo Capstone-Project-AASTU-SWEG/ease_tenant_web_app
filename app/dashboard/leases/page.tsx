@@ -40,7 +40,6 @@ import { Title } from "@/components/custom/title";
 import { Text } from "@/components/custom/text";
 import PageWrapper from "@/components/custom/page-wrapper";
 import { Group } from "@/components/custom/group";
-import { BackgroundDots } from "@/components/custom/design-elements";
 import { CreateLeaseTemplateDialog } from "./_components/create-lease-template-dialog";
 import { CreateLeaseDialog } from "./_components/create-lease-dialog";
 
@@ -278,7 +277,7 @@ export default function LeasesPage() {
 
   return (
     <PageWrapper>
-      <BackgroundDots />
+      {/* <BackgroundDots /> */}
       <header className="mb-6">
         <Title size="h2">Lease Management</Title>
         <Text variant="dimmed">

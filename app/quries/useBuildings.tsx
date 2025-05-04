@@ -28,6 +28,7 @@ export const useGetAllBuildingsQuery = () => {
         const buildings = response.data.data;
         const refinedBuildings = buildings?.map((building) => ({
           ...building,
+          id: building._id,
         }));
         return refinedBuildings;
       } catch (error) {

@@ -6,11 +6,13 @@ import {
   BarChart3,
   Bell,
   Building,
+  FileText,
   LogOut,
   LucideProps,
   MessageCircle,
   Settings,
   ShoppingBasket,
+  UserPlus,
   UsersIcon,
   Wrench,
 } from "lucide-react";
@@ -33,6 +35,8 @@ const adminNavigationItems = [
   { href: "/dashboard", icon: BarChart3, label: "Overview" },
   { href: "/dashboard/tenants", icon: UsersIcon, label: "Tenants" },
   { href: "/dashboard/buildings", icon: Building, label: "Buildings" },
+  { href: "/dashboard/leases", icon: FileText, label: "Leases" },
+  { href: "/dashboard/applications", icon: UserPlus, label: "Applications" },
   {
     href: "/dashboard/marketplace",
     icon: ShoppingBasket,

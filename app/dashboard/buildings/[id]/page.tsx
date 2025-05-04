@@ -40,6 +40,8 @@ import { UnitMergeDialog } from "./_components/unit-merge-dialog";
 import { useGetBuildingQuery } from "@/app/quries/useBuildings";
 import LogJSON from "@/components/custom/log-json";
 import { getOccupancyColor, getOccupancyTextColor } from "@/utils";
+import { PageLoader } from "@/components/custom/page-loader";
+import { PageError } from "@/components/custom/page-error";
 
 // Main Page Component
 const Page = () => {
@@ -57,7 +59,6 @@ const Page = () => {
   const [activeTab, setActiveTab] = useState("floors");
 
   const getBuildingQuery = useGetBuildingQuery(buildingID);
-  
 
   if (!buildingID) {
     return <div className="p-8 text-center">Building ID not provided</div>;
@@ -65,18 +66,17 @@ const Page = () => {
 
   if (getBuildingQuery.isPending) {
     return (
-      <div>
-        <p>Getting building data</p>
-      </div>
+      <PageLoader
+        isLoading={getBuildingQuery.isPending}
+        loaderVariant="dots"
+        variant="minimal"
+        loaderSize={"full"}
+      />
     );
   }
 
   if (getBuildingQuery.isError) {
-    return (
-      <div>
-        <p>{getBuildingQuery.error?.message}</p>
-      </div>
-    );
+    return <PageError fullPage message={getBuildingQuery.error.message} />;
   }
 
   const building = getBuildingQuery.data;
@@ -438,6 +438,5 @@ const QuickActionButton = ({
     </motion.div>
   );
 };
-
 
 export default Page;

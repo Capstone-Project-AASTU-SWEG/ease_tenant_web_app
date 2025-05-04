@@ -58,7 +58,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   errorToast,
-  infoToast,
   successToast,
   warningToast,
 } from "@/components/custom/toasts";
@@ -68,6 +67,8 @@ import { useGetBuildingQuery } from "@/app/quries/useBuildings";
 import { cn } from "@/lib/utils";
 import { useCreateRentalApplicationMutation } from "@/app/quries/useApplications";
 import LogJSON from "@/components/custom/log-json";
+import { PageError } from "@/components/custom/page-error";
+import { PageLoader } from "@/components/custom/page-loader";
 
 // Define the rental application schema (simplified since user identity is already in the system)
 const rentalApplicationSchema = z.object({
@@ -220,26 +221,13 @@ const RentUnitPage = () => {
     }
   }, [createRentalApplicationMutation.isError]);
 
+  if (getBuildingQuery.isPending) {
+    return <PageLoader isLoading={getBuildingQuery.isPending}  variant="minimal" loaderVariant="progress" />
+  }
+
   if (!building || !unit) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Card className="w-[400px]">
-          <CardHeader>
-            <CardTitle>Unit Not Found</CardTitle>
-            <CardDescription>
-              The building or unit {`you're`} looking for could not be found.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button
-              onClick={() => router.push("/buildings")}
-              className="w-full"
-            >
-              Browse Available Units
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      <PageError variant="404" message="Building or Unit not found" fullPage />
     );
   }
 
