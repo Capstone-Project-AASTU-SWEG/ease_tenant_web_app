@@ -8,22 +8,34 @@ import axios from "axios";
 export const useTenantSignUp = () => {
   return useMutation({
     mutationKey: ["tenantSignUp"],
-    mutationFn: async (payload: Omit<Tenant, "">) => {
+    mutationFn: async (
+      payload: Omit<Tenant, "id" | "fullname"> & {
+        password: string;
+      },
+    ) => {
       try {
-        const response = await axiosClient.post<APIResponse<null>>(
+        const response = await axiosClient.post<APIResponse<{ token: string }>>(
           "/tenants",
           payload,
         );
 
-        const data = response.data;
+        const data = response.data.data;
+        if (!data) {
+          throw new Error("Tenant data not found.");
+        }
+
         return data;
       } catch (error) {
         console.log({ error });
         if (axios.isAxiosError(error)) {
-          const apiError = error.response?.data as APIResponse<null>;
-          throw new Error(apiError.error || "An error occurred");
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while signing up a tenant.",
+          );
         }
-        throw new Error("An unexpected error occurred");
+        throw new Error(
+          "An unexpected error occurred while signing up a tenant.",
+        );
       }
     },
   });
@@ -32,7 +44,7 @@ export const useManagerSignUp = () => {
   return useMutation({
     mutationKey: ["managerSignUp"],
     mutationFn: async (
-      payload: Omit<CommonUserData, ""> & {
+      payload: Omit<CommonUserData, "id"> & {
         assignedBuildingId?: string;
         employmentDate?: Date;
         salary?: number;
@@ -49,8 +61,8 @@ export const useManagerSignUp = () => {
       } catch (error) {
         console.log({ error });
         if (axios.isAxiosError(error)) {
-          const apiError = error.response?.data as APIResponse<null>;
-          throw new Error(apiError.error || "An error occurred");
+          const errorMessage = error.response?.data.message;
+          throw new Error(errorMessage || "An error occurred");
         }
         throw new Error("An unexpected error occurred");
       }

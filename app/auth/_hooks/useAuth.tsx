@@ -4,16 +4,15 @@ import { create } from "zustand";
 import { TenantFormValues } from "../_validations";
 import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { USER_TYPE } from "@/types";
+import { CommonUserData, USER_TYPE } from "@/types";
 
 export type Tenant = TenantFormValues;
 
-export type User = Omit<
-  Tenant,
-  "marketingOptIn" | "confirmPassword" | "termsAccepted" | "secondaryEmail"
-> & {
-  id: string;
-};
+export type User =
+  | (Omit<Tenant, "confirmPassword" | "termsAccepted"> & {
+      id: string;
+    })
+  | CommonUserData;
 
 export type AuthState = {
   user: User | null;
@@ -32,13 +31,14 @@ const initialState: AuthState = {
     businessName: "Nesru.Inc",
     businessType: "LLC",
     businessWebsite: "https://nesru.com",
+    businessRegistrationNumber: "123456789",
     email: "nesrugetahun@gmail.com",
     password: "nesru123",
     firstName: "Nesru",
     lastName: "Getahun",
     phone: "+251911111111",
     taxId: "1234567890",
-    title: "Developer",
+    occupation: "Developer",
   },
   userType: USER_TYPE.OWNER,
 };

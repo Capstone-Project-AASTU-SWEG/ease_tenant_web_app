@@ -1,4 +1,5 @@
 export type CommonUserData = {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -8,6 +9,7 @@ export type CommonUserData = {
 
 export type Tenant = {
   // Personal Information
+  id: string;
   firstName: string;
   lastName: string;
   fullName?: string;
@@ -27,6 +29,7 @@ export type Tenant = {
 };
 
 export type ServiceProvider = {
+  id: string;
   firstName: string;
   lastName: string;
   fullName?: string;
@@ -38,6 +41,7 @@ export type ServiceProvider = {
 };
 
 export type MaintenanceWorker = {
+  id: string;
   firstName: string;
   lastName: string;
   fullName?: string;
@@ -64,6 +68,7 @@ export type User =
   | MaintenanceWorker;
 
 export type Manager = {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -74,6 +79,7 @@ export type Manager = {
 };
 
 export type Owner = {
+  id: string;
   firstName: string;
   lastName: string;
   fullName?: string;
@@ -316,41 +322,34 @@ export type APIResponse<T> = {
 /**
  * Application status types
  */
-export type ApplicationStatus =
+export type APPLICATION_STATUS =
   | "pending"
   | "approved"
   | "rejected"
-  | "in_review"
-  | "on_hold";
+  | "in_review";
 
 /**
  * Application types
  */
-export type ApplicationType =
-  | "rental"
-  | "maintenance"
-  | "provider"
-  | "service"
-  | "other";
-
+export type APPLICATION_TYPE = "rental" | "maintenance";
 /**
  * Application priority levels
  */
-export type PriorityLevel = "low" | "medium" | "high" | "urgent";
+export type PRIORITY_LEVEL = "low" | "medium" | "high" | "urgent";
 
 /**
  * Base application interface
  */
 export interface BaseApplication {
   id: string;
-  type: ApplicationType;
-  status: ApplicationStatus;
+  type: APPLICATION_TYPE;
+  status: APPLICATION_STATUS;
   submittedAt: string;
   submittedBy: User;
-  priority: PriorityLevel;
+  priority: PRIORITY_LEVEL;
   lastUpdated: string;
   notes?: string;
-  assignedTo?: User;
+  assignedTo: User;
 }
 
 /**
@@ -358,141 +357,20 @@ export interface BaseApplication {
  */
 export interface RentalApplication extends BaseApplication {
   type: "rental";
-  unitDetails: Unit;
-  businessDetails: {
-    name: string;
-    type: string;
-    employees: number;
-  };
+  unit: Unit;
   leaseDetails: {
-    requestedStartDate: string;
+    requestedStartDate: Date;
     requestedDuration: number;
     specialRequirements?: string;
+    numberOfEmployees: number;
   };
-  documents: Array<{
-    id: string;
+  documents: File[];
+  documentsMetadata: {
     name: string;
-    type: string;
-    url: string;
-    uploadedAt: string;
-  }>;
-}
-
-/**
- * Maintenance request specific fields
- */
-export interface MaintenanceApplication extends BaseApplication {
-  type: "maintenance";
-  issueDetails: {
-    category: string;
-    title: string;
-    description: string;
-    location: string;
-    reportedAt: string;
-  };
-  unitDetails: {
-    buildingId: string;
-    buildingName: string;
-    unitId: string;
-    unitNumber: string;
-    floorNumber: number;
-  };
-  scheduledFor?: string;
-  estimatedCost?: number;
-  images?: Array<{
-    id: string;
-    url: string;
-    caption?: string;
-  }>;
-}
-
-/**
- * Provider registration application specific fields
- */
-export interface ProviderApplication extends BaseApplication {
-  type: "provider";
-  providerDetails: {
-    companyName: string;
-    serviceType: string;
-    contactPerson: string;
-    phone: string;
-    email: string;
-    website?: string;
-    yearsInBusiness: number;
-    employeeCount: number;
-  };
-  servicesOffered: string[];
-  certifications: Array<{
-    id: string;
-    name: string;
-    issuedBy: string;
-    expiryDate: string;
-    verificationUrl?: string;
-  }>;
-  insuranceDetails: {
-    provider: string;
-    policyNumber: string;
-    coverageAmount: number;
-    expiryDate: string;
-  };
-  references: Array<{
-    name: string;
-    company: string;
-    phone: string;
-    email: string;
-  }>;
-}
-
-/**
- * Service provider application specific fields
- */
-export interface ServiceApplication extends BaseApplication {
-  type: "service";
-  serviceDetails: {
-    category: string;
-    title: string;
-    description: string;
-    pricing: {
-      type: "fixed" | "hourly" | "quote";
-      amount?: number;
-    };
-    availability: string[];
-  };
-  providerDetails: {
-    id: string;
-    name: string;
-    rating?: number;
-    completedJobs?: number;
-  };
-  targetBuildings?: Array<{
-    id: string;
-    name: string;
-  }>;
-}
-
-/**
- * Other application types
- */
-export interface OtherApplication extends BaseApplication {
-  type: "other";
-  title: string;
-  description: string;
-  category?: string;
-  requestedAction?: string;
-  attachments?: Array<{
-    id: string;
-    name: string;
-    type: string;
-    url: string;
-  }>;
+  }[];
 }
 
 /**
  * Union type for all application types
  */
-export type Application =
-  | RentalApplication
-  | MaintenanceApplication
-  | ProviderApplication
-  | ServiceApplication
-  | OtherApplication;
+export type Application = RentalApplication;

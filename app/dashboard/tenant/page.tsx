@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageWrapper from "@/components/custom/page-wrapper";
@@ -27,236 +28,506 @@ import {
   Home,
   KeyRound,
   Layers,
+  Loader,
   Plus,
   PenToolIcon as Tool,
   Wrench,
+  Search,
+  AlertCircle,
 } from "lucide-react";
 
 import Stack from "@/components/custom/stack";
 import { Group } from "@/components/custom/group";
 import PageHeader from "@/components/custom/page-header";
-import { authUser } from "@/app/auth/_hooks/useAuth";
+import { UserDetail, useVerifyUserQuery } from "@/app/quries/useAuth";
+import { PageLoader } from "@/components/custom/page-loader";
+import { PageError } from "@/components/custom/page-error";
+import Link from "next/link";
+
+
+type PriorityLevel = "high" | "medium" | "low";
+type PaymentStatus = "paid" | "pending" | "overdue";
+type MaintenanceStatus = "in-progress" | "completed" | "pending";
+
+type Payment = {
+  id: string;
+  description: string;
+  date: string;
+  amount: string;
+  status: PaymentStatus;
+};
+
+type Announcement = {
+  title: string;
+  date: string;
+  description: string;
+  priority: PriorityLevel;
+};
+
+type MaintenanceRequest = {
+  id: string;
+  issue: string;
+  location: string;
+  date: string;
+  status: MaintenanceStatus;
+  priority: PriorityLevel;
+};
 
 // ===== MAIN PAGE COMPONENT =====
 const Page = () => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState<string>("overview");
+  const verifyUserQuery = useVerifyUserQuery();
+
+  if (verifyUserQuery.isLoading) {
+    return (
+      <PageLoader variant="minimal" isLoading={true} loaderVariant={"dots"} />
+    );
+  }
+
+  if (verifyUserQuery.isError) {
+    return (
+      <PageError
+        variant="generic"
+        message={verifyUserQuery.error.message}
+        fullPage
+        size="xl"
+      />
+    );
+  }
+
+  const userData = verifyUserQuery.data;
+
+  // Check if user has a unit assigned
+  const hasUnit = userData?.unit !== null;
+
+  // Check if user has a pending application
+  const hasPendingApplication = false;
+
+  // Determine tenant status
+  const tenantStatus = "inactive";
 
   return (
-    <PageWrapper className="relative px-4 py-6 md:px-8 md:py-8">
+    <PageWrapper className="relative py-0">
       {/* Dashboard Header with Title and Actions */}
+      {userData && (
+        <PageHeader
+          title="Tenant Dashboard"
+          description="Manage your commercial space and services"
+          rightSection={<TenantProfileSummary userData={userData} />}
+        />
+      )}
 
-      <PageHeader
-        title="Tenant Dashboard"
-        description="Manage your commercial space and services"
-        rightSection={<TenantProfileSummary />}
-      />
+      {/* Show different content based on tenant status */}
+      {!hasUnit && (
+        <NoUnitAssigned
+          tenantStatus={tenantStatus}
+          userData={userData}
+          hasPendingApplication={hasPendingApplication}
+        />
+      )}
 
-      {/* Building overview and quick actions cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="mt-6 grid gap-6 md:grid-cols-3"
-      >
-        {/* Tenant Overview Card */}
-        <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Tenant Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              {/* Lease Progress indicator */}
-              <div className="flex items-center justify-between text-sm">
-                <span>Lease Progress</span>
-                <span className="font-medium text-green-600">27%</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: "27%" }}
-                  transition={{ duration: 1, delay: 0.3 }}
-                  className="h-full bg-green-500"
-                />
-              </div>
+      {hasUnit && (
+        <>
+          {/* Building overview and quick actions cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mt-6 grid gap-6 md:grid-cols-3"
+          >
+            {/* Tenant Overview Card */}
+            <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Tenant Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2">
+                  {/* Lease Progress indicator */}
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Lease Progress</span>
+                    <span className="font-medium text-green-600">27%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "27%" }}
+                      transition={{ duration: 1, delay: 0.3 }}
+                      className="h-full bg-green-500"
+                    />
+                  </div>
 
-              {/* Tenant statistics */}
-              <div className="mt-4 grid gap-4">
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="flex items-center gap-2"
-                >
-                  <div className="rounded-full bg-primary/10 p-1.5">
-                    <Home className="h-4 w-4 text-primary" />
+                  {/* Tenant statistics */}
+                  <div className="mt-4 grid gap-4">
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="flex items-center gap-2"
+                    >
+                      <div className="rounded-full bg-primary/10 p-1.5">
+                        <Home className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">Active</span> Lease Status
+                      </div>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="flex items-center gap-2"
+                    >
+                      <div className="rounded-full bg-blue-500/10 p-1.5">
+                        <Layers className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">Suite 302</span> (1,200 sq
+                        ft)
+                      </div>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.6 }}
+                      className="flex items-center gap-2"
+                    >
+                      <div className="rounded-full bg-green-500/10 p-1.5">
+                        <CircleDollarSign className="h-4 w-4 text-green-500" />
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">$0.00</span> Current
+                        Balance
+                      </div>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.7 }}
+                      className="flex items-center gap-2"
+                    >
+                      <div className="rounded-full bg-amber-500/10 p-1.5">
+                        <Tool className="h-4 w-4 text-amber-500" />
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">1 Open</span> Maintenance
+                        Request
+                      </div>
+                    </motion.div>
                   </div>
-                  <div className="text-sm">
-                    <span className="font-medium">Active</span> Lease Status
-                  </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex items-center gap-2"
-                >
-                  <div className="rounded-full bg-blue-500/10 p-1.5">
-                    <Layers className="h-4 w-4 text-blue-500" />
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">Suite 302</span> (1,200 sq ft)
-                  </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="flex items-center gap-2"
-                >
-                  <div className="rounded-full bg-green-500/10 p-1.5">
-                    <CircleDollarSign className="h-4 w-4 text-green-500" />
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">$0.00</span> Current Balance
-                  </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.7 }}
-                  className="flex items-center gap-2"
-                >
-                  <div className="rounded-full bg-amber-500/10 p-1.5">
-                    <Tool className="h-4 w-4 text-amber-500" />
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">1 Open</span> Maintenance
-                    Request
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions Card */}
-        <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md md:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-              <QuickActionButton
-                icon={<CreditCard className="h-5 w-5" />}
-                label="Pay Rent"
-                variant="default"
-                onClick={() => {}}
-                index={0}
-              />
-              <QuickActionButton
-                icon={<Wrench className="h-5 w-5" />}
-                label="Maintenance"
-                variant="outline"
-                onClick={() => setActiveTab("maintenance")}
-                index={1}
-              />
-              <QuickActionButton
-                icon={<Calendar className="h-5 w-5" />}
-                label="Book Room"
-                variant="outline"
-                onClick={() => {}}
-                index={2}
-              />
-              <QuickActionButton
-                icon={<Building className="h-5 w-5" />}
-                label="Amenities"
-                variant="outline"
-                onClick={() => {}}
-                index={3}
-              />
-              <QuickActionButton
-                icon={<KeyRound className="h-5 w-5" />}
-                label="Access"
-                variant="outline"
-                onClick={() => {}}
-                index={4}
-              />
-              <QuickActionButton
-                icon={<FileText className="h-5 w-5" />}
-                label="View Lease"
-                variant="outline"
-                onClick={() => {}}
-                index={5}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Main Content Tabs */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="mt-6"
-      >
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="relative z-10"
-        >
-          <TabsList className="rounded-full bg-background/50 backdrop-blur-sm">
-            <TabsTrigger
-              value="overview"
-              className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-            >
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="payments"
-              className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-            >
-              Payments
-            </TabsTrigger>
-            <TabsTrigger
-              value="maintenance"
-              className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-            >
-              Maintenance
-            </TabsTrigger>
-          </TabsList>
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* Overview Tab Content */}
-              <TabsContent value="overview" className="mt-4">
-                <LeaseInformation />
-                <div className="mt-6 grid gap-6 md:grid-cols-2">
-                  <UpcomingPayments />
-                  <RecentAnnouncements />
                 </div>
-              </TabsContent>
+              </CardContent>
+            </Card>
 
-              {/* Payments Tab Content */}
-              <TabsContent value="payments" className="mt-4">
-                <PaymentHistory />
-              </TabsContent>
+            {/* Quick Actions Card */}
+            <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md md:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                  <QuickActionButton
+                    icon={<CreditCard className="h-5 w-5" />}
+                    label="Pay Rent"
+                    variant="default"
+                    onClick={() => {}}
+                    index={0}
+                  />
+                  <QuickActionButton
+                    icon={<Wrench className="h-5 w-5" />}
+                    label="Maintenance"
+                    variant="outline"
+                    onClick={() => setActiveTab("maintenance")}
+                    index={1}
+                  />
+                  <QuickActionButton
+                    icon={<Calendar className="h-5 w-5" />}
+                    label="Book Room"
+                    variant="outline"
+                    onClick={() => {}}
+                    index={2}
+                  />
+                  <QuickActionButton
+                    icon={<Building className="h-5 w-5" />}
+                    label="Amenities"
+                    variant="outline"
+                    onClick={() => {}}
+                    index={3}
+                  />
+                  <QuickActionButton
+                    icon={<KeyRound className="h-5 w-5" />}
+                    label="Access"
+                    variant="outline"
+                    onClick={() => {}}
+                    index={4}
+                  />
+                  <QuickActionButton
+                    icon={<FileText className="h-5 w-5" />}
+                    label="View Lease"
+                    variant="outline"
+                    onClick={() => {}}
+                    index={5}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-              {/* Maintenance Tab Content */}
-              <TabsContent value="maintenance" className="mt-4">
-                <MaintenanceRequests />
-              </TabsContent>
-            </motion.div>
-          </AnimatePresence>
-        </Tabs>
-      </motion.div>
+          {/* Main Content Tabs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-6"
+          >
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="relative z-10"
+            >
+              <TabsList className="rounded-full bg-background/50 backdrop-blur-sm">
+                <TabsTrigger
+                  value="overview"
+                  className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                >
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger
+                  value="payments"
+                  className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                >
+                  Payments
+                </TabsTrigger>
+                <TabsTrigger
+                  value="maintenance"
+                  className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                >
+                  Maintenance
+                </TabsTrigger>
+              </TabsList>
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {/* Overview Tab Content */}
+                  <TabsContent value="overview" className="mt-4">
+                    <LeaseInformation />
+                    <div className="mt-6 grid gap-6 md:grid-cols-2">
+                      <UpcomingPayments />
+                      <RecentAnnouncements />
+                    </div>
+                  </TabsContent>
+
+                  {/* Payments Tab Content */}
+                  <TabsContent value="payments" className="mt-4">
+                    <PaymentHistory />
+                  </TabsContent>
+
+                  {/* Maintenance Tab Content */}
+                  <TabsContent value="maintenance" className="mt-4">
+                    <MaintenanceRequests />
+                  </TabsContent>
+                </motion.div>
+              </AnimatePresence>
+            </Tabs>
+          </motion.div>
+        </>
+      )}
     </PageWrapper>
+  );
+};
+
+// Component for when no unit is assigned
+const NoUnitAssigned = ({
+  // tenantStatus,
+  userData,
+  hasPendingApplication,
+}: {
+  tenantStatus: string;
+  userData: UserDetail;
+  hasPendingApplication: boolean;
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+      className="mt-6"
+    >
+      {hasPendingApplication ? (
+        <PendingApplicationStatus userData={userData} />
+      ) : (
+        <NoApplicationStatus userData={userData} />
+      )}
+    </motion.div>
+  );
+};
+
+// Component for pending application status
+const PendingApplicationStatus = ({ userData }: { userData: UserDetail }) => {
+  console.log({ userData });
+  return (
+    <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-amber-500" />
+          Application Under Review
+        </CardTitle>
+        <CardDescription>
+          Your application is currently being reviewed by our management team
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-lg bg-amber-50/50 p-4 dark:bg-amber-900/10">
+          <div className="flex items-start gap-3">
+            <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-900/20">
+              <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <h4 className="font-medium text-amber-800 dark:text-amber-300">
+                Application Status: Pending
+              </h4>
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+                Thank you for your interest in our commercial space. Your
+                application has been received and is currently under review. Our
+                team will contact you within 2-3 business days regarding the
+                next steps.
+              </p>
+
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">Application submitted</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-full border-2 border-amber-500 bg-amber-100"></div>
+                  <span className="text-sm">
+                    Application review (in progress)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-full border-2 border-neutral-300 bg-neutral-100"></div>
+                  <span className="text-sm text-muted-foreground">
+                    Credit & background check
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-full border-2 border-neutral-300 bg-neutral-100"></div>
+                  <span className="text-sm text-muted-foreground">
+                    Final approval
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button variant="outline" size="sm" className="rounded-full">
+                  <FileText className="mr-2 h-4 w-4" />
+                  View Application
+                </Button>
+                <Button size="sm" className="rounded-full">
+                  Contact Management
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Component for no application status
+const NoApplicationStatus = ({ userData }: { userData: UserDetail }) => {
+  console.log({ userData });
+  return (
+    <Card className="border-none shadow-none">
+      <CardContent className="px-0">
+        <div className="rounded-lg bg-primary/5 p-4">
+          <div className="flex items-start gap-3">
+            <div className="rounded-full bg-primary/10 p-2">
+              <Home className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h4 className="font-medium text-primary">
+                No Units Currently Assigned
+              </h4>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {`You're`} registered as a tenant in our system, but you{" "}
+                {`don't`} have any commercial spaces assigned yet. Browse our
+                available units and submit an application to get started.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button className="rounded-full" asChild>
+                  <Link href="/dashboard/buildings">
+                    <Search className="mr-2 h-4 w-4" />
+                    Browse Available Units
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <h4 className="mb-3 font-medium">Complete Your Profile</h4>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <span className="text-sm">Basic Information</span>
+              </div>
+              <Badge
+                variant="outline"
+                className="bg-green-500/10 text-green-500"
+              >
+                Completed
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <span className="text-sm">Business Details</span>
+              </div>
+              <Badge
+                variant="outline"
+                className="bg-green-500/10 text-green-500"
+              >
+                Completed
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <span className="text-sm">Financial Information</span>
+              </div>
+              <Badge
+                variant="outline"
+                className="bg-amber-500/10 text-amber-500"
+              >
+                Incomplete
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <span className="text-sm">Required Documents</span>
+              </div>
+              <Badge
+                variant="outline"
+                className="bg-amber-500/10 text-amber-500"
+              >
+                Incomplete
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -297,8 +568,13 @@ const QuickActionButton = ({
 };
 
 // Tenant Profile Summary for the header
-const TenantProfileSummary = () => {
-  const user = authUser();
+const TenantProfileSummary = ({ userData }: { userData: UserDetail }) => {
+  if (!userData || !userData.user) {
+    return <Loader className="h-5 w-5" />;
+  }
+
+  const { user, tenant } = userData;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 5 }}
@@ -309,17 +585,16 @@ const TenantProfileSummary = () => {
       <Avatar className="h-8 w-8 border border-primary/10">
         <AvatarImage src="/placeholder.svg?height=32&width=32" />
         <AvatarFallback className="uppercase">
-          {user?.firstName.at(0)}
-          {user?.lastName.at(0)}
+          {user.firstName.at(0)}
+          {user.lastName.at(0)}
         </AvatarFallback>
       </Avatar>
       <div className="hidden md:block">
-        <p className="text-sm font-medium">{user?.businessName}</p>
+        <p className="text-sm font-medium">
+          {tenant?.businessName || `${user.firstName} ${user.lastName}`}
+        </p>
         <p className="text-xs text-muted-foreground">
-          {user
-            ? `${user?.firstName}
-          ${user?.lastName}`
-            : "..."}
+          {tenant?.businessType || "USER ROLE"}
         </p>
       </div>
       <Button
@@ -336,24 +611,27 @@ const TenantProfileSummary = () => {
 // ===== COMPONENT: Upcoming Payments =====
 const UpcomingPayments = () => {
   // Sample upcoming payment data
-  const payments = [
+  const payments: Payment[] = [
     {
       description: "Monthly Rent",
       amount: "$3,500.00",
-      dueDate: "May 1, 2025",
-      status: "upcoming",
+      date: "May 1, 2025",
+      id: "UP-001",
+      status: "pending",
     },
     {
       description: "Utilities",
       amount: "$450.00",
-      dueDate: "May 5, 2025",
-      status: "upcoming",
+      date: "May 5, 2025",
+      id: "UP-002",
+      status: "pending",
     },
     {
       description: "Maintenance Fee",
       amount: "$200.00",
-      dueDate: "May 10, 2025",
-      status: "upcoming",
+      date: "May 10, 2025",
+      id: "UP-003",
+      status: "pending",
     },
   ];
 
@@ -390,7 +668,7 @@ const UpcomingPayments = () => {
                 <div>
                   <p className="font-medium">{payment.description}</p>
                   <p className="text-xs text-muted-foreground">
-                    Due: {payment.dueDate}
+                    Due: {payment.date}
                   </p>
                 </div>
               </div>
@@ -411,7 +689,7 @@ const UpcomingPayments = () => {
 // ===== COMPONENT: Recent Announcements =====
 const RecentAnnouncements = () => {
   // Sample announcements data
-  const announcements = [
+  const announcements: Announcement[] = [
     {
       title: "Building Maintenance",
       date: "Apr 10, 2025",
@@ -434,7 +712,7 @@ const RecentAnnouncements = () => {
   ];
 
   // Function to get priority badge styling
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityBadge = (priority: PriorityLevel) => {
     switch (priority) {
       case "high":
         return <Badge variant="destructive">High</Badge>;
@@ -606,7 +884,7 @@ const LeaseInformation = () => {
 // ===== COMPONENT: Payment History =====
 const PaymentHistory = () => {
   // Sample payment history data
-  const payments = [
+  const payments: Payment[] = [
     {
       id: "INV-2025-004",
       description: "Monthly Rent",
@@ -705,7 +983,7 @@ const PaymentHistory = () => {
 // ===== COMPONENT: Maintenance Requests =====
 const MaintenanceRequests = () => {
   // Sample maintenance request data
-  const requests = [
+  const requests: MaintenanceRequest[] = [
     {
       id: "REQ-2025-001",
       issue: "HVAC not cooling properly",
@@ -733,7 +1011,7 @@ const MaintenanceRequests = () => {
   ];
 
   // Function to get status badge
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: MaintenanceStatus) => {
     switch (status) {
       case "in-progress":
         return <Badge variant="secondary">In Progress</Badge>;

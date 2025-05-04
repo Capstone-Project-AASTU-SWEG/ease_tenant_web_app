@@ -1,14 +1,10 @@
 "use client";
 
-import type React from "react";
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-
 import { Form } from "@/components/ui/form";
-
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   MapPin,
@@ -19,20 +15,11 @@ import {
   ChevronLeft,
   BuildingIcon,
 } from "lucide-react";
-import { Building, BUILDING_STATUS, PAYMENT_FREQUENCY } from "@/types";
-import {
-  errorToast,
-  infoToast,
-  successToast,
-} from "@/components/custom/toasts";
+import { BUILDING_STATUS, PAYMENT_FREQUENCY } from "@/types";
+import { errorToast, successToast } from "@/components/custom/toasts";
 import PageWrapper from "@/components/custom/page-wrapper";
 import { Stack } from "@/components/custom/stack";
 import { buildingSchema, BuildingSchema } from "./_validations";
-import {
-  TAB_TYPES,
-  TAB_TYPES_LIST,
-  useCreateBuildingContext,
-} from "./_contexts";
 import { ClassValue } from "clsx";
 import { Group } from "@/components/custom/group";
 import {
@@ -43,49 +30,59 @@ import {
   TextFormField,
 } from "@/components/custom/form-field";
 import { FileUploader } from "@/components/custom/file-upload";
-import { TagInput } from "@/components/custom/tag-input";
-import { addBuilding } from "../_hooks/useBuildings";
 import { useRouter } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import PageHeader from "@/components/custom/page-header";
 import { AccessibilityFeatures, CommercialAmenities } from "./_constants";
+import { DataListInput } from "@/components/custom/data-list-input";
+import { useEffect, useState } from "react";
 import { useCreateBuildingMutation } from "@/app/quries/useBuildings";
-import { useEffect } from "react";
+
+const TAB_TYPES = {
+  BASIC: "Basic Info",
+  ADDRESS: "Address",
+  DETAILS: "Details",
+  LEASE_TERMS: "Lease Terms",
+} as const;
+
+type TabType = keyof typeof TAB_TYPES;
+const TAB_TYPES_LIST = Object.keys(TAB_TYPES) as TabType[];
 
 const Page = () => {
-  const { activeTab, onTabChange } = useCreateBuildingContext();
-  const createBuildingMutation = useCreateBuildingMutation();
-
+  const [activeTab, setActiveTab] = useState<TabType>("BASIC");
   const router = useRouter();
+
+  const createBuildingMutation = useCreateBuildingMutation();
 
   const form = useForm<BuildingSchema>({
     resolver: zodResolver(buildingSchema),
     defaultValues: {
-      name: "#001",
+      name: "",
       description: "",
       address: {
-        country: "Ethiopia",
-        street: "Kilinto",
-        city: "Addis Ababa",
-        state: "Addis Ababa",
-        postalCode: "1000",
-        latitude: 1,
-        longitude: 1,
+        country: "",
+        street: "",
+        city: "",
+        state: "",
+        postalCode: "",
+        latitude: 0,
+        longitude: 0,
       },
       managerId: "",
-      totalFloors: 2,
-      totalUnits: 10,
+      totalFloors: 1,
+      totalUnits: 1,
       amenities: [],
-      elevators: 0,
       accessibilityFeatures: [],
+      elevators: 0,
       emergencyExits: 0,
       fireSafetyCertified: false,
       status: BUILDING_STATUS.ACTIVE,
+      yearBuilt: 2010,
       operatingHours: "",
       parkingSpaces: 0,
       leaseTerms: {
-        minLeasePeriodMonths: 3,
-        maxLeasePeriodMonths: 12,
+        minLeasePeriodMonths: 1,
+        maxLeasePeriodMonths: 1,
         latePaymentPenalty: 0,
         leaseRenewalPolicy: "",
         paymentFrequency: PAYMENT_FREQUENCY.MONTHLY,
@@ -119,8 +116,7 @@ const Page = () => {
 
   const handleSubmit = async () => {
     const data: BuildingSchema = form.getValues();
-    // Convert File objects to URLs for the API
-
+    console.log("Form data before appending:", data);
     const formData = new FormData();
 
     // do appending for each fields
@@ -156,12 +152,11 @@ const Page = () => {
       formData.append(`images`, file);
     });
 
-    data.accessibilityFeatures?.forEach((feature) => {
-      formData.append(`accessibilityFeatures`, feature);
-    });
-    data.amenities?.forEach((amenity) => {
-      formData.append(`amenities`, amenity);
-    });
+    formData.append(
+      "accessibilityFeatures",
+      JSON.stringify(data.accessibilityFeatures),
+    );
+    formData.append("amenities", JSON.stringify(data.amenities));
 
     data.regulationDocuments?.forEach((file) => {
       formData.append("regulationDocuments", file.file);
@@ -171,39 +166,23 @@ const Page = () => {
 
     console.log("Form data:", formData);
 
-    await createBuildingMutation.mutateAsync(formData);
+    createBuildingMutation.mutate(formData);
   };
 
-  const handleNext = async () => {
-    // make validation here
+  const validateCurrentTab = async () => {
     switch (activeTab) {
-      case TAB_TYPES.BASIC: {
-        const isValid = await form.trigger([
-          "name",
-          "description",
-          "managerId",
-        ]);
-        if (isValid) {
-          onTabChange(TAB_TYPES.ADDRESS);
-        }
-        return;
-      }
-      case TAB_TYPES.ADDRESS: {
-        const isValid = await form.trigger([
+      case "BASIC":
+        return await form.trigger(["name", "description", "managerId"]);
+      case "ADDRESS":
+        return await form.trigger([
           "address.street",
           "address.city",
           "address.state",
           "address.country",
           "address.postalCode",
         ]);
-        if (isValid) {
-          onTabChange(TAB_TYPES.DETAILS);
-        }
-
-        return;
-      }
-      case TAB_TYPES.DETAILS: {
-        const isValid = await form.trigger([
+      case "DETAILS":
+        return await form.trigger([
           "totalFloors",
           "totalUnits",
           "yearBuilt",
@@ -213,103 +192,77 @@ const Page = () => {
           "elevators",
           "emergencyExits",
         ]);
-        if (isValid) {
-          onTabChange(TAB_TYPES.LEASE_TERMS);
-        }
+      default:
+        return true;
+    }
+  };
 
-        return;
-      }
-      default: {
-        infoToast(activeTab);
+  const handleNext = async () => {
+    const isValid = await validateCurrentTab();
+    if (isValid) {
+      const currentIndex = TAB_TYPES_LIST.indexOf(activeTab);
+      if (currentIndex < TAB_TYPES_LIST.length - 1) {
+        setActiveTab(TAB_TYPES_LIST[currentIndex + 1]);
       }
     }
   };
+
   const handlePrev = () => {
     const currentIndex = TAB_TYPES_LIST.indexOf(activeTab);
     if (currentIndex > 0) {
-      onTabChange(TAB_TYPES_LIST[currentIndex - 1]);
+      setActiveTab(TAB_TYPES_LIST[currentIndex - 1]);
     }
   };
 
-  useEffect(() => {
-    if (createBuildingMutation.isSuccess) {
-      const data = form.getValues();
-      const imageUrls =
-        data.images?.map((file) => URL.createObjectURL(file)) || [];
-      const videoUrls =
-        data.videos?.map((file) => URL.createObjectURL(file)) || [];
+  const handleTabClick = async (tabType: TabType) => {
+    const tabIndex = TAB_TYPES_LIST.indexOf(tabType);
+    const activeTabIndex = TAB_TYPES_LIST.indexOf(activeTab);
 
-      const regulationDocuments = data.regulationDocuments?.map((file) => ({
-        name: file.name,
-        url: URL.createObjectURL(file.file),
-      }));
-
-      const responseData = createBuildingMutation.data;
-      console.log({ data });
-
-      if (!responseData) {
-        errorToast("Building creation failed");
-        return;
-      }
-
-      // Create the final building object
-      const buildingDataTemp: Building = {
-        ...data,
-        imageUrls,
-        videoUrls,
-        regulationDocuments,
-        operatingHours: data.operatingHours || "",
-        leaseTerms: {
-          ...data.leaseTerms,
-          maxLeasePeriodMonths: data.leaseTerms.maxLeasePeriodMonths || 0,
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        id: responseData._id,
-      };
-
-      successToast("Building created successfully");
-      addBuilding(buildingDataTemp);
-      router.push("/dashboard/buildings");
+    if (tabIndex > activeTabIndex) {
+      const isValid = await validateCurrentTab();
+      if (!isValid) return;
     }
-  }, [
-    createBuildingMutation.data,
-    createBuildingMutation.isSuccess,
-    form,
-    router,
-  ]);
+    setActiveTab(tabType);
+  };
 
+  // Show error toast if error occured
   useEffect(() => {
     if (createBuildingMutation.isError) {
       errorToast(createBuildingMutation.error.message);
     }
   }, [createBuildingMutation.error?.message, createBuildingMutation.isError]);
 
+  useEffect(() => {
+    if (createBuildingMutation.isSuccess) {
+      successToast("Building created successfully");
+      router.push("/dashboard/buildings");
+    }
+  }, [createBuildingMutation.isSuccess, router]);
+
   return (
     <PageWrapper className="py-0">
       <PageHeader
         title="Create New Building"
-        description=" Add a new building to your property management system"
+        description="Add a new building to your property management system"
         withBackButton
       />
 
       <main className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(12rem,1fr)_4fr]">
         <Stack spacing="lg" className="p-2">
-          {/* Taps */}
-          <LeftSection />
+          <LeftSection activeTab={activeTab} onTabClick={handleTabClick} />
         </Stack>
         <ScrollArea>
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(() => {})}
+              onSubmit={form.handleSubmit(handleSubmit)}
               className="flex min-h-[calc(100vh-12rem)] flex-col gap-6 p-2"
             >
               <Tabs
-                defaultValue={TAB_TYPES.BASIC}
+                defaultValue="BASIC"
                 value={activeTab}
-                onValueChange={(tab) => onTabChange(tab as TAB_TYPES)}
+                onValueChange={(tab) => setActiveTab(tab as TabType)}
               >
-                <TabsContent value={TAB_TYPES.BASIC} className="space-y-4">
+                <TabsContent value="BASIC" className="space-y-4">
                   <Group
                     className="grid grid-cols-1 gap-4 md:grid-cols-2"
                     align="start"
@@ -328,7 +281,7 @@ const Page = () => {
                       options={[
                         { label: "Nesredin Getahun", value: "01" },
                         { label: "Hassen Getahun", value: "02" },
-                      ]} // Fetch options from API
+                      ]}
                     />
                   </Group>
 
@@ -340,7 +293,6 @@ const Page = () => {
                     placeholder="Enter building description"
                   />
 
-                  {/* Image Upload Section */}
                   <FileUploader
                     acceptedFormats={["image/png", "image/jpg", "image/jpeg"]}
                     onFilesChange={handleFiles}
@@ -348,7 +300,7 @@ const Page = () => {
                   />
                 </TabsContent>
 
-                <TabsContent value={TAB_TYPES.ADDRESS} className="space-y-4">
+                <TabsContent value="ADDRESS" className="space-y-4">
                   <TextFormField<BuildingSchema>
                     control={form.control}
                     name="address.country"
@@ -404,7 +356,6 @@ const Page = () => {
                     />
                   </Group>
 
-                  {/* Map Preview (Simulated) */}
                   <div className="mt-4 rounded-md border bg-muted/30 p-4">
                     <h4 className="mb-2 text-sm font-medium">Map Preview</h4>
                     <div className="flex h-[200px] items-center justify-center rounded-md bg-muted">
@@ -419,7 +370,7 @@ const Page = () => {
                   </div>
                 </TabsContent>
 
-                <TabsContent value={TAB_TYPES.DETAILS} className="space-y-4">
+                <TabsContent value="DETAILS" className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <NumberFormField<BuildingSchema>
                       control={form.control}
@@ -450,10 +401,7 @@ const Page = () => {
                       name="status"
                       label="Building Status"
                       options={[
-                        {
-                          value: BUILDING_STATUS.ACTIVE,
-                          label: "Active",
-                        },
+                        { value: BUILDING_STATUS.ACTIVE, label: "Active" },
                         {
                           value: BUILDING_STATUS.UNDER_RENOVATION,
                           label: "Under Renovation",
@@ -473,7 +421,6 @@ const Page = () => {
                       label="Number of Elevators"
                       placeholder="e.g. 2"
                     />
-
                     <NumberFormField<BuildingSchema>
                       control={form.control}
                       name="parkingSpaces"
@@ -489,7 +436,6 @@ const Page = () => {
                       label="Emergency Exits"
                       placeholder="e.g. 2"
                     />
-
                     <CheckboxFormField
                       control={form.control}
                       name="fireSafetyCertified"
@@ -504,29 +450,48 @@ const Page = () => {
                     placeholder="e.g. 9 AM - 5 PM"
                   />
 
-                  <TagInput
+                  <DataListInput
                     label="Accessibility Features"
-                    suggestions={AccessibilityFeatures}
+                    items={AccessibilityFeatures.map((f) => ({
+                      label: f,
+                      value: f,
+                    }))}
+                    placeholder="e.g. Wheelchair Accessible"
                     onChange={(tags) => {
-                      form.setValue("accessibilityFeatures", tags);
+                      form.setValue(
+                        "accessibilityFeatures",
+                        tags.map((tag) => tag.value),
+                      );
                     }}
-                    tags={form.watch("accessibilityFeatures")}
+                    selectedItems={form
+                      .watch("accessibilityFeatures")
+                      .map((f) => ({
+                        label: f,
+                        value: f,
+                      }))}
                   />
-                  {/* Amenities Section */}
-                  <TagInput
+
+                  <DataListInput
                     label="Amenities"
-                    suggestions={CommercialAmenities}
+                    items={CommercialAmenities.map((f) => ({
+                      label: f,
+                      value: f,
+                    }))}
+                    placeholder="e.g. Swimming Pool"
                     onChange={(tags) => {
-                      form.setValue("amenities", tags);
+                      form.setValue(
+                        "amenities",
+                        tags.map((tag) => tag.value),
+                      );
                     }}
-                    tags={form.watch("amenities")}
+                    selectedItems={form.watch("amenities").map((f) => ({
+                      label: f,
+                      value: f,
+                    }))}
                   />
                 </TabsContent>
 
-                <TabsContent
-                  value={TAB_TYPES.LEASE_TERMS}
-                  className="space-y-4"
-                >
+                <TabsContent value="LEASE_TERMS" className="space-y-4">
                   <Group
                     className="grid grid-cols-1 gap-4 md:grid-cols-2"
                     align="start"
@@ -548,10 +513,7 @@ const Page = () => {
                     name="leaseTerms.paymentFrequency"
                     label="Payment Frequency*"
                     options={[
-                      {
-                        value: PAYMENT_FREQUENCY.MONTHLY,
-                        label: "Monthly",
-                      },
+                      { value: PAYMENT_FREQUENCY.MONTHLY, label: "Monthly" },
                       {
                         value: PAYMENT_FREQUENCY.QUARTERLY,
                         label: "Quarterly",
@@ -612,39 +574,21 @@ const Page = () => {
                   />
                 </TabsContent>
               </Tabs>
-              <Group justify={"between"} className="mt-auto">
-                {activeTab !== TAB_TYPES.BASIC ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      handlePrev();
-                    }}
-                    // disabled={activeTab === TAB_TYPES.BASIC}
-                  >
-                    <ChevronLeft className="" /> Previous
+              <Group justify="between" className="mt-auto">
+                {activeTab !== "BASIC" ? (
+                  <Button type="button" variant="ghost" onClick={handlePrev}>
+                    <ChevronLeft /> Previous
                   </Button>
                 ) : (
                   <span />
                 )}
 
-                {activeTab !== TAB_TYPES.LEASE_TERMS ? (
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      handleNext();
-                    }}
-                  >
-                    Next <ChevronRight className="" />
+                {activeTab !== "LEASE_TERMS" ? (
+                  <Button type="button" onClick={handleNext}>
+                    Next <ChevronRight />
                   </Button>
                 ) : (
-                  <Button
-                    type="button"
-                    disabled={createBuildingMutation.isPending}
-                    onClick={() => {
-                      handleSubmit();
-                    }}
-                  >
+                  <Button type="submit" onClick={handleSubmit}>
                     Submit <BuildingIcon />
                   </Button>
                 )}
@@ -658,49 +602,61 @@ const Page = () => {
   );
 };
 
-// type LeftSectionProps = {};
-const LeftSection = () => {
+const LeftSection = ({
+  activeTab,
+  onTabClick,
+}: {
+  activeTab: TabType;
+  onTabClick: (tabType: TabType) => void;
+}) => {
   return (
     <Stack className="grid grid-cols-4 gap-4 px-0 lg:grid-cols-1 lg:px-4">
-      <LeftSectionItem icon={Building2} tabType={TAB_TYPES.BASIC} />
-      <LeftSectionItem icon={MapPin} tabType={TAB_TYPES.ADDRESS} />
-      <LeftSectionItem icon={Home} tabType={TAB_TYPES.DETAILS} />
-      <LeftSectionItem icon={Calendar} tabType={TAB_TYPES.LEASE_TERMS} />
+      <LeftSectionItem
+        icon={Building2}
+        tabType="BASIC"
+        activeTab={activeTab}
+        onClick={() => onTabClick("BASIC")}
+      />
+      <LeftSectionItem
+        icon={MapPin}
+        tabType="ADDRESS"
+        activeTab={activeTab}
+        onClick={() => onTabClick("ADDRESS")}
+      />
+      <LeftSectionItem
+        icon={Home}
+        tabType="DETAILS"
+        activeTab={activeTab}
+        onClick={() => onTabClick("DETAILS")}
+      />
+      <LeftSectionItem
+        icon={Calendar}
+        tabType="LEASE_TERMS"
+        activeTab={activeTab}
+        onClick={() => onTabClick("LEASE_TERMS")}
+      />
     </Stack>
   );
 };
 
-type LeftSectionItemProps = {
-  tabType: TAB_TYPES;
+const LeftSectionItem = ({
+  tabType,
+  icon: Icon,
+  activeTab,
+  onClick,
+}: {
+  tabType: TabType;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-};
-
-const LeftSectionItem = ({ tabType, icon: Icon }: LeftSectionItemProps) => {
-  const { activeTab, onTabChange } = useCreateBuildingContext();
+  activeTab: TabType;
+  onClick: () => void;
+}) => {
   const hintClassName: ClassValue =
     "text-sm text-neutral-500 font-light transition-all duration-300";
   const iconClassName: ClassValue =
     "mr-2 h-6 w-6 text-neutral-500 transition-all duration-300";
 
   return (
-    <div
-      className="flex cursor-pointer items-center gap-3"
-      onClick={() => {
-        const tabIndex = TAB_TYPES_LIST.findIndex((tab) => tab === tabType);
-        const activeTabIndex = TAB_TYPES_LIST.findIndex(
-          (tab) => tab === activeTab,
-        );
-        if (tabIndex === -1 || activeTabIndex === -1) {
-          return;
-        }
-
-        if (tabIndex > activeTabIndex) {
-          return;
-        }
-
-        onTabChange(tabType);
-      }}
-    >
+    <div className="flex cursor-pointer items-center gap-3" onClick={onClick}>
       <Icon
         className={cn(iconClassName, {
           "scale-[1.2] text-primary": activeTab === tabType,
@@ -711,7 +667,7 @@ const LeftSectionItem = ({ tabType, icon: Icon }: LeftSectionItemProps) => {
           "scale-[1.2] text-primary": activeTab === tabType,
         })}
       >
-        {tabType}
+        {TAB_TYPES[tabType]}
       </span>
     </div>
   );

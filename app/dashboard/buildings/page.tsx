@@ -42,7 +42,7 @@ import { Group } from "@/components/custom/group";
 
 import { getBuildings, setBuildings } from "./_hooks/useBuildings";
 import ASSETS from "@/app/auth/_assets";
-import { USER_TYPE} from "@/types";
+import { USER_TYPE } from "@/types";
 import PageHeader from "@/components/custom/page-header";
 import {
   DropdownMenu,
@@ -55,6 +55,7 @@ import { Separator } from "@radix-ui/react-select";
 import { authUserType } from "@/app/auth/_hooks/useAuth";
 import {
   BuildingWithStat,
+  useDeleteBuildingMutation,
   useGetAllBuildingsQuery,
 } from "@/app/quries/useBuildings";
 import LogJSON from "@/components/custom/log-json";
@@ -273,6 +274,8 @@ const BuildingCard = ({
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
 
+  const deleteBuildingMutation = useDeleteBuildingMutation();
+
   useEffect(() => {
     if (isInView) {
       controls.start("visible");
@@ -298,6 +301,12 @@ const BuildingCard = ({
       },
     },
   };
+
+  useEffect(() => {
+    if (deleteBuildingMutation.isError) {
+      errorToast(deleteBuildingMutation.error.message);
+    }
+  }, [deleteBuildingMutation.error?.message, deleteBuildingMutation.isError]);
 
   return (
     <motion.div
@@ -371,7 +380,13 @@ const BuildingCard = ({
                     </DropdownMenuItem>
                   )}
                   {isAdmin && (
-                    <DropdownMenuItem className="cursor-pointer text-red-500">
+                    <DropdownMenuItem
+                      className="cursor-pointer text-red-500"
+                      disabled={deleteBuildingMutation.isPending}
+                      onClick={() => {
+                        deleteBuildingMutation.mutate(building.id);
+                      }}
+                    >
                       <Trash className="mr-2 h-4 w-4" />
                       Delete building
                     </DropdownMenuItem>

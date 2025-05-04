@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getBuildingByID } from "../_hooks/useBuildings";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Select,
@@ -13,12 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   ArrowUpRight,
-  Clock,
   Edit,
   FileText,
-  Store,
   DollarSign,
-  Calendar,
   SquareIcon as SquareFoot,
   XCircle,
   Grid,
@@ -27,15 +23,11 @@ import {
   AlertTriangle,
   Wrench,
   ImageIcon,
-  Play,
   Filter,
-  ChevronRight,
-  MoreHorizontal,
   RefreshCw,
   FilterX,
   Plus,
   Trash,
-  PlaySquare,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -46,154 +38,45 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { type Unit, UNIT_STATUS } from "@/types";
+import { UNIT_STATUS } from "@/types";
 import Image from "next/image";
 import { StatusBadgeStyles, UnitTypeIcons } from "@/constants/icons";
 import SearchInput from "@/components/custom/search-input";
-import { getUnitsByBuildingId } from "../_hooks/useUnits";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Group } from "@/components/custom/group";
-
-interface ImageGalleryProps {
-  images: string[];
-  initialIndex?: number;
-  onImageChange?: (index: number) => void;
-}
-
-const ImageGallery = ({
-  images,
-  initialIndex = 0,
-  onImageChange,
-}: ImageGalleryProps) => {
-  const [activeIndex, setActiveIndex] = useState(initialIndex);
-
-  useEffect(() => {
-    if (onImageChange) {
-      onImageChange(activeIndex);
-    }
-  }, [activeIndex, onImageChange]);
-
-  if (!images || images.length === 0) {
-    return (
-      <div className="rounded-lg border bg-slate-50 p-6 text-center dark:bg-slate-900">
-        <ImageIcon className="mx-auto mb-2 h-10 w-10 text-slate-400" />
-        <p className="text-sm text-slate-500">No images available</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="relative overflow-hidden rounded-lg">
-        <AspectRatio ratio={16 / 9} className="bg-slate-100 dark:bg-slate-800">
-          <Image
-            src={images[activeIndex] || "/placeholder.svg"}
-            alt={"Unit image"}
-            fill
-            className="object-cover"
-            unoptimized
-          />
-        </AspectRatio>
-      </div>
-
-      {images.length > 1 && (
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          {images.map((url, index) => (
-            <motion.button
-              key={url}
-              className={cn(
-                "h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border-2",
-                activeIndex === index
-                  ? "border-primary"
-                  : "border-transparent hover:border-primary/50",
-              )}
-              onClick={() => setActiveIndex(index)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Image
-                src={url || "/placeholder.svg"}
-                alt={`Thumbnail ${index + 1}`}
-                width={64}
-                height={64}
-                className="h-full w-full object-cover"
-              />
-            </motion.button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface VideoPlayerProps {
-  videoUrl: string | null;
-  onClose?: () => void;
-}
-
-const VideoPlayer = ({ videoUrl }: VideoPlayerProps) => {
-  if (!videoUrl) {
-    return (
-      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-        No video URL provided
-      </div>
-    );
-  }
-
-  return (
-    <div className="aspect-video bg-black">
-      <div className="flex h-full w-full items-center justify-center">
-        <p className="text-white">Video would play here: {videoUrl}</p>
-        {/* In a real implementation, you would use a video player component here */}
-        <video src={videoUrl} controls className="h-full w-full" />
-      </div>
-    </div>
-  );
-};
+import { useGetBuildingQuery } from "@/app/quries/useBuildings";
+import type { UnitWithId } from "@/app/quries/useUnits";
+import {
+  UnitDetailsSheet,
+  type UnitAction,
+} from "@/components/custom/unit-details-sheet";
+import LogJSON from "@/components/custom/log-json";
+import { warningToast } from "@/components/custom/toasts";
 
 const FloorPlan = ({ buildingID }: { buildingID: string }) => {
-  const building = getBuildingByID(buildingID);
   const isAdmin = true;
+
+  const getBuildingQuery = useGetBuildingQuery(buildingID);
 
   const router = useRouter();
 
   // State management
   const [selectedFloor, setSelectedFloor] = useState("1");
   const [isEditFloorPlanOpen, setIsEditFloorPlanOpen] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<UnitWithId | null>(null);
   const [isUnitDetailsDrawerOpen, setIsUnitDetailsDrawerOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [statusFilter, setStatusFilter] = useState<UNIT_STATUS | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [showVideoModal, setShowVideoModal] = useState(false);
-  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
-  const units = getUnitsByBuildingId(buildingID);
+  const building = getBuildingQuery.data;
+  const units = building?.units || [];
 
   // DEBUG: Log when building or floor changes
   useEffect(() => {
@@ -201,16 +84,22 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
     console.log("Selected Floor:", selectedFloor);
   }, [buildingID, selectedFloor]);
 
-  const getVisibleActions = () => {
+  const getUnitActions = (): UnitAction[] => {
     const commonActions = [
       {
-        icon: <PlaySquare className="h-4 w-4" />,
-        label: "Enquire",
+        icon: <ArrowUpRight className="h-4 w-4" />,
+        label: "Rent",
         onClick: () => {
+          if (!selectedUnit) {
+            warningToast("Unit not found.");
+            return;
+          }
           router.push(
-            `/dashboard/rent?buildingID=${buildingID}&unitID=${selectedUnit?.id}`,
+            `/dashboard/rent?buildingId=${buildingID}&unitId=${selectedUnit.id}`,
           );
+          console.log({ selectedUnit });
         },
+        variant: "default" as const,
       },
     ];
 
@@ -219,28 +108,33 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
         icon: <Edit className="h-4 w-4" />,
         label: "Edit",
         onClick: () => console.log("Edit clicked"),
+        variant: "outline" as const,
       },
       {
         icon: <FileSignature className="h-4 w-4" />,
         label: "Lease",
         onClick: () => console.log("Lease clicked"),
+        variant: "outline" as const,
       },
       {
         icon: <Wrench className="h-4 w-4" />,
         label: "Maintenance",
         onClick: () => console.log("Maintenance clicked"),
+        variant: "outline" as const,
       },
       {
-        icon: <Trash className="h-4 w-4 text-red-500" />,
+        icon: <Trash className="h-4 w-4" />,
         label: "Delete",
-        onClick: () => console.log("Maintenance clicked"),
+        onClick: () => console.log("Delete clicked"),
+        variant: "destructive" as const,
       },
     ];
 
     return isAdmin ? [...commonActions, ...adminOnlyActions] : commonActions;
   };
 
-  const filterUnits = (units: Unit[]) => {
+  const filterUnits = (units: UnitWithId[]) => {
+    console.log({ units });
     return units.filter((unit) => {
       const unitStatus = unit.status;
       const unitType = unit.type;
@@ -263,15 +157,9 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
     });
   };
 
-  const handleUnitClick = (unit: Unit) => {
+  const handleUnitClick = (unit: UnitWithId) => {
     setSelectedUnit(unit);
     setIsUnitDetailsDrawerOpen(true);
-    setActiveImageIndex(0);
-  };
-
-  const handleVideoClick = (videoUrl: string) => {
-    setActiveVideoUrl(videoUrl);
-    setShowVideoModal(true);
   };
 
   if (!building) {
@@ -297,6 +185,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
+      <LogJSON data={filterUnits} />
       <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <SearchInput
           searchQuery={searchQuery}
@@ -353,7 +242,6 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
           </Select>
         </div>
       </section>
-
       {/* Floor plan visualization */}
       <Card className="overflow-hidden border-none bg-white shadow-sm dark:bg-slate-900">
         <CardContent className="p-0">
@@ -409,19 +297,19 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
           ) : viewMode === "grid" ? (
             // Grid view of commercial units
             <div className="relative w-full overflow-hidden rounded-lg bg-muted/5">
-              <div className="grid h-full grid-cols-1 gap-4  sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid h-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 <AnimatePresence>
                   {filteredUnits.map((unit, i) => {
                     const unitNumber = unit.unitNumber;
                     const unitType = unit.type;
                     const unitStatus = unit.status;
                     const isOccupied = unitStatus === UNIT_STATUS.OCCUPIED;
-                    const unitImages = unit.imageUrls || [];
+                    const unitImages = unit.images || [];
                     const hasImages = unitImages.length > 0;
 
                     return (
                       <motion.div
-                        key={unitNumber}
+                        key={unit.id}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
@@ -478,7 +366,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
                             {unitType}
                           </p>
 
-                          <div className="mt-auto grid grid-cols-2 gap-y-2 text-sm">
+                          <div className="grid grid-cols-2 gap-y-2 text-sm">
                             <div className="flex items-center gap-1.5">
                               <SquareFoot className="h-4 w-4 text-slate-500" />
                               <span>{unit.sizeSqFt} sq ft</span>
@@ -487,6 +375,36 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
                               <DollarSign className="h-4 w-4 text-slate-500" />
                               <span>{unit.monthlyRent}/month</span>
                             </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              className="flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/dashboard/rent?buildingID=${buildingID}&unitID=${unit.id}`,
+                                );
+                              }}
+                            >
+                              <ArrowUpRight className="mr-1 h-3.5 w-3.5" />
+                              Rent
+                            </Button>
+                            {isAdmin && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  console.log("Edit clicked", unit);
+                                }}
+                              >
+                                <Edit className="mr-1 h-3.5 w-3.5" />
+                                Edit
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </motion.div>
@@ -519,7 +437,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
 
                     return (
                       <motion.div
-                        key={unitNumber}
+                        key={unit.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
@@ -579,40 +497,33 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
                         <div className="flex justify-end md:hidden">
                           <div className="flex gap-2">
                             <Button
-                              variant="outline"
+                              variant="default"
                               size="sm"
                               className="gap-1"
-                              onClick={() => handleUnitClick(unit)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/dashboard/rent?buildingID=${buildingID}&unitID=${unit.id}`,
+                                );
+                              }}
                             >
-                              View Details
-                              <ChevronRight className="h-4 w-4" />
+                              <ArrowUpRight className="h-4 w-4" />
+                              Rent
                             </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-9 w-9 p-0"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>
-                                  Quick Actions
-                                </DropdownMenuLabel>
-                                {getVisibleActions().map((action, index) => (
-                                  <DropdownMenuItem
-                                    key={index}
-                                    onClick={action.onClick}
-                                    className="cursor-pointer"
-                                  >
-                                    {action.icon}
-                                    <span className="ml-2">{action.label}</span>
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            {isAdmin && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  console.log("Edit clicked", unit);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                                Edit
+                              </Button>
+                            )}
                           </div>
                         </div>
 
@@ -649,36 +560,35 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
                             {unitStatus}
                           </Badge>
                         </div>
-                        <div className="col-span-1 hidden text-right md:block">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 w-7 rounded-full p-0"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleUnitClick(unit)}
-                              >
-                                <ArrowUpRight className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              {getVisibleActions().map((action, index) => (
-                                <DropdownMenuItem
-                                  key={index}
-                                  onClick={action.onClick}
-                                >
-                                  {action.icon}
-                                  <span className="ml-2">{action.label}</span>
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                        <div className="col-span-1 hidden md:flex md:justify-end md:gap-1">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="h-8 gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(
+                                `/dashboard/rent?buildingID=${buildingID}&unitID=${unit.id}`,
+                              );
+                            }}
+                          >
+                            <ArrowUpRight className="h-3.5 w-3.5" />
+                            Rent
+                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log("Edit clicked", unit);
+                              }}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                              Edit
+                            </Button>
+                          )}
                         </div>
                       </motion.div>
                     );
@@ -749,220 +659,16 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Unit Details Sheet */}
-      <Sheet
-        open={isUnitDetailsDrawerOpen}
-        onOpenChange={setIsUnitDetailsDrawerOpen}
-      >
-        <SheetContent
-          className="w-full overflow-y-auto sm:max-w-md md:max-w-lg lg:max-w-xl"
-          side="right"
-        >
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.3 }}
-            className="flex h-full flex-col"
-          >
-            <SheetHeader className="border-b pb-4">
-              <div className="flex items-center justify-between">
-                <SheetTitle className="flex items-center gap-2">
-                  <div
-                    className={cn(
-                      "flex h-6 w-6 items-center justify-center rounded-full",
-                      selectedUnit &&
-                        selectedUnit.status === UNIT_STATUS.OCCUPIED
-                        ? "bg-primary/10"
-                        : "bg-slate-100 dark:bg-slate-800",
-                    )}
-                  >
-                    {selectedUnit && UnitTypeIcons[selectedUnit.type]}
-                  </div>
-                  <span className="flex items-center gap-2">
-                    {selectedUnit ? (
-                      <>
-                        Unit {selectedUnit.unitNumber}
-                        {UnitTypeIcons[selectedUnit.type]}
-                      </>
-                    ) : (
-                      "Loading..."
-                    )}
-                  </span>
-                </SheetTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
-                    {selectedUnit &&
-                      getVisibleActions().map((action, index) => (
-                        <DropdownMenuItem key={index} onClick={action.onClick}>
-                          {action.icon}
-                          <span className="ml-2">{action.label}</span>
-                        </DropdownMenuItem>
-                      ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <SheetDescription>
-                Commercial unit details and management options
-              </SheetDescription>
-            </SheetHeader>
-
-            <ScrollArea className="-mx-6 flex-1 px-6">
-              <div className="py-4">
-                {selectedUnit && (
-                  <div className="grid gap-5">
-                    {/* Status and size info */}
-                    <div className="flex items-center justify-between">
-                      <Badge
-                        className={cn(
-                          "border",
-                          // TODO: MAKE BELOW CODE WORK
-                          StatusBadgeStyles[selectedUnit.status],
-                        )}
-                      >
-                        {selectedUnit.status}
-                      </Badge>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <SquareFoot className="h-4 w-4" />
-                        <span>{selectedUnit.sizeSqFt} sq ft</span>
-                      </div>
-                    </div>
-
-                    {/* Unit images */}
-                    <div className="space-y-3">
-                      <Label>Images</Label>
-                      <ImageGallery
-                        images={selectedUnit.imageUrls || []}
-                        initialIndex={activeImageIndex}
-                        onImageChange={setActiveImageIndex}
-                      />
-                    </div>
-
-                    {/* Unit videos */}
-                    <div className="space-y-3">
-                      <Label>Videos</Label>
-                      {selectedUnit.videoUrls &&
-                      selectedUnit.videoUrls.length > 0 ? (
-                        <div className="grid gap-2">
-                          {selectedUnit.videoUrls.map((url) => (
-                            <Button
-                              key={url}
-                              variant="outline"
-                              className="flex w-full items-center justify-center gap-2 rounded-lg border p-4 text-center"
-                              onClick={() => handleVideoClick(url)}
-                            >
-                              <Play className="h-5 w-5" />
-                              <span>{url}</span>
-                            </Button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="rounded-lg border bg-slate-50 p-6 text-center dark:bg-slate-900">
-                          <Play className="mx-auto mb-2 h-10 w-10 text-slate-400" />
-                          <p className="text-sm text-slate-500">
-                            No videos available for this unit
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* //TODO: MAKE THIS WORK */}
-                    {/* Current tenant info (if occupied) */}
-                    {selectedUnit.status === UNIT_STATUS.OCCUPIED && (
-                      <div className="rounded-md bg-blue-50 p-4 dark:bg-blue-950/20">
-                        <h3 className="mb-3 font-medium">Current Tenant</h3>
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-                            <Store className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                          </div>
-                          <div>
-                            <p className="font-medium">Acme Corporation</p>
-                            <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3.5 w-3.5" />
-                                <span>Lease ends Dec 31, 2025</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Additional tenant details */}
-                        <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Contact</p>
-                            <p>John Smith</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Phone</p>
-                            <p>(555) 123-4567</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Unit details */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="grid gap-2">
-                        <Label>Unit Type</Label>
-                        <Group className="text-sm" spacing="xs">
-                          {UnitTypeIcons[selectedUnit.type]} {selectedUnit.type}
-                        </Group>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label>Monthly Rate</Label>
-                        <p className="text-sm">
-                          {selectedUnit.monthlyRent} /mo
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Unit features */}
-                    <div className="grid gap-2">
-                      <Label>Features</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedUnit.amenities.map((feature, index) => (
-                          <Badge
-                            key={index}
-                            variant="secondary"
-                            className="rounded-full"
-                          >
-                            {feature}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    {/* //TODO: MAKE IT WORK */}
-                    {/* Maintenance history */}
-                    <div className="grid gap-2">
-                      <Label>Last Maintenance</Label>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>HVAC System Upgrade - March 15, 2023</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </motion.div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Video Modal */}
-      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
-        <DialogContent className="max-w-3xl border-none p-0">
-          <DialogHeader className="p-4">
-            <DialogTitle>Unit Video</DialogTitle>
-          </DialogHeader>
-          <VideoPlayer videoUrl={activeVideoUrl} />
-        </DialogContent>
-      </Dialog>
+      {/* Unit Details Sheet - Using the new reusable component */}
+      {selectedUnit && (
+        <UnitDetailsSheet
+          unit={selectedUnit}
+          isOpen={isUnitDetailsDrawerOpen}
+          onOpenChange={setIsUnitDetailsDrawerOpen}
+          building={building}
+          actions={getUnitActions()}
+        />
+      )}
     </motion.div>
   );
 };

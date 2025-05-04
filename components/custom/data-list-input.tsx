@@ -18,7 +18,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
+import { FormLabel } from "../ui/form";
+import LogJSON from "./log-json";
 
 export type DataListItem = {
   value: string;
@@ -28,6 +29,7 @@ export type DataListItem = {
 interface DataListInputProps {
   placeholder?: string;
   emptyMessage?: string;
+  label?: React.ReactNode;
   items: DataListItem[];
   selectedItems?: DataListItem[];
   onChange?: (items: DataListItem[]) => void;
@@ -40,6 +42,7 @@ export function DataListInput({
   placeholder = "Select items...",
   emptyMessage = "No items found.",
   items,
+  label,
   selectedItems = [],
   onChange,
   disabled = false,
@@ -102,8 +105,10 @@ export function DataListInput({
 
   return (
     <div className={cn("w-full", className)}>
+      <LogJSON data={{ selected, items }} position="top-right" />
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
+        <FormLabel className="mb-2 block font-normal">{label}</FormLabel>
+        <PopoverTrigger className="w-full" asChild>
           <Button
             variant="outline"
             role="combobox"
@@ -117,27 +122,9 @@ export function DataListInput({
           >
             <div className="flex flex-wrap gap-1">
               {selected.length > 0 ? (
-                selected.map((item) => (
-                  <Badge
-                    key={item.value}
-                    variant="secondary"
-                    className="flex items-center gap-1 px-2 py-0"
-                  >
-                    {item.label}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-4 w-4 p-0 hover:bg-muted"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemove(item);
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                      <span className="sr-only">Remove {item.label}</span>
-                    </Button>
-                  </Badge>
-                ))
+                <span className="text-muted-foreground">
+                  {selected.length} items added.
+                </span>
               ) : (
                 <span className="text-muted-foreground">{placeholder}</span>
               )}
@@ -145,6 +132,31 @@ export function DataListInput({
             <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
+        {/* Items */}
+
+        <div className="mt-2 flex flex-wrap gap-2">
+          {selected.map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground"
+            >
+              {item.label}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="ml-1 h-5 w-5 rounded-full hover:bg-destructive/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemove(item);
+                }}
+              >
+                <X className="h-3 w-3" />
+                <span className="sr-only">Remove {item.label}</span>
+              </Button>
+            </div>
+          ))}
+        </div>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
           <Command onKeyDown={handleKeyDown}>
             <CommandInput

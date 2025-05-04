@@ -5,6 +5,7 @@ import axios from "axios";
 
 export type UnitWithId = Unit & {
   _id: string;
+  id: string;
 };
 
 export type UnitWithBuilding = UnitWithId & { buildingId: Building };
@@ -25,7 +26,6 @@ export const useGetAllUnitsOfBuildingQuery = (buildingId?: string) => {
 
         const refinedUnits = units?.map((unit) => ({
           ...unit,
-          id: unit._id,
         }));
 
         return refinedUnits;
@@ -68,10 +68,8 @@ export const useCreateUnitMutation = () => {
         "lastRenovationDate",
         unit.lastRenovationDate?.toString() || "",
       );
-      unit.amenities?.forEach((amenity) => {
-        formData.append(`amenities`, amenity);
-      });
-      unit.images.forEach((image) => {
+      formData.append("amenities", JSON.stringify(unit.amenities));
+      unit.images?.forEach((image) => {
         formData.append("images", image);
       });
 

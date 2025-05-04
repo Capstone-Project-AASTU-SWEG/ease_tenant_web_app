@@ -21,6 +21,7 @@ import {
   EmailFormField,
   PasswordFormField,
   TextareaFormField,
+  SelectFormField,
 } from "@/components/custom/form-field";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, ChevronRight, ChevronLeft } from "lucide-react";
@@ -35,8 +36,6 @@ import { useRouter } from "next/navigation";
 import { Group } from "@/components/custom/group";
 import Stack from "@/components/custom/stack";
 import { useTenantSignUp } from "../../_queries/useAuth";
-import { DataListInput } from "@/components/custom/data-list-input";
-import { Label } from "@/components/ui/label";
 
 // ========== ANIMATIONS ==========
 const contentVariants = {
@@ -83,20 +82,21 @@ export default function TenantSignup() {
   const form = useForm<TenantFormValues>({
     resolver: zodResolver(tenantFormSchema),
     defaultValues: {
-      businessName: "b name",
+      businessName: "",
       businessType: BUSINESS_TYPE_OPTIONS[0].value,
-      businessDescription: "b description",
+      businessDescription: "",
       businessWebsite: "",
-      taxId: "123456789",
-      firstName: "Nesredin",
-      lastName: "Ge",
+      businessRegistrationNumber: "",
+      taxId: "",
+      firstName: "",
+      lastName: "",
       occupation: "Developer",
-      email: "nesru@gmail.com",
-      phone: "0912345678",
-      workPhoneNumber: "0912345678",
+      email: "",
+      phone: "",
+      workPhoneNumber: "",
       emergencyContact: "",
-      password: "12345678",
-      confirmPassword: "12345678",
+      password: "",
+      confirmPassword: "",
       termsAccepted: false,
     },
   });
@@ -197,20 +197,22 @@ export default function TenantSignup() {
   };
 
   async function onSubmit(values: TenantFormValues) {
-    try {
-      signUpMutation.mutate(values);
-    } catch (error) {
-      let message = "";
-      if (error instanceof Error) {
-        message = error.message;
-      } else {
-        message = "There was a problem creating your account.";
-      }
-      errorToast("", {
-        title: "Sign Up Error",
-        description: message,
-      });
-    }
+    signUpMutation.mutate({
+      businessName: values.businessName,
+      businessRegistrationNumber: values.businessRegistrationNumber,
+      businessType: values.businessType,
+      businessWebsite: values.businessWebsite,
+      businessDescription: values.businessDescription,
+      firstName: values.firstName,
+      lastName: values.lastName,
+      email: values.email,
+      phone: values.phone,
+      occupation: values.occupation,
+      password: values.password,
+      emergencyContact: values.emergencyContact,
+      workPhoneNumber: values.workPhoneNumber,
+      taxId: values.taxId,
+    });
   }
 
   const renderActiveSection = () => {
@@ -241,9 +243,11 @@ export default function TenantSignup() {
       });
       form.reset();
 
-      router.push("/dashboard");
+      const token = signUpMutation.data.token;
+      localStorage.setItem("token", token);
+      router.push("/dashboard/tenant");
     }
-  }, [form, router, signUpMutation.isSuccess]);
+  }, [form, router, signUpMutation.data?.token, signUpMutation.isSuccess]);
 
   // On error, show error toast
   useEffect(() => {
@@ -313,17 +317,12 @@ const BusinessSection = ({ form, onNavigation }: FormSectionProps) => (
         placeholder="Acme Corporation"
       />
 
-      <Stack spacing={"xs"}>
-        <Label className="text-sm font-normal">Business Type</Label>
-        <DataListInput
-          items={BUSINESS_TYPE_OPTIONS}
-          placeholder="Select business type"
-          maxItems={1}
-          onChange={(value) => {
-            form.setValue("businessType", value[0].value);
-          }}
-        />
-      </Stack>
+      <SelectFormField
+        control={form.control}
+        name="businessType"
+        label="Business Type"
+        options={BUSINESS_TYPE_OPTIONS}
+      />
 
       <TextareaFormField
         control={form.control}
@@ -510,9 +509,9 @@ const NavigationButton = ({
 }) => (
   <motion.button
     type="button"
-    className={`flex items-center space-x-2 rounded-full px-6 py-2 ${
+    className={`flex items-center space-x-2 px-6 py-2 ${
       direction === "back"
-        ? "bg-muted text-muted-foreground"
+        ? "text-muted-foreground"
         : "bg-primary text-primary-foreground shadow-md"
     }`}
     onClick={onClick}
@@ -537,7 +536,7 @@ const NavigationButton = ({
 const SubmitButton = ({ isSubmitting }: { isSubmitting: boolean }) => (
   <motion.button
     type="submit"
-    className="flex items-center space-x-2 rounded-full bg-gradient-to-r from-primary to-primary/80 px-6 py-2 text-primary-foreground shadow-md"
+    className="flex items-center space-x-2 rounded-md bg-gradient-to-r from-primary to-primary/80 px-6 py-2 text-primary-foreground shadow-md"
     disabled={isSubmitting}
     variants={buttonVariants}
     whileHover="hover"

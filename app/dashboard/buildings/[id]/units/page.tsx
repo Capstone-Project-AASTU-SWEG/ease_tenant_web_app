@@ -52,7 +52,6 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/utils";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import {
   Tooltip,
@@ -62,6 +61,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Group } from "@/components/custom/group";
+import LogJSON from "@/components/custom/log-json";
 
 const Page = () => {
   const params = useParams();
@@ -131,6 +131,7 @@ const Page = () => {
 
   return (
     <PageWrapper>
+      <LogJSON data={{ units }} />
       <div className="mb-6">
         <PageHeader
           title="Unit Management"
@@ -186,7 +187,7 @@ const Page = () => {
           ) : currentView === "grid" ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredUnits.map((unit) => (
-                <UnitCard key={unit._id} unit={unit} />
+                <UnitCard key={unit.id} unit={unit} />
               ))}
             </div>
           ) : (
@@ -452,10 +453,12 @@ const UnitCard = ({ unit }: { unit: UnitWithBuilding }) => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <p className="truncate font-medium">{unit.buildingId.name}</p>
+                  <p className="truncate font-medium">
+                    {unit.buildingId?.name}
+                  </p>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{unit.buildingId.name}</p>
+                  <p>{unit.buildingId?.name}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -508,7 +511,7 @@ const UnitsTable = ({ units }: { units: UnitWithBuilding[] }) => (
       </thead>
       <tbody>
         {units.map((unit) => (
-          <tr key={unit._id} className="border-b bg-white hover:bg-muted/20">
+          <tr key={unit.id} className="border-b bg-white hover:bg-muted/20">
             <td className="px-4 py-3 font-medium">
               Unit {unit.unitNumber} <br />
               <span className="text-xs text-muted-foreground">

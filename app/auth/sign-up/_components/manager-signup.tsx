@@ -19,9 +19,10 @@ import { Sparkles } from "lucide-react";
 import { useManagerSignUp } from "../../_queries/useAuth";
 import { useEffect } from "react";
 import { errorToast, successToast } from "@/components/custom/toasts";
-import Stack from "@/components/custom/stack";
-import { Label } from "@/components/ui/label";
+
 import { DataListInput } from "@/components/custom/data-list-input";
+import { useGetAllBuildingsQuery } from "@/app/quries/useBuildings";
+import LogJSON from "@/components/custom/log-json";
 
 const buttonVariants = {
   initial: { scale: 1 },
@@ -64,12 +65,21 @@ export default function ManagerSignup() {
       phone: "",
       password: "",
       confirmPassword: "",
+      assignedBuildingId: "",
+      salary: 0,
+      employmentDate: new Date(),
     },
   });
 
   const managerSignUpMutation = useManagerSignUp();
+  const buildings = useGetAllBuildingsQuery();
 
   async function onSubmit(values: z.infer<typeof managerFormSchema>) {
+    const optional: Record<string, string | number> = {};
+
+    if (values.salary && values.salary > 1) {
+      optional["salary"] = values.salary;
+    }
     managerSignUpMutation.mutate({
       firstName: values.firstName,
       lastName: values.lastName,
@@ -78,7 +88,7 @@ export default function ManagerSignup() {
       phone: values.phone,
       assignedBuildingId: values.assignedBuildingId,
       employmentDate: values.employmentDate,
-      salary: values.salary,
+      ...optional,
     });
   }
 
@@ -107,26 +117,30 @@ export default function ManagerSignup() {
       description="Create an account to manage properties, tenants, and maintenance requests."
       userType="manager"
     >
+      <LogJSON
+        data={{
+          buildings: buildings.data,
+          DATA: buildings.data?.map((building) => ({
+            label: building.name,
+            value: building.id,
+          })),
+        }}
+      />
       <Form {...form}>
         <form id="manager-signup-form" onSubmit={form.handleSubmit(onSubmit)}>
           <section className="h-[calc(100vh-20rem)] space-y-6">
             {/* Building info */}
-            <Stack spacing={"xs"}>
-              <Label className="text-sm font-normal">Select Building</Label>
-              <DataListInput
-                maxItems={1}
-                items={[
-                  {
-                    label: "Building Name 01",
-                    value: "01",
-                  },
-                  {
-                    label: "Building Name 02",
-                    value: "02",
-                  },
-                ]}
-              />
-            </Stack>
+            <DataListInput
+              maxItems={1}
+              items={
+                buildings.data?.map((building) => ({
+                  label: building.name,
+                  value: building.id,
+                })) || []
+              }
+              label="Select Building"
+            />
+
             <Group align={"start"} className="grid sm:grid-cols-2">
               <TextFormField
                 control={form.control}
@@ -198,7 +212,7 @@ export default function ManagerSignup() {
 const SubmitButton = ({ isSubmitting }: { isSubmitting: boolean }) => (
   <motion.button
     type="submit"
-    className="flex items-center space-x-2 rounded-full bg-gradient-to-r from-primary to-primary/80 px-6 py-2 text-primary-foreground shadow-md"
+    className="flex items-center space-x-2 rounded-md bg-gradient-to-r from-primary to-primary/80 px-6 py-2 text-primary-foreground shadow-md"
     disabled={isSubmitting}
     variants={buttonVariants}
     whileHover="hover"

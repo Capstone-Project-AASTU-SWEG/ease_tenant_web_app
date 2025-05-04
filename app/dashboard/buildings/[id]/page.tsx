@@ -57,6 +57,7 @@ const Page = () => {
   const [activeTab, setActiveTab] = useState("floors");
 
   const getBuildingQuery = useGetBuildingQuery(buildingID);
+  
 
   if (!buildingID) {
     return <div className="p-8 text-center">Building ID not provided</div>;

@@ -5,6 +5,7 @@ import { APIResponse, Building } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect } from "react";
+import { UnitWithId } from "./useUnits";
 
 type BuildingWithId = Building & {
   _id: string;
@@ -27,7 +28,6 @@ export const useGetAllBuildingsQuery = () => {
         const buildings = response.data.data;
         const refinedBuildings = buildings?.map((building) => ({
           ...building,
-          id: building._id,
         }));
         return refinedBuildings;
       } catch (error) {
@@ -42,14 +42,17 @@ export const useGetAllBuildingsQuery = () => {
   });
 };
 
-export const useGetBuildingQuery = (id: string) => {
+export const useGetBuildingQuery = (id?: string) => {
   const query = useQuery({
     queryKey: ["getBuilding", id],
     queryFn: async () => {
       try {
-        const response = await axiosClient.get<APIResponse<BuildingWithStat>>(
-          `/buildings/${id}`,
-        );
+        if (!id) {
+          throw new Error("Building ID is required");
+        }
+        const response = await axiosClient.get<
+          APIResponse<BuildingWithStat & { units: UnitWithId[] }>
+        >(`/buildings/${id}`);
         const building = response.data.data;
         if (!building) {
           throw new Error("Building not found");
@@ -58,6 +61,9 @@ export const useGetBuildingQuery = (id: string) => {
         const refinedBuilding = {
           ...building,
           id: building?._id,
+          units: building?.units.map((unit) => ({
+            ...unit,
+          })),
         };
 
         return refinedBuilding;
@@ -95,6 +101,26 @@ export const useCreateBuildingMutation = () => {
         const building = response.data.data;
         await queryClient.invalidateQueries({ queryKey: ["getAllBuildings"] });
         return building;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(errorMessage || "An error occurred");
+        }
+        throw new Error("An unexpected error occurred");
+      }
+    },
+  });
+};
+
+export const useDeleteBuildingMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ["deleteBuilding"],
+    mutationFn: async (buildingId: string) => {
+      try {
+        await axiosClient.delete(`/buildings/${buildingId}`);
+        await queryClient.invalidateQueries({ queryKey: ["getAllBuildings"] });
       } catch (error) {
         console.log({ error });
         if (axios.isAxiosError(error)) {

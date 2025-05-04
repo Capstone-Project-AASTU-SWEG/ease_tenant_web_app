@@ -8,14 +8,20 @@ import { z } from "zod";
 import {
   Building2,
   Check,
-  Info,
   Calendar,
   FileText,
   Users,
-  DollarSign,
   Clipboard,
   Star,
   ArchiveIcon,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  Shield,
+  BadgeCheck,
+  CreditCard,
+  ArrowRight,
+  ChevronLeft,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -41,8 +47,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import Image from "next/image";
-import { getBuildingByID } from "../buildings/_hooks/useBuildings";
-import { getUnitById } from "../buildings/_hooks/useUnits";
+
 import { authUser } from "@/app/auth/_hooks/useAuth";
 import PageWrapper from "@/components/custom/page-wrapper";
 import PageHeader from "@/components/custom/page-header";
@@ -52,13 +57,17 @@ import { DateFormField, NumberFormField } from "@/components/custom/form-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
+  errorToast,
   infoToast,
   successToast,
   warningToast,
 } from "@/components/custom/toasts";
-import { addApplication } from "../buildings/_hooks/useApplications";
-import { RentalApplication } from "@/types";
+import type { RentalApplication, Tenant } from "@/types";
 import { useGetBuildingManager } from "@/app/auth/_hooks/useUser";
+import { useGetBuildingQuery } from "@/app/quries/useBuildings";
+import { cn } from "@/lib/utils";
+import { useCreateRentalApplicationMutation } from "@/app/quries/useApplications";
+import LogJSON from "@/components/custom/log-json";
 
 // Define the rental application schema (simplified since user identity is already in the system)
 const rentalApplicationSchema = z.object({
@@ -80,22 +89,22 @@ type RentalApplicationSchema = z.infer<typeof rentalApplicationSchema>;
 const RentUnitPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const buildingID = searchParams.get("buildingID");
-  const unitID = searchParams.get("unitID");
+  const buildingID = searchParams.get("buildingId");
+  const unitID = searchParams.get("unitId");
 
   const [activeTab, setActiveTab] = useState<string>("unit-details");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Get building and unit data
-  const building = buildingID ? getBuildingByID(buildingID) : undefined;
-  const unit = unitID ? getUnitById(unitID) : undefined;
+  const getBuildingQuery = useGetBuildingQuery(buildingID!);
+  const building = getBuildingQuery.data;
+  const unit = building?.units.find((unit) => unit.id === unitID);
   const buildingManager = useGetBuildingManager();
 
-  // Get current authenticated user
-  const currentUser = authUser();
-  // const userType = authUserType();
+  const createRentalApplicationMutation = useCreateRentalApplicationMutation();
 
-  // console.log({ userType });
+  // Get current authenticated user
+  const currentUser = authUser() as Tenant;
 
   // Form setup
   const form = useForm<RentalApplicationSchema>({
@@ -120,64 +129,62 @@ const RentUnitPage = () => {
 
   // Handle form submission
   const onSubmit = (data: RentalApplicationSchema) => {
-    setIsSubmitting(true);
     if (!currentUser) {
       warningToast("Please log in to submit your application.");
-      setIsSubmitting(false);
-      return;
     }
 
     if (!building || !unit) {
       warningToast("Building or unit not found.");
-      setIsSubmitting(false);
       return;
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Application submitted:", {
-        tenant: currentUser,
-        building: building?.id,
-        unit: unit?.id,
-        ...data,
-      });
+    const rentalApplication: RentalApplication = {
+      id: Math.floor(Math.random() * 1000000).toString(),
+      status: "pending",
+      unit: unit,
+      documentsMetadata: [],
+      documents: [],
+      leaseDetails: {
+        numberOfEmployees: data.numberOfEmployees,
+        requestedDuration: data.leaseDuration,
+        requestedStartDate: data.moveInDate,
+        specialRequirements: data.specialRequirements,
+      },
+      lastUpdated: new Date().toISOString(),
+      priority: "high",
+      submittedAt: new Date().toISOString(),
+      submittedBy: currentUser,
+      notes: data.additionalNotes,
+      type: "rental",
+      assignedTo: buildingManager,
+    };
 
-      const rentalApplication: RentalApplication = {
-        id: Math.floor(Math.random() * 1000000).toString(),
-        status: "pending",
-        businessDetails: {
-          employees: data.numberOfEmployees,
-          name: currentUser.businessName,
-          type: currentUser.businessType,
-        },
-        documents: [],
-        leaseDetails: {
-          specialRequirements: data.specialRequirements,
-          requestedStartDate: data.moveInDate.toISOString(),
-          requestedDuration: data.leaseDuration,
-        },
-        unitDetails: unit,
-        lastUpdated: new Date().toISOString(),
-        priority: "high",
-        submittedAt: new Date().toISOString(),
-        submittedBy: currentUser,
-        notes: data.additionalNotes,
-        type: "rental",
-        assignedTo: buildingManager,
-      };
+    const formData = new FormData();
 
-      addApplication(rentalApplication);
+    // Add simple fields
+    formData.append("status", rentalApplication.status);
+    formData.append("priority", rentalApplication.priority);
+    formData.append("type", rentalApplication.type);
+    formData.append("notes", rentalApplication.notes || "");
 
-      // Show success message and redirect
-      successToast(
-        "Your rental application has been submitted successfully! Reference #: " +
-          Math.floor(Math.random() * 1000000),
-      );
+    // Add nested objects as JSON strings
+    formData.append("unitId", rentalApplication.unit.id);
+    formData.append(
+      "leaseDetails",
+      JSON.stringify(rentalApplication.leaseDetails),
+    );
+    formData.append("submittedById", rentalApplication.submittedBy.id);
+    formData.append("assignedToId", rentalApplication.assignedTo.id);
 
-      // Redirect to dashboard or another page
-      router.push("/dashboard/applications");
-      setIsSubmitting(false);
-    }, 1500);
+    // Add arrays (empty in this case, but showing how it would work)
+    rentalApplication.documentsMetadata.forEach((metadata) => {
+      formData.append(`documentsMetadata`, JSON.stringify(metadata));
+    });
+
+    rentalApplication.documents.forEach((doc) => {
+      formData.append(`documents`, doc);
+    });
+    createRentalApplicationMutation.mutate(formData);
   };
 
   // Calculate monthly cost
@@ -197,6 +204,21 @@ const RentUnitPage = () => {
       minimumFractionDigits: 2,
     }).format(amount);
   };
+
+  useEffect(() => {
+    if (createRentalApplicationMutation.isSuccess) {
+      // Show success message and redirect
+      successToast("Rental application submitted successfully.");
+      router.push("/dashboard/applications");
+    }
+  }, [createRentalApplicationMutation.isSuccess, router]);
+
+  useEffect(() => {
+    if (createRentalApplicationMutation.isError) {
+      // Show error message
+      errorToast("Failed to submit rental application.");
+    }
+  }, [createRentalApplicationMutation.isError]);
 
   if (!building || !unit) {
     return (
@@ -222,13 +244,15 @@ const RentUnitPage = () => {
   }
 
   return (
-    <PageWrapper>
+    <PageWrapper className="py-0">
       {/* Header */}
       <PageHeader
         title="Renting Process"
         description="Staring by providing additional information to finish renting process."
         withBackButton
       />
+
+      <LogJSON data={{ building }} />
 
       {/* Main Content */}
       <main className="mt-4">
@@ -237,89 +261,117 @@ const RentUnitPage = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
               {/* Monthly Cost Breakdown */}
-              <Card className="rounded-lg bg-primary text-white shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
+              <Card className="overflow-hidden rounded-md border-none">
+                <div className="bg-gradient-to-r from-primary to-primary/90 p-6 text-white">
+                  <h3 className="text-lg font-semibold">
                     Monthly Cost Estimate
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Base Rent</span>
+                  </h3>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-sm opacity-90">Base Rent</span>
                     <span className="font-medium">
                       {formatCurrency(unit.monthlyRent)}
                     </span>
                   </div>
 
-                  <Separator />
-                  <div className="flex items-center justify-between font-medium">
-                    <span>Total Monthly</span>
-                    <span className="text-lg text-primary">
+                  <Separator className="my-4 bg-white/20" />
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Total Monthly</span>
+                    <span className="text-xl font-bold">
                       {formatCurrency(calculateMonthlyCost())}
                     </span>
                   </div>
-                  <div className="mt-2 text-xs text-slate-500">
+                </div>
+                <div className="bg-white p-3 dark:bg-slate-900">
+                  <div className="text-xs text-muted-foreground">
                     *Estimate only. Final costs may vary based on specific terms
                     and additional services.
                   </div>
-                </CardContent>
+                </div>
               </Card>
 
-              <Card className="overflow-hidden shadow-sm">
-                <div className="relative h-48 bg-slate-200">
-                  {unit.imageUrls && unit.imageUrls.length > 0 ? (
-                    <Image
-                      src={
-                        unit.imageUrls[0] ||
-                        "/placeholder.svg?height=192&width=384"
-                      }
-                      alt={`${building.name} - Unit ${unit.unitNumber}`}
-                      className="h-full w-full object-cover"
-                      fill
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
-                      <Building2 className="h-16 w-16 text-slate-400" />
-                    </div>
-                  )}
-                  <Badge className="absolute right-4 top-4 bg-primary">
-                    {unit.status}
-                  </Badge>
+              <Card className="overflow-hidden rounded-md border-none">
+                <div className="relative">
+                  <div className="relative h-56 bg-slate-200">
+                    {unit.images && unit.images.length > 0 ? (
+                      <>
+                        <Image
+                          src={
+                            unit.images[activeImageIndex] ||
+                            "/placeholder.svg?height=224&width=384" ||
+                            "/placeholder.svg"
+                          }
+                          alt={`${building.name} - Unit ${unit.unitNumber}`}
+                          className="h-full w-full object-cover"
+                          fill
+                        />
+                        {unit.images.length > 1 && (
+                          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
+                            {unit.images.map((_, index) => (
+                              <button
+                                key={index}
+                                className={cn(
+                                  "h-1.5 w-1.5 rounded-full bg-white/50 transition-all",
+                                  activeImageIndex === index && "w-4 bg-white",
+                                )}
+                                onClick={() => setActiveImageIndex(index)}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
+                        <Building2 className="h-16 w-16 text-slate-400" />
+                      </div>
+                    )}
+                    <Badge className="absolute right-4 top-4 bg-primary/90 px-3 py-1 text-sm font-medium shadow-md">
+                      {unit.status}
+                    </Badge>
+                  </div>
                 </div>
 
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Unit {unit.unitNumber}</span>
-                    <span className="text-primary">
+                  <div className="flex items-center justify-between">
+                    <Badge
+                      variant="outline"
+                      className="px-2 py-0.5 text-xs font-normal"
+                    >
+                      {unit.type}
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="px-2 py-0.5 text-xs font-normal"
+                    >
+                      {unit.sizeSqFt} sq ft
+                    </Badge>
+                  </div>
+                  <CardTitle className="mt-2 flex items-center justify-between">
+                    <span className="text-xl">Unit {unit.unitNumber}</span>
+                    <span className="text-lg font-bold text-primary">
                       {formatCurrency(unit.monthlyRent)}/mo
                     </span>
                   </CardTitle>
-                  <CardDescription>{building.name}</CardDescription>
+                  <CardDescription className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {building.name}
+                  </CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-slate-500">Floor</p>
+                    <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/50">
+                      <p className="text-xs text-muted-foreground">Floor</p>
                       <p className="font-medium">{unit.floorNumber}</p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Size</p>
-                      <p className="font-medium">{unit.sizeSqFt} sq ft</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Type</p>
-                      <p className="font-medium">{unit.type}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Min. Lease</p>
+                    <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/50">
+                      <p className="text-xs text-muted-foreground">
+                        Min. Lease
+                      </p>
                       <p className="font-medium">
                         {building.leaseTerms.minLeasePeriodMonths} months
                       </p>
                     </div>
                   </div>
-
-                  <Separator />
 
                   {/* Amenities */}
                   <div>
@@ -330,7 +382,7 @@ const RentUnitPage = () => {
                           <Badge
                             key={index}
                             variant="outline"
-                            className="bg-slate-50"
+                            className="bg-slate-50 dark:bg-slate-800/50"
                           >
                             {amenity}
                           </Badge>
@@ -343,119 +395,109 @@ const RentUnitPage = () => {
                     </div>
                   </div>
 
-                  {/* Allowed Uses */}
-                  <div>
-                    <p className="mb-2 text-sm font-medium">Allowed Uses</p>
-                    <div className="flex flex-wrap gap-2">
-                      {unit.allowedUses &&
-                        unit.allowedUses.map((use, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="bg-slate-50"
-                          >
-                            {use}
-                          </Badge>
-                        ))}
-                      {(!unit.allowedUses || unit.allowedUses.length === 0) && (
-                        <p className="text-sm text-slate-500">
-                          No specific uses listed
-                        </p>
-                      )}
-                    </div>
+                  {/* Building Address */}
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/30">
+                    <h3 className="mb-1 text-sm font-medium">
+                      Building Address
+                    </h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {building.address.street}, {building.address.city},{" "}
+                      {building.address.country}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
-
-              {/* //TODO: FIGURE THIS OUT */}
-              {/* Download Lease Documents */}
-              {/* <Card className="border-slate-200 shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Documents</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    size="sm"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Lease Agreement Template
-                    <Download className="ml-auto h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    size="sm"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Building Rules & Regulations
-                    <Download className="ml-auto h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    size="sm"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Floor Plan
-                    <Download className="ml-auto h-4 w-4" />
-                  </Button>
-                </CardContent>
-              </Card> */}
             </div>
           </div>
 
           {/* Right Column - Application Form */}
           <div className="lg:col-span-2">
-            <Card className="border-none shadow-none">
+            <Card className="overflow-hidden rounded-md border-none">
               <Tabs
                 defaultValue="unit-details"
                 value={activeTab}
                 onValueChange={setActiveTab}
               >
-                <div className="px-0">
+                <div className="border-b px-6 pt-6">
                   <TabsList className="grid w-full grid-cols-3 gap-4">
-                    <TabsTrigger value="unit-details">Unit Details</TabsTrigger>
-                    <TabsTrigger value="lease-terms">Lease Terms</TabsTrigger>
-                    <TabsTrigger value="review">Review & Submit</TabsTrigger>
+                    <TabsTrigger
+                      value="unit-details"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-white"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Unit Details</span>
+                        <span className="sm:hidden">Details</span>
+                      </span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="lease-terms"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-white"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span className="hidden sm:inline">Lease Terms</span>
+                        <span className="sm:hidden">Terms</span>
+                      </span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="review"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-white"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Clipboard className="h-4 w-4" />
+                        <span className="hidden sm:inline">
+                          Review & Submit
+                        </span>
+                        <span className="sm:hidden">Review</span>
+                      </span>
+                    </TabsTrigger>
                   </TabsList>
                 </div>
 
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)}>
-                    <CardContent className="p-0">
+                    <CardContent className="p-6">
                       {/* Unit Details Tab */}
-                      <TabsContent value="unit-details" className="space-y-6">
-                        <div className="space-y-4">
-                          <h3 className="flex items-center pt-2 text-lg font-medium">
-                            <Building2 className="mr-2 h-5 w-5 text-primary" />
-                            Unit Information
-                          </h3>
+                      <TabsContent
+                        value="unit-details"
+                        className="mt-0 space-y-6"
+                      >
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-2 rounded-lg bg-primary/5 p-4 text-primary">
+                            <Building2 className="h-5 w-5" />
+                            <h3 className="text-lg font-medium">
+                              Unit Information
+                            </h3>
+                          </div>
 
                           {/* Unit Description */}
-                          <div className="space-y-4">
-                            <p className="text-slate-600">
-                              {`You're`} applying for Unit {unit.unitNumber} on
-                              Floor {unit.floorNumber} of {building.name}. This{" "}
-                              {unit.sizeSqFt} sq ft {unit.type.toLowerCase()}{" "}
-                              space is available for{" "}
-                              {formatCurrency(unit.monthlyRent)} per month with
-                              a minimum lease term of{" "}
-                              {building.leaseTerms.minLeasePeriodMonths} months.
-                            </p>
+                          <div className="space-y-6">
+                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/30">
+                              <p className="text-slate-600 dark:text-slate-300">
+                                {`You're`} applying for Unit {unit.unitNumber}{" "}
+                                on Floor {unit.floorNumber} of {building.name}.
+                                This {unit.sizeSqFt} sq ft{" "}
+                                {unit.type.toLowerCase()} space is available for{" "}
+                                {formatCurrency(unit.monthlyRent)} per month
+                                with a minimum lease term of{" "}
+                                {building.leaseTerms.minLeasePeriodMonths}{" "}
+                                months.
+                              </p>
+                            </div>
 
                             {/* Building Features */}
-                            <div className="rounded-lg border border-slate-200 bg-white p-4">
-                              <h4 className="mb-3 font-medium">
+                            <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                              <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
+                                <BadgeCheck className="h-5 w-5" />
                                 Building Features
                               </h4>
                               {building.amenities.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                   {building.amenities.map((amenity, index) => (
                                     <div
                                       key={index}
-                                      className="flex items-center"
+                                      className="flex items-center rounded-md bg-slate-50 p-2 dark:bg-slate-800/50"
                                     >
                                       <Check className="mr-2 h-4 w-4 text-green-500" />
                                       <span className="text-sm capitalize">
@@ -475,22 +517,26 @@ const RentUnitPage = () => {
                             </div>
 
                             {/* Unit Gallery */}
-                            {unit.imageUrls && unit.imageUrls.length > 0 && (
-                              <div className="space-y-2">
-                                <h4 className="font-medium">Unit Gallery</h4>
-                                <div className="grid grid-cols-3 gap-2">
-                                  {unit.imageUrls.map((url, index) => (
+                            {unit.images && unit.images.length > 0 && (
+                              <div className="space-y-3">
+                                <h4 className="flex items-center gap-2 font-medium text-primary">
+                                  <FileText className="h-5 w-5" />
+                                  Unit Gallery
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                  {unit.images.map((url, index) => (
                                     <div
                                       key={index}
-                                      className="relative aspect-square overflow-hidden rounded-md"
+                                      className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 shadow-sm transition-all hover:shadow-md dark:border-slate-700"
                                     >
                                       <Image
                                         src={
                                           url ||
-                                          "/placeholder.svg?height=100&width=100"
+                                          "/placeholder.svg?height=100&width=100" ||
+                                          "/placeholder.svg"
                                         }
                                         alt={`Unit ${unit.unitNumber} - Image ${index + 1}`}
-                                        className="h-full w-full object-cover"
+                                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                         fill
                                       />
                                     </div>
@@ -501,8 +547,8 @@ const RentUnitPage = () => {
 
                             {/* Last Renovation */}
                             {unit.lastRenovationDate && (
-                              <div className="flex items-center text-sm text-slate-600">
-                                <Info className="mr-2 h-4 w-4 text-slate-400" />
+                              <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-800/30 dark:text-slate-300">
+                                <Clock className="h-4 w-4 text-primary" />
                                 Last renovated:{" "}
                                 {new Date(
                                   unit.lastRenovationDate,
@@ -512,35 +558,27 @@ const RentUnitPage = () => {
                           </div>
 
                           {/* Unit Notes */}
-                          {unit.notes && (
-                            <div className="mt-4 rounded border border-slate-200 bg-slate-100 p-3">
-                              <p className="text-sm font-medium">
+                          {unit.description && (
+                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/30">
+                              <p className="mb-2 text-sm font-medium text-primary">
                                 Additional Notes
                               </p>
-                              <p className="mt-1 text-sm text-slate-600">
-                                {unit.notes}
+                              <p className="text-sm text-slate-600 dark:text-slate-300">
+                                {unit.description}
                               </p>
                             </div>
                           )}
                         </div>
 
-                        {/* Building Address */}
-                        <div className="rounded-lg border border-slate-200 bg-white p-4">
-                          <h3 className="mb-2 font-medium">Building Address</h3>
-                          <p className="text-slate-600">
-                            {building.address.street}, {building.address.city},{" "}
-                            {building.address.country}
-                          </p>
-                        </div>
-
                         {/* Request Tour Option */}
-                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                        <div className="rounded-lg border border-primary/10 bg-primary/5 p-5 shadow-sm">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="font-medium">
+                              <h3 className="flex items-center gap-2 font-medium text-primary">
+                                <Calendar className="h-5 w-5" />
                                 Request In-Person Tour
                               </h3>
-                              <p className="text-sm text-slate-500">
+                              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                                 Schedule a tour before making your decision
                               </p>
                             </div>
@@ -549,6 +587,7 @@ const RentUnitPage = () => {
                               onCheckedChange={(checked) =>
                                 form.setValue("requestTour", checked)
                               }
+                              className="data-[state=checked]:bg-primary"
                             />
                           </div>
                         </div>
@@ -557,117 +596,131 @@ const RentUnitPage = () => {
                       {/* Lease Terms Tab */}
                       <TabsContent
                         value="lease-terms"
-                        className="space-y-6 pt-2"
+                        className="mt-0 space-y-6"
                       >
-                        <div className="space-y-4">
-                          <h3 className="flex items-center text-lg font-medium">
-                            <Calendar className="mr-2 h-5 w-5 text-primary" />
-                            Lease Preferences
-                          </h3>
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-2 rounded-lg bg-primary/5 p-4 text-primary">
+                            <Calendar className="h-5 w-5" />
+                            <h3 className="text-lg font-medium">
+                              Lease Preferences
+                            </h3>
+                          </div>
 
-                          <div className="grid grid-cols-1 gap-4">
-                            <Group>
-                              <NumberFormField
+                          <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                            <div className="grid grid-cols-1 gap-5">
+                              <Group>
+                                <NumberFormField
+                                  control={form.control}
+                                  label={`Lease Duration [${building.leaseTerms.minLeasePeriodMonths} - ${building.leaseTerms.maxLeasePeriodMonths}]`}
+                                  name="leaseDuration"
+                                  min={1}
+                                  placeholder={`${building.leaseTerms.minLeasePeriodMonths} month`}
+                                />
+                                <NumberFormField
+                                  control={form.control}
+                                  label="Number of Employees"
+                                  name="numberOfEmployees"
+                                  min={1}
+                                  placeholder={`1 employee`}
+                                />
+                              </Group>
+
+                              <DateFormField
                                 control={form.control}
-                                label="Lease Duration(month)"
-                                name="leaseDuration"
-                                min={1}
-                                placeholder={`${building.leaseTerms.minLeasePeriodMonths + 1} month`}
+                                name="moveInDate"
+                                label="Desired Move-In Date"
                               />
-                              <NumberFormField
-                                control={form.control}
-                                label="Number of Employees"
-                                name="numberOfEmployees"
-                                min={1}
-                                placeholder={`1 employee`}
-                              />
-                            </Group>
 
-                            <DateFormField
-                              control={form.control}
-                              name="moveInDate"
-                              label="Desired Move-In Date"
-                            />
-
-                            <div className="space-y-2">
-                              <label
-                                htmlFor="specialRequirements"
-                                className="text-sm font-medium"
-                              >
-                                Special Requirements or Modifications
-                              </label>
-                              <Textarea
-                                id="specialRequirements"
-                                rows={4}
-                                className="resize-none"
-                                placeholder="Describe any special requirements or modifications you need for the space..."
-                                {...form.register("specialRequirements")}
-                              />
+                              <div className="space-y-2">
+                                <label
+                                  htmlFor="specialRequirements"
+                                  className="text-sm font-medium"
+                                >
+                                  Special Requirements or Modifications
+                                </label>
+                                <Textarea
+                                  id="specialRequirements"
+                                  rows={4}
+                                  className="resize-none"
+                                  placeholder="Describe any special requirements or modifications you need for the space..."
+                                  {...form.register("specialRequirements")}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
 
                         {/* Lease Terms Information */}
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                          <h3 className="mb-3 flex items-center font-medium">
-                            <FileText className="mr-2 h-5 w-5 text-primary" />
+                        <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                          <h3 className="mb-4 flex items-center gap-2 font-medium text-primary">
+                            <Shield className="h-5 w-5" />
                             Lease Terms Overview
                           </h3>
-                          <div className="space-y-3 text-sm">
-                            <div className="flex items-start">
-                              <Check className="mr-2 mt-0.5 h-4 w-4 text-green-500" />
-                              <p>
+                          <div className="space-y-4 text-sm">
+                            <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                              <Check className="mt-0.5 h-4 w-4 text-green-500" />
+                              <div>
                                 <span className="font-medium">
                                   Payment Schedule:
                                 </span>{" "}
-                                Rent is due on the 1st of each month with a
-                                5-day grace period.
-                              </p>
+                                <span className="text-slate-600 dark:text-slate-300">
+                                  Rent is due on the 1st of each month with a
+                                  5-day grace period.
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-start">
-                              <Check className="mr-2 mt-0.5 h-4 w-4 text-green-500" />
-                              <p>
+                            <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                              <Check className="mt-0.5 h-4 w-4 text-green-500" />
+                              <div>
                                 <span className="font-medium">
                                   Security Deposit:
                                 </span>{" "}
-                                Equal to one {`month's`} rent, refundable upon
-                                lease completion.
-                              </p>
+                                <span className="text-slate-600 dark:text-slate-300">
+                                  Equal to one {`month's`} rent, refundable upon
+                                  lease completion.
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-start">
-                              <Check className="mr-2 mt-0.5 h-4 w-4 text-green-500" />
-                              <p>
+                            <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                              <Check className="mt-0.5 h-4 w-4 text-green-500" />
+                              <div>
                                 <span className="font-medium">
                                   Maintenance:
                                 </span>{" "}
-                                Building maintenance is included in the service
-                                fee. Tenant is responsible for unit-specific
-                                maintenance.
-                              </p>
+                                <span className="text-slate-600 dark:text-slate-300">
+                                  Building maintenance is included in the
+                                  service fee. Tenant is responsible for
+                                  unit-specific maintenance.
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-start">
-                              <Check className="mr-2 mt-0.5 h-4 w-4 text-green-500" />
-                              <p>
+                            <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                              <Check className="mt-0.5 h-4 w-4 text-green-500" />
+                              <div>
                                 <span className="font-medium">Insurance:</span>{" "}
-                                Tenant must maintain commercial liability
-                                insurance with minimum coverage of $1,000,000.
-                              </p>
+                                <span className="text-slate-600 dark:text-slate-300">
+                                  Tenant must maintain commercial liability
+                                  insurance with minimum coverage of $1,000,000.
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-start">
-                              <Check className="mr-2 mt-0.5 h-4 w-4 text-green-500" />
-                              <p>
+                            <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                              <Check className="mt-0.5 h-4 w-4 text-green-500" />
+                              <div>
                                 <span className="font-medium">Renewal:</span>{" "}
-                                Option to renew with 60-day notice before lease
-                                expiration.
-                              </p>
+                                <span className="text-slate-600 dark:text-slate-300">
+                                  Option to renew with 60-day notice before
+                                  lease expiration.
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                           <label
                             htmlFor="additionalNotes"
-                            className="text-sm font-medium"
+                            className="mb-2 block text-sm font-medium"
                           >
                             Additional Notes for Property Manager
                           </label>
@@ -682,99 +735,111 @@ const RentUnitPage = () => {
                       </TabsContent>
 
                       {/* Review & Submit Tab */}
-                      <TabsContent value="review" className="space-y-6 pt-2">
-                        <div className="space-y-0">
-                          <h3 className="flex items-center text-lg font-medium">
-                            <Clipboard className="mr-2 h-5 w-5 text-primary" />
-                            Review Your Application
-                          </h3>
+                      <TabsContent value="review" className="mt-0 space-y-6">
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-2 rounded-lg bg-primary/5 p-4 text-primary">
+                            <Clipboard className="h-5 w-5" />
+                            <h3 className="text-lg font-medium">
+                              Review Your Application
+                            </h3>
+                          </div>
 
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-6">
                             {/* Tenant Information Summary */}
-                            <Card className="border-none shadow-none">
-                              <CardHeader className="px-0 pb-2">
-                                <CardTitle className="flex items-center text-base">
-                                  <Users className="mr-2 h-4 w-4" />
-                                  Tenant Information
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent className="grid grid-cols-2 gap-3 px-0 text-sm">
-                                <div>
-                                  <p className="font-medium">Business Name</p>
-                                  <p className="text-slate-600">
+                            <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                              <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
+                                <Users className="h-5 w-5" />
+                                Tenant Information
+                              </h4>
+                              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                  <p className="text-xs text-muted-foreground">
+                                    Business Name
+                                  </p>
+                                  <p className="font-medium">
                                     {currentUser?.businessName ||
                                       "Not provided"}
                                   </p>
                                 </div>
-                                <div>
-                                  <p className="font-medium">Business Type</p>
-                                  <p className="text-slate-600">
+                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                  <p className="text-xs text-muted-foreground">
+                                    Business Type
+                                  </p>
+                                  <p className="font-medium">
                                     {currentUser?.businessType ||
                                       "Not provided"}
                                   </p>
                                 </div>
-                                <div>
-                                  <p className="font-medium">Contact Name</p>
-                                  <p className="text-slate-600">
+                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                  <p className="text-xs text-muted-foreground">
+                                    Contact Name
+                                  </p>
+                                  <p className="font-medium">
                                     {currentUser?.firstName}{" "}
                                     {currentUser?.lastName}
                                   </p>
                                 </div>
-                                <div>
-                                  <p className="font-medium">Contact Email</p>
-                                  <p className="text-slate-600">
+                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                  <p className="text-xs text-muted-foreground">
+                                    Contact Email
+                                  </p>
+                                  <p className="font-medium">
                                     {currentUser?.email}
                                   </p>
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </div>
 
                             {/* Unit Information Summary */}
-                            <Card className="border-none shadow-none">
-                              <CardHeader className="px-0 pb-2">
-                                <CardTitle className="flex items-center text-base">
-                                  <Building2 className="mr-2 h-4 w-4" />
-                                  Unit Information
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent className="grid grid-cols-2 gap-3 px-0 text-sm">
-                                <div>
-                                  <p className="font-medium">Building</p>
-                                  <p className="text-slate-600">
-                                    {building.name}
+                            <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                              <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
+                                <Building2 className="h-5 w-5" />
+                                Unit Information
+                              </h4>
+                              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                  <p className="text-xs text-muted-foreground">
+                                    Building
                                   </p>
+                                  <p className="font-medium">{building.name}</p>
                                 </div>
-                                <div>
-                                  <p className="font-medium">Unit</p>
-                                  <p className="text-slate-600">
+                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                  <p className="text-xs text-muted-foreground">
+                                    Unit
+                                  </p>
+                                  <p className="font-medium">
                                     {unit.unitNumber}
                                   </p>
                                 </div>
-                                <div>
-                                  <p className="font-medium">Size</p>
-                                  <p className="text-slate-600">
+                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                  <p className="text-xs text-muted-foreground">
+                                    Size
+                                  </p>
+                                  <p className="font-medium">
                                     {unit.sizeSqFt} sq ft
                                   </p>
                                 </div>
-                                <div>
-                                  <p className="font-medium">Type</p>
-                                  <p className="text-slate-600">{unit.type}</p>
+                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                  <p className="text-xs text-muted-foreground">
+                                    Type
+                                  </p>
+                                  <p className="font-medium">{unit.type}</p>
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </div>
 
                             {/* Lease Terms Summary */}
-                            <Card className="border-none shadow-none">
-                              <CardHeader className="px-0 pb-2">
-                                <CardTitle className="flex items-center text-base">
-                                  <Calendar className="mr-2 h-4 w-4" />
-                                  Lease Terms
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent className="grid grid-cols-2 gap-3 px-0 text-sm">
-                                <div>
-                                  <p className="font-medium">Move-In Date</p>
-                                  <p className="text-slate-600">
+                            <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                              <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
+                                <Calendar className="h-5 w-5" />
+                                Lease Terms
+                              </h4>
+                              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                  <p className="text-xs text-muted-foreground">
+                                    Move-In Date
+                                  </p>
+                                  <p className="font-medium">
                                     {form.watch("moveInDate")
                                       ? new Date(
                                           form.watch("moveInDate"),
@@ -782,87 +847,91 @@ const RentUnitPage = () => {
                                       : "Not provided"}
                                   </p>
                                 </div>
-                                <div>
-                                  <p className="font-medium">Lease Duration</p>
-                                  <p className="text-slate-600">
+                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                  <p className="text-xs text-muted-foreground">
+                                    Lease Duration
+                                  </p>
+                                  <p className="font-medium">
                                     {form.watch("leaseDuration") ||
                                       "Not provided"}{" "}
                                     months
                                   </p>
                                 </div>
-                                <div className="col-span-2">
-                                  <p className="font-medium">
+                                <div className="col-span-1 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30 sm:col-span-2">
+                                  <p className="text-xs text-muted-foreground">
                                     Special Requirements
                                   </p>
-                                  <p className="text-slate-600">
+                                  <p className="font-medium">
                                     {form.watch("specialRequirements") ||
                                       "None specified"}
                                   </p>
                                 </div>
-                                <div className="col-span-2">
-                                  <p className="font-medium">
+                                <div className="col-span-1 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30 sm:col-span-2">
+                                  <p className="text-xs text-muted-foreground">
                                     Additional Notes
                                   </p>
-                                  <p className="text-slate-600">
+                                  <p className="font-medium">
                                     {form.watch("additionalNotes") ||
                                       "None specified"}
                                   </p>
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </div>
 
                             {/* Financial Summary */}
-                            <Card className="border-none shadow-none">
-                              <CardHeader className="px-0 pb-2">
-                                <CardTitle className="flex items-center text-base">
-                                  <DollarSign className="mr-2 h-4 w-4" />
-                                  Financial Summary
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-3 rounded-lg bg-primary pt-4 text-sm text-white">
-                                <div className="flex items-center justify-between">
-                                  <span>Monthly Rent</span>
-                                  <span className="font-medium">
-                                    {formatCurrency(unit.monthlyRent)}
-                                  </span>
-                                </div>
+                            <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                              <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
+                                <CreditCard className="h-5 w-5" />
+                                Financial Summary
+                              </h4>
+                              <div className="overflow-hidden rounded-lg">
+                                <div className="space-y-3 bg-gradient-to-r from-primary to-primary/90 p-5 text-white">
+                                  <div className="flex items-center justify-between">
+                                    <span>Monthly Rent</span>
+                                    <span className="font-medium">
+                                      {formatCurrency(unit.monthlyRent)}
+                                    </span>
+                                  </div>
 
-                                <Separator />
-                                <div className="flex items-center justify-between font-medium">
-                                  <span>Total Monthly</span>
-                                  <span className="text-primary">
-                                    {formatCurrency(calculateMonthlyCost())}
-                                  </span>
+                                  <Separator className="bg-white/20" />
+                                  <div className="flex items-center justify-between">
+                                    <span>Total Monthly</span>
+                                    <span className="text-lg font-bold">
+                                      {formatCurrency(calculateMonthlyCost())}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span>Security Deposit</span>
+                                    <span className="font-medium">
+                                      {formatCurrency(unit.monthlyRent)}
+                                    </span>
+                                  </div>
+                                  <Separator className="bg-white/20" />
+                                  <div className="flex items-center justify-between">
+                                    <span>Due at Signing</span>
+                                    <span className="text-lg font-bold">
+                                      {formatCurrency(
+                                        unit.monthlyRent +
+                                          calculateMonthlyCost(),
+                                      )}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center justify-between">
-                                  <span>Security Deposit</span>
-                                  <span className="font-medium">
-                                    {formatCurrency(unit.monthlyRent)}
-                                  </span>
-                                </div>
-                                <div className="flex items-center justify-between font-medium">
-                                  <span>Due at Signing</span>
-                                  <span className="text-primary">
-                                    {formatCurrency(
-                                      unit.monthlyRent + calculateMonthlyCost(),
-                                    )}
-                                  </span>
-                                </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </div>
 
                             {/* Last components */}
-                            <section className="mt-6">
+                            <section className="space-y-6">
                               {/* Request Tour */}
                               {form.watch("requestTour") && (
-                                <div className="rounded border border-amber-200 bg-amber-50 p-4 text-amber-800">
-                                  <div className="flex items-center">
-                                    <Star className="mr-2 h-5 w-5 text-amber-500" />
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
+                                  <div className="flex items-center gap-2">
+                                    <Star className="h-5 w-5 text-amber-500" />
                                     <p className="font-medium">
                                       In-Person Tour Requested
                                     </p>
                                   </div>
-                                  <p className="mt-1 text-sm">
+                                  <p className="mt-2 text-sm">
                                     A property manager will contact you within
                                     1-2 business days to schedule your tour.
                                   </p>
@@ -870,18 +939,10 @@ const RentUnitPage = () => {
                               )}
 
                               {/* Terms and Conditions */}
-                              <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                                <div className="flex items-start space-x-3">
+                              <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="flex items-start gap-3">
                                   <Checkbox
                                     onCheckedChange={(checked) => {
-                                      infoToast(
-                                        JSON.stringify(
-                                          { form: form.getValues(), checked },
-                                          null,
-                                          2,
-                                        ),
-                                      );
-
                                       form.setValue(
                                         "agreeToTerms",
                                         checked ? true : false,
@@ -889,11 +950,12 @@ const RentUnitPage = () => {
                                     }}
                                     checked={form.watch("agreeToTerms")}
                                     id="agreeToTerms"
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                   />
 
                                   <Label
                                     htmlFor="agreeToTerms"
-                                    className="text-sm"
+                                    className="text-sm leading-relaxed"
                                   >
                                     I confirm that all information provided is
                                     accurate and complete. I understand that
@@ -906,7 +968,7 @@ const RentUnitPage = () => {
                                   </Label>
                                 </div>
                                 {form.formState.errors.agreeToTerms && (
-                                  <p className="ml-6 mt-2 text-xs text-red-500">
+                                  <p className="ml-9 mt-2 text-xs text-red-500">
                                     {form.formState.errors.agreeToTerms.message}
                                   </p>
                                 )}
@@ -917,7 +979,7 @@ const RentUnitPage = () => {
                       </TabsContent>
                     </CardContent>
 
-                    <CardFooter className="flex justify-between px-2 py-6">
+                    <CardFooter className="flex justify-between border-t p-6">
                       {activeTab !== "unit-details" ? (
                         <Button
                           type="button"
@@ -929,7 +991,9 @@ const RentUnitPage = () => {
                                 : "unit-details",
                             )
                           }
+                          className="gap-2"
                         >
+                          <ChevronLeft className="h-4 w-4" />
                           Back
                         </Button>
                       ) : (
@@ -969,8 +1033,10 @@ const RentUnitPage = () => {
                               setActiveTab("lease-terms");
                             }
                           }}
+                          className="gap-2"
                         >
                           Continue
+                          <ArrowRight className="h-4 w-4" />
                         </Button>
                       ) : (
                         <TooltipProvider>
@@ -979,12 +1045,19 @@ const RentUnitPage = () => {
                               <div>
                                 <Button
                                   type="submit"
-                                  className="bg-primary"
-                                  disabled={isSubmitting}
+                                  className="gap-2 bg-primary hover:bg-primary/90"
+                                  disabled={
+                                    createRentalApplicationMutation.isPending
+                                  }
                                 >
-                                  {isSubmitting
-                                    ? "Submitting..."
-                                    : "Submit Application"}
+                                  {createRentalApplicationMutation.isPending ? (
+                                    "Submitting..."
+                                  ) : (
+                                    <>
+                                      Submit Application
+                                      <CheckCircle2 className="h-4 w-4" />
+                                    </>
+                                  )}
                                 </Button>
                               </div>
                             </TooltipTrigger>
