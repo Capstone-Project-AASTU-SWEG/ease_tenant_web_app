@@ -9,17 +9,11 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Building2,
-  PenToolIcon as Tool,
-  UserCog,
-  Briefcase,
-  Calendar,
   ArrowUpDown,
   ChevronRight,
   Users,
   FileText,
   Trash2,
-  Download,
   MessageSquare,
   Check,
 } from "lucide-react";
@@ -42,7 +36,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
-import Image from "next/image";
 import PageWrapper from "@/components/custom/page-wrapper";
 import SearchInput from "@/components/custom/search-input";
 import {
@@ -54,17 +47,13 @@ import {
 } from "@/components/ui/sheet";
 import {
   Application,
-  ApplicationStatus,
-  ApplicationType,
-  MaintenanceApplication,
-  OtherApplication,
-  PriorityLevel,
-  ProviderApplication,
+  APPLICATION_STATUS,
+  APPLICATION_TYPE,
+  PRIORITY_LEVEL,
   RentalApplication,
-  ServiceApplication,
+  Tenant,
 } from "@/types";
 import {
-  formatDate,
   formatDateTime,
   formatStatusLabel,
   getApplicationTypeIcon,
@@ -75,7 +64,6 @@ import {
   timeElapsed,
 } from "./_utils";
 import {
-  getApplications,
   removeApplication,
   updateApplicationStatus,
 } from "../buildings/_hooks/useApplications";
@@ -87,20 +75,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { RentalApplicationDetail } from "./_components/rental-application-detail";
+import PageHeader from "@/components/custom/page-header";
+import { useGetApplicationsOfBuildingQuery } from "@/app/quries/useApplications";
+import LogJSON from "@/components/custom/log-json";
 
-export default function ApplicationsPage() {
+const ApplicationsPage = () => {
   // State for applications data
-  const applications = getApplications();
-
-  const isLoading = false;
+  const { data: applications = [], isLoading } =
+    useGetApplicationsOfBuildingQuery("6817cf0d67320596899e2d34");
 
   // State for filters and search
-  const [activeTab, setActiveTab] = useState<ApplicationType | "all">("all");
+  const [activeTab, setActiveTab] = useState<APPLICATION_TYPE | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">(
+  const [statusFilter, setStatusFilter] = useState<APPLICATION_STATUS | "all">(
     "all",
   );
-  const [priorityFilter, setPriorityFilter] = useState<PriorityLevel | "all">(
+  const [priorityFilter, setPriorityFilter] = useState<PRIORITY_LEVEL | "all">(
     "all",
   );
   const [sortBy, setSortBy] = useState<"date" | "priority" | "status">("date");
@@ -113,6 +104,10 @@ export default function ApplicationsPage() {
 
   // Filter and sort applications based on current filters
   const filteredApplications = useMemo(() => {
+    if (!Array.isArray(applications)) {
+      return [];
+    }
+
     return applications
       .filter((app) => {
         // Filter by type
@@ -128,81 +123,26 @@ export default function ApplicationsPage() {
         // Search query filtering
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
-
-          // Search in common fields
-          if (
-            app.id.toLowerCase().includes(query) ||
-            (app.submittedBy.firstName + app.submittedBy.lastName)
+          const matchesCommonFields =
+            app.id?.toLowerCase().includes(query) ||
+            `${app.submittedBy?.firstName}${app.submittedBy?.lastName}`
               .toLowerCase()
               .includes(query) ||
-            app.submittedBy.email.toLowerCase().includes(query) ||
-            (app.notes && app.notes.toLowerCase().includes(query))
-          ) {
-            return true;
-          }
+            app.submittedBy?.email?.toLowerCase().includes(query) ||
+            (app.notes && app.notes.toLowerCase().includes(query));
+
+          if (matchesCommonFields) return true;
 
           // Type-specific searching
-
-          switch (app.type) {
-            case "rental":
-              const rentalApp = app as RentalApplication;
-              const building = getBuildingByID(
-                rentalApp.unitDetails.buildingId,
-              ); // Mock building data
-              return (
-                building?.name.toLowerCase().includes(query) ||
-                rentalApp.unitDetails.unitNumber
-                  .toLowerCase()
-                  .includes(query) ||
-                rentalApp.businessDetails.name.toLowerCase().includes(query) ||
-                rentalApp.businessDetails.type.toLowerCase().includes(query)
-              );
-            case "maintenance":
-              const maintApp = app as MaintenanceApplication;
-              return (
-                maintApp.issueDetails.title.toLowerCase().includes(query) ||
-                maintApp.issueDetails.description
-                  .toLowerCase()
-                  .includes(query) ||
-                maintApp.issueDetails.category.toLowerCase().includes(query) ||
-                maintApp.unitDetails.buildingName.toLowerCase().includes(query)
-              );
-            case "provider":
-              const providerApp = app as ProviderApplication;
-              return (
-                providerApp.providerDetails.companyName
-                  .toLowerCase()
-                  .includes(query) ||
-                providerApp.providerDetails.serviceType
-                  .toLowerCase()
-                  .includes(query) ||
-                providerApp.providerDetails.contactPerson
-                  .toLowerCase()
-                  .includes(query)
-              );
-            case "service":
-              const serviceApp = app as ServiceApplication;
-              return (
-                serviceApp.serviceDetails.title.toLowerCase().includes(query) ||
-                serviceApp.serviceDetails.description
-                  .toLowerCase()
-                  .includes(query) ||
-                serviceApp.serviceDetails.category
-                  .toLowerCase()
-                  .includes(query) ||
-                serviceApp.providerDetails.name.toLowerCase().includes(query)
-              );
-            case "other":
-              const otherApp = app as OtherApplication;
-              return (
-                otherApp.title.toLowerCase().includes(query) ||
-                otherApp.description.toLowerCase().includes(query) ||
-                (otherApp.category &&
-                  otherApp.category.toLowerCase().includes(query))
-              );
+          if (app.type === "rental") {
+            const rentalApp = app as RentalApplication;
+            const building = getBuildingByID(rentalApp.unit.buildingId);
+            return (
+              building?.name?.toLowerCase().includes(query) ||
+              rentalApp.unit.unitNumber?.toLowerCase().includes(query) ||
+              rentalApp.unit.type?.toLowerCase().includes(query)
+            );
           }
-
-          return false;
         }
 
         return true;
@@ -252,13 +192,13 @@ export default function ApplicationsPage() {
   const stats = useMemo(() => {
     return {
       total: applications.length,
-      pending: applications.filter((app) => app.status === "pending").length,
-      approved: applications.filter((app) => app.status === "approved").length,
-      rejected: applications.filter((app) => app.status === "rejected").length,
-      inReview: applications.filter((app) => app.status === "in_review").length,
-      onHold: applications.filter((app) => app.status === "on_hold").length,
-      urgent: applications.filter((app) => app.priority === "urgent").length,
-      unassigned: applications.filter((app) => !app.assignedTo).length,
+      pending: applications?.filter((app) => app.status === "pending").length,
+      approved: applications?.filter((app) => app.status === "approved").length,
+      rejected: applications?.filter((app) => app.status === "rejected").length,
+      inReview: applications?.filter((app) => app.status === "in_review")
+        .length,
+      urgent: applications?.filter((app) => app.priority === "urgent").length,
+      unassigned: applications?.filter((app) => !app.assignedTo).length,
     };
   }, [applications]);
 
@@ -271,7 +211,7 @@ export default function ApplicationsPage() {
   // Handle application status change
   const handleStatusChange = (
     applicationId: string,
-    newStatus: ApplicationStatus,
+    newStatus: APPLICATION_STATUS,
   ) => {
     updateApplicationStatus(applicationId, newStatus);
   };
@@ -292,21 +232,14 @@ export default function ApplicationsPage() {
   };
 
   return (
-    <PageWrapper className="min-h-screen">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white">
-        <div className="py-4">
-          <div>
-            <h1 className="text-2xl font-bold">Applications Management</h1>
-            <p className="text-slate-500">
-              Review and manage all incoming applications
-            </p>
-          </div>
-        </div>
-      </header>
+    <PageWrapper className="py-0">
+      <PageHeader
+        title="Applications Management"
+        description="Review and manage all incoming applications"
+      />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="mt-4">
         {/* Stats Cards */}
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card className="bg-white">
@@ -329,10 +262,6 @@ export default function ApplicationsPage() {
                     {stats.pending + stats.inReview}
                   </span>
                 </div>
-                <Progress
-                  value={((stats.pending + stats.inReview) / stats.total) * 100}
-                  className="mt-2 h-1"
-                />
               </div>
             </CardContent>
           </Card>
@@ -468,12 +397,7 @@ export default function ApplicationsPage() {
                       <Check className="ml-auto h-4 w-4" />
                     )}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter("on_hold")}>
-                    On Hold
-                    {statusFilter === "on_hold" && (
-                      <Check className="ml-auto h-4 w-4" />
-                    )}
-                  </DropdownMenuItem>
+
                   <DropdownMenuItem onClick={() => setStatusFilter("approved")}>
                     Approved
                     {statusFilter === "approved" && (
@@ -579,7 +503,7 @@ export default function ApplicationsPage() {
           <Tabs
             defaultValue="all"
             value={activeTab}
-            onValueChange={(value) => setActiveTab(value as ApplicationType)}
+            onValueChange={(value) => setActiveTab(value as APPLICATION_TYPE)}
           >
             <TabsList>
               <TabsTrigger className="px-6" value="all">
@@ -662,6 +586,8 @@ export default function ApplicationsPage() {
         </div>
       </main>
 
+      <LogJSON data={{ selectedApplication }} />
+
       {/* Application Detail Dialog */}
       {selectedApplication && (
         <RenderApplicationDetail
@@ -674,7 +600,7 @@ export default function ApplicationsPage() {
       )}
     </PageWrapper>
   );
-}
+};
 
 type RenderApplicationCardProps = {
   application: Application;
@@ -694,6 +620,7 @@ const RenderApplicationCard = ({
       transition={{ duration: 0.3 }}
       className="group"
     >
+      <LogJSON data={{application}} position="bottom-left" />
       <Card
         className="mb-4 cursor-pointer overflow-hidden border-l-4 transition-all duration-200 hover:shadow-md"
         style={{
@@ -740,131 +667,25 @@ const RenderApplicationCard = ({
               {application.type === "rental" && (
                 <div className="space-y-1">
                   <p className="font-medium">
-                    {(application as RentalApplication).businessDetails.name}
+                    TODO: Bussiness Name
+                    {(application as RentalApplication).submittedBy.email}
                   </p>
                   <p className="text-sm text-slate-600">
-                    Unit{" "}
-                    {(application as RentalApplication).unitDetails.unitNumber}{" "}
-                    at{" "}
+                    Unit {(application as RentalApplication).unit.unitNumber} at{" "}
                     {
                       getBuildingByID(
-                        (application as RentalApplication).unitDetails
-                          .buildingId,
+                        (application as RentalApplication).unit.buildingId,
                       )?.name
                     }
                   </p>
                   <p className="text-sm text-slate-500">
-                    {(application as RentalApplication).businessDetails.type} •{" "}
+                    {(application as RentalApplication).unit.type} •{" "}
                     {
-                      (application as RentalApplication).businessDetails
-                        .employees
+                      (application as RentalApplication).leaseDetails
+                        .numberOfEmployees
                     }{" "}
                     employees
                   </p>
-                </div>
-              )}
-
-              {application.type === "maintenance" && (
-                <div className="space-y-1">
-                  <p className="font-medium">
-                    {(application as MaintenanceApplication).issueDetails.title}
-                  </p>
-                  <p className="line-clamp-1 text-sm text-slate-600">
-                    {
-                      (application as MaintenanceApplication).issueDetails
-                        .description
-                    }
-                  </p>
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <span>
-                      {
-                        (application as MaintenanceApplication).issueDetails
-                          .category
-                      }
-                    </span>
-                    <span>•</span>
-                    <span>
-                      {
-                        (application as MaintenanceApplication).issueDetails
-                          .location
-                      }
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {application.type === "provider" && (
-                <div className="space-y-1">
-                  <p className="font-medium">
-                    {
-                      (application as ProviderApplication).providerDetails
-                        .companyName
-                    }
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    {
-                      (application as ProviderApplication).providerDetails
-                        .serviceType
-                    }
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {
-                      (application as ProviderApplication).providerDetails
-                        .yearsInBusiness
-                    }{" "}
-                    years in business •{" "}
-                    {
-                      (application as ProviderApplication).providerDetails
-                        .employeeCount
-                    }{" "}
-                    employees
-                  </p>
-                </div>
-              )}
-
-              {application.type === "service" && (
-                <div className="space-y-1">
-                  <p className="font-medium">
-                    {(application as ServiceApplication).serviceDetails.title}
-                  </p>
-                  <p className="line-clamp-1 text-sm text-slate-600">
-                    {
-                      (application as ServiceApplication).serviceDetails
-                        .description
-                    }
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {
-                      (application as ServiceApplication).serviceDetails
-                        .category
-                    }{" "}
-                    •
-                    {(application as ServiceApplication).serviceDetails.pricing
-                      .type === "fixed"
-                      ? ` Fixed: $${(application as ServiceApplication).serviceDetails.pricing.amount}`
-                      : (application as ServiceApplication).serviceDetails
-                            .pricing.type === "hourly"
-                        ? ` Hourly: $${(application as ServiceApplication).serviceDetails.pricing.amount}/hr`
-                        : " Quote-based"}
-                  </p>
-                </div>
-              )}
-
-              {application.type === "other" && (
-                <div className="space-y-1">
-                  <p className="font-medium">
-                    {(application as OtherApplication).title}
-                  </p>
-                  <p className="line-clamp-1 text-sm text-slate-600">
-                    {(application as OtherApplication).description}
-                  </p>
-                  {(application as OtherApplication).category && (
-                    <p className="text-sm text-slate-500">
-                      {(application as OtherApplication).category} •{" "}
-                      {(application as OtherApplication).requestedAction ||
-                        "No action specified"}
-                    </p>
-                  )}
                 </div>
               )}
             </div>
@@ -915,9 +736,10 @@ type RenderApplicationDetailProps = {
   application: Application;
   showDetailView: boolean;
   setShowDetailView: (show: boolean) => void;
-  onStatusChange: (appID: string, status: ApplicationStatus) => void;
+  onStatusChange: (appID: string, status: APPLICATION_STATUS) => void;
   onDeleteApplication: (appID: string) => void;
 };
+
 // Render application detail view
 const RenderApplicationDetail = ({
   application,
@@ -927,6 +749,8 @@ const RenderApplicationDetail = ({
   onDeleteApplication,
 }: RenderApplicationDetailProps) => {
   if (!application) return null;
+
+  const submittedBy = application.submittedBy as Tenant;
 
   return (
     <Sheet open={showDetailView} onOpenChange={setShowDetailView}>
@@ -939,18 +763,8 @@ const RenderApplicationDetail = ({
               </div>
               <div>
                 <SheetTitle className="text-xl">
-                  {application.type === "rental"
-                    ? `${(application as RentalApplication).businessDetails.name} - Unit ${(application as RentalApplication).unitDetails.unitNumber}`
-                    : application.type === "maintenance"
-                      ? (application as MaintenanceApplication).issueDetails
-                          .title
-                      : application.type === "provider"
-                        ? (application as ProviderApplication).providerDetails
-                            .companyName
-                        : application.type === "service"
-                          ? (application as ServiceApplication).serviceDetails
-                              .title
-                          : (application as OtherApplication).title}
+                  {application.type === "rental" &&
+                    `${submittedBy.businessName} - Unit ${(application as RentalApplication).unit.unitNumber}`}
                 </SheetTitle>
                 <SheetDescription className="flex items-center gap-2">
                   <span>{getApplicationTypeLabel(application.type)}</span>
@@ -995,30 +809,6 @@ const RenderApplicationDetail = ({
                   />
                 )}
 
-                {application.type === "maintenance" && (
-                  <MaintenanceApplicationDetail
-                    application={application as MaintenanceApplication}
-                  />
-                )}
-
-                {application.type === "provider" && (
-                  <ProviderApplicationDetail
-                    application={application as ProviderApplication}
-                  />
-                )}
-
-                {application.type === "service" && (
-                  <ServiceApplicationDetail
-                    application={application as ServiceApplication}
-                  />
-                )}
-
-                {application.type === "other" && (
-                  <OtherApplicationDetail
-                    application={application as OtherApplication}
-                  />
-                )}
-
                 {/* Submission details */}
                 <Card>
                   <CardHeader className="pb-2">
@@ -1059,7 +849,7 @@ const RenderApplicationDetail = ({
                         Submitted On
                       </span>
                       <span className="text-sm">
-                        {formatDateTime(application.submittedAt)}
+                        {formatDateTime(application.createdAt || "")}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -1067,7 +857,7 @@ const RenderApplicationDetail = ({
                         Last Updated
                       </span>
                       <span className="text-sm">
-                        {formatDateTime(application.lastUpdated)}
+                        {formatDateTime(application.updatedAt || "")}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -1144,15 +934,7 @@ const RenderApplicationDetail = ({
                             <FileText className="h-4 w-4" />
                             <span>In Review</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              onStatusChange(application.id, "on_hold")
-                            }
-                            className="flex items-center gap-2"
-                          >
-                            <AlertCircle className="h-4 w-4" />
-                            <span>On Hold</span>
-                          </DropdownMenuItem>
+
                           <DropdownMenuItem
                             onClick={() =>
                               onStatusChange(application.id, "approved")
@@ -1226,690 +1008,4 @@ const RenderApplicationDetail = ({
   );
 };
 
-// ======================================================
-// Application Detail Components
-// ======================================================
-
-/**
- * Rental Application Detail Component
- */
-function RentalApplicationDetail({
-  application,
-}: {
-  application: RentalApplication;
-}) {
-  const building = getBuildingByID(application.unitDetails.buildingId);
-  if (!building) return <p>Building not found.</p>;
-
-  return (
-    <>
-      {/* Business Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <Briefcase className="mr-2 h-4 w-4 text-blue-500" />
-            Business Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Business Name
-              </p>
-              <p>{application.businessDetails.name}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Business Type
-              </p>
-              <p>{application.businessDetails.type}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Employees</p>
-              <p>{application.businessDetails.employees}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Unit Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <Building2 className="mr-2 h-4 w-4 text-blue-500" />
-            Unit Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Building</p>
-              <p>{building.name}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Unit Number</p>
-              <p>{application.unitDetails.unitNumber}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Floor</p>
-              <p>{application.unitDetails.floorNumber}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Monthly Rent</p>
-              <p>${application.unitDetails.monthlyRent.toLocaleString()}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Lease Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <Calendar className="mr-2 h-4 w-4 text-blue-500" />
-            Lease Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Requested Start Date
-              </p>
-              <p>{formatDate(application.leaseDetails.requestedStartDate)}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Requested Duration
-              </p>
-              <p>{application.leaseDetails.requestedDuration} months</p>
-            </div>
-          </div>
-
-          {application.leaseDetails.specialRequirements && (
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Special Requirements
-              </p>
-              <p className="text-sm">
-                {application.leaseDetails.specialRequirements}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Documents */}
-      {application.documents && application.documents.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-base">
-              <FileText className="mr-2 h-4 w-4 text-blue-500" />
-              Documents
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {application.documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center justify-between rounded-md bg-slate-50 p-2"
-                >
-                  <div className="flex items-center">
-                    <div className="flex h-8 w-8 items-center justify-center rounded bg-slate-200 text-xs font-medium">
-                      {doc.type.toUpperCase()}
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium">{doc.name}</p>
-                      <p className="text-xs text-slate-500">
-                        Uploaded {formatDate(doc.uploadedAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </>
-  );
-}
-
-/**
- * Maintenance Application Detail Component
- */
-function MaintenanceApplicationDetail({
-  application,
-}: {
-  application: MaintenanceApplication;
-}) {
-  return (
-    <>
-      {/* Issue Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <Tool className="mr-2 h-4 w-4 text-blue-500" />
-            Issue Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Title</p>
-            <p className="font-medium">{application.issueDetails.title}</p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-slate-500">Description</p>
-            <p>{application.issueDetails.description}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Category</p>
-              <p>{application.issueDetails.category}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Location</p>
-              <p>{application.issueDetails.location}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Reported At</p>
-              <p>{formatDateTime(application.issueDetails.reportedAt)}</p>
-            </div>
-            {application.scheduledFor && (
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Scheduled For
-                </p>
-                <p>{formatDateTime(application.scheduledFor)}</p>
-              </div>
-            )}
-          </div>
-
-          {application.estimatedCost !== undefined && (
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Estimated Cost
-              </p>
-              <p>${application.estimatedCost.toLocaleString()}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Unit Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <Building2 className="mr-2 h-4 w-4 text-blue-500" />
-            Unit Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Building</p>
-              <p>{application.unitDetails.buildingName}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Unit Number</p>
-              <p>{application.unitDetails.unitNumber}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Floor</p>
-              <p>{application.unitDetails.floorNumber}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Images */}
-      {application.images && application.images.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Images</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              {application.images.map((image, index) => (
-                <div key={image.id} className="space-y-1">
-                  <div className="relative aspect-video overflow-hidden rounded-md border border-slate-200">
-                    <Image
-                      src={image.url || "/placeholder.svg"}
-                      alt={image.caption || `Issue image ${index + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  {image.caption && (
-                    <p className="text-xs text-slate-500">{image.caption}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </>
-  );
-}
-
-/**
- * Provider Application Detail Component
- */
-function ProviderApplicationDetail({
-  application,
-}: {
-  application: ProviderApplication;
-}) {
-  return (
-    <>
-      {/* Provider Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <UserCog className="mr-2 h-4 w-4 text-blue-500" />
-            Provider Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Company Name</p>
-              <p>{application.providerDetails.companyName}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Service Type</p>
-              <p>{application.providerDetails.serviceType}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Contact Person
-              </p>
-              <p>{application.providerDetails.contactPerson}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Phone</p>
-              <p>{application.providerDetails.phone}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Email</p>
-              <p>{application.providerDetails.email}</p>
-            </div>
-            {application.providerDetails.website && (
-              <div>
-                <p className="text-sm font-medium text-slate-500">Website</p>
-                <p className="truncate">
-                  <a
-                    href={application.providerDetails.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {application.providerDetails.website}
-                  </a>
-                </p>
-              </div>
-            )}
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Years in Business
-              </p>
-              <p>{application.providerDetails.yearsInBusiness}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Employee Count
-              </p>
-              <p>{application.providerDetails.employeeCount}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Services Offered */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Services Offered</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {application.servicesOffered.map((service, index) => (
-              <Badge key={index} variant="outline" className="bg-slate-50">
-                {service}
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Certifications */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Certifications</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {application.certifications.map((cert) => (
-              <div key={cert.id} className="rounded-md bg-slate-50 p-3">
-                <div className="flex justify-between">
-                  <p className="font-medium">{cert.name}</p>
-                  <Badge variant="outline">
-                    {new Date(cert.expiryDate) > new Date()
-                      ? "Valid"
-                      : "Expired"}
-                  </Badge>
-                </div>
-                <p className="text-sm text-slate-600">
-                  Issued by: {cert.issuedBy}
-                </p>
-                <div className="mt-1 flex items-center justify-between">
-                  <p className="text-sm text-slate-500">
-                    Expires: {formatDate(cert.expiryDate)}
-                  </p>
-                  {cert.verificationUrl && (
-                    <Button variant="link" size="sm" className="h-auto p-0">
-                      Verify
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Insurance Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Insurance Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-slate-500">Provider</p>
-                <p>{application.insuranceDetails.provider}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Policy Number
-                </p>
-                <p>{application.insuranceDetails.policyNumber}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Coverage Amount
-                </p>
-                <p>
-                  $
-                  {application.insuranceDetails.coverageAmount.toLocaleString()}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Expiry Date
-                </p>
-                <p>{formatDate(application.insuranceDetails.expiryDate)}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* References */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">References</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {application.references.map((ref, index) => (
-              <div key={index} className="rounded-md bg-slate-50 p-3">
-                <p className="font-medium">{ref.name}</p>
-                <p className="text-sm text-slate-600">{ref.company}</p>
-                <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-slate-500">{ref.phone}</p>
-                  <p className="text-sm text-slate-500">{ref.email}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </>
-  );
-}
-
-/**
- * Service Application Detail Component
- */
-function ServiceApplicationDetail({
-  application,
-}: {
-  application: ServiceApplication;
-}) {
-  return (
-    <>
-      {/* Service Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <Briefcase className="mr-2 h-4 w-4 text-blue-500" />
-            Service Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Title</p>
-            <p className="font-medium">{application.serviceDetails.title}</p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-slate-500">Description</p>
-            <p>{application.serviceDetails.description}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Category</p>
-              <p>{application.serviceDetails.category}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Pricing Type</p>
-              <p className="capitalize">
-                {application.serviceDetails.pricing.type}
-              </p>
-            </div>
-            {application.serviceDetails.pricing.amount !== undefined && (
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  {application.serviceDetails.pricing.type === "hourly"
-                    ? "Hourly Rate"
-                    : "Fixed Price"}
-                </p>
-                <p>
-                  ${application.serviceDetails.pricing.amount.toLocaleString()}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-slate-500">Availability</p>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {application.serviceDetails.availability.map((day, index) => (
-                <Badge key={index} variant="outline" className="bg-slate-50">
-                  {day}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Provider Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Provider Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Provider Name
-              </p>
-              <p>{application.providerDetails.name}</p>
-            </div>
-            {application.providerDetails.rating !== undefined && (
-              <div>
-                <p className="text-sm font-medium text-slate-500">Rating</p>
-                <div className="flex items-center">
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <svg
-                        key={i}
-                        className={`h-4 w-4 ${
-                          i < Math.floor(application.providerDetails.rating!)
-                            ? "text-yellow-400"
-                            : i < application.providerDetails.rating!
-                              ? "text-yellow-400/50"
-                              : "text-slate-300"
-                        }`}
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <span className="ml-1 text-sm text-slate-600">
-                    {application.providerDetails.rating.toFixed(1)}
-                  </span>
-                </div>
-              </div>
-            )}
-            {application.providerDetails.completedJobs !== undefined && (
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Completed Jobs
-                </p>
-                <p>{application.providerDetails.completedJobs}</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Target Buildings */}
-      {application.targetBuildings &&
-        application.targetBuildings.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Target Buildings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {application.targetBuildings.map((building) => (
-                  <div
-                    key={building.id}
-                    className="flex items-center rounded-md bg-slate-50 p-2"
-                  >
-                    <Building2 className="mr-2 h-4 w-4 text-slate-400" />
-                    <span>{building.name}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-    </>
-  );
-}
-
-/**
- * Other Application Detail Component
- */
-function OtherApplicationDetail({
-  application,
-}: {
-  application: OtherApplication;
-}) {
-  return (
-    <>
-      {/* Request Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <FileText className="mr-2 h-4 w-4 text-blue-500" />
-            Request Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Title</p>
-            <p className="font-medium">{application.title}</p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-slate-500">Description</p>
-            <p>{application.description}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {application.category && (
-              <div>
-                <p className="text-sm font-medium text-slate-500">Category</p>
-                <p>{application.category}</p>
-              </div>
-            )}
-            {application.requestedAction && (
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Requested Action
-                </p>
-                <p>{application.requestedAction}</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Attachments */}
-      {application.attachments && application.attachments.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Attachments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {application.attachments.map((attachment) => (
-                <div
-                  key={attachment.id}
-                  className="flex items-center justify-between rounded-md bg-slate-50 p-2"
-                >
-                  <div className="flex items-center">
-                    <div className="flex h-8 w-8 items-center justify-center rounded bg-slate-200 text-xs font-medium">
-                      {attachment.type.toUpperCase()}
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium">{attachment.name}</p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </>
-  );
-}
+export default ApplicationsPage;

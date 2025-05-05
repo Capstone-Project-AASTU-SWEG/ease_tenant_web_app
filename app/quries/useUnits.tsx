@@ -109,3 +109,32 @@ export const useCreateUnitMutation = () => {
     },
   });
 };
+
+export const useDeleteUnitMutation = () => {
+  return useMutation({
+    mutationKey: ["deleteUnit"],
+    mutationFn: async ({
+      buildingId,
+      unitId,
+    }: {
+      buildingId: string;
+      unitId: string;
+    }) => {
+      try {
+        await axiosClient.delete<APIResponse<null>>(
+          `/units/${buildingId}/${unitId}`,
+        );
+        return null;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while deleting a unit",
+          );
+        }
+        throw new Error("An unexpected error occurred while deleting a unit");
+      }
+    },
+  });
+};

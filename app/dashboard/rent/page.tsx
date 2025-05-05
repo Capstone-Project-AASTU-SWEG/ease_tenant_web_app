@@ -48,7 +48,6 @@ import {
 
 import Image from "next/image";
 
-import { authUser } from "@/app/auth/_hooks/useAuth";
 import PageWrapper from "@/components/custom/page-wrapper";
 import PageHeader from "@/components/custom/page-header";
 import { Group } from "@/components/custom/group";
@@ -61,14 +60,14 @@ import {
   successToast,
   warningToast,
 } from "@/components/custom/toasts";
-import type { RentalApplication, Tenant } from "@/types";
-import { useGetBuildingManager } from "@/app/auth/_hooks/useUser";
+import type { RentalApplication } from "@/types";
 import { useGetBuildingQuery } from "@/app/quries/useBuildings";
 import { cn } from "@/lib/utils";
 import { useCreateRentalApplicationMutation } from "@/app/quries/useApplications";
 import LogJSON from "@/components/custom/log-json";
 import { PageError } from "@/components/custom/page-error";
 import { PageLoader } from "@/components/custom/page-loader";
+import { useVerifyUserQuery } from "@/app/quries/useAuth";
 
 // Define the rental application schema (simplified since user identity is already in the system)
 const rentalApplicationSchema = z.object({
@@ -100,12 +99,12 @@ const RentUnitPage = () => {
   const getBuildingQuery = useGetBuildingQuery(buildingID!);
   const building = getBuildingQuery.data;
   const unit = building?.units.find((unit) => unit.id === unitID);
-  const buildingManager = useGetBuildingManager();
 
   const createRentalApplicationMutation = useCreateRentalApplicationMutation();
 
   // Get current authenticated user
-  const currentUser = authUser() as Tenant;
+  const verifyUserQuery = useVerifyUserQuery();
+  const currentUser = verifyUserQuery.data;
 
   // Form setup
   const form = useForm<RentalApplicationSchema>({
@@ -132,10 +131,17 @@ const RentUnitPage = () => {
   const onSubmit = (data: RentalApplicationSchema) => {
     if (!currentUser) {
       warningToast("Please log in to submit your application.");
+      return;
     }
 
     if (!building || !unit) {
       warningToast("Building or unit not found.");
+      return;
+    }
+
+    const buildingManager = building.managerId;
+    if (!buildingManager) {
+      warningToast("Building manager not found.");
       return;
     }
 
@@ -154,7 +160,7 @@ const RentUnitPage = () => {
       lastUpdated: new Date().toISOString(),
       priority: "high",
       submittedAt: new Date().toISOString(),
-      submittedBy: currentUser,
+      submittedBy: currentUser.user,
       notes: data.additionalNotes,
       type: "rental",
       assignedTo: buildingManager,
@@ -222,7 +228,13 @@ const RentUnitPage = () => {
   }, [createRentalApplicationMutation.isError]);
 
   if (getBuildingQuery.isPending) {
-    return <PageLoader isLoading={getBuildingQuery.isPending}  variant="minimal" loaderVariant="progress" />
+    return (
+      <PageLoader
+        isLoading={getBuildingQuery.isPending}
+        variant="minimal"
+        loaderVariant="progress"
+      />
+    );
   }
 
   if (!building || !unit) {
@@ -240,7 +252,7 @@ const RentUnitPage = () => {
         withBackButton
       />
 
-      <LogJSON data={{ building }} />
+      <LogJSON data={{ building, currentUser }} />
 
       {/* Main Content */}
       <main className="mt-4">
@@ -745,7 +757,7 @@ const RentUnitPage = () => {
                                     Business Name
                                   </p>
                                   <p className="font-medium">
-                                    {currentUser?.businessName ||
+                                    {currentUser?.tenant?.businessName ||
                                       "Not provided"}
                                   </p>
                                 </div>
@@ -754,7 +766,7 @@ const RentUnitPage = () => {
                                     Business Type
                                   </p>
                                   <p className="font-medium">
-                                    {currentUser?.businessType ||
+                                    {currentUser?.tenant?.businessType ||
                                       "Not provided"}
                                   </p>
                                 </div>
@@ -763,8 +775,8 @@ const RentUnitPage = () => {
                                     Contact Name
                                   </p>
                                   <p className="font-medium">
-                                    {currentUser?.firstName}{" "}
-                                    {currentUser?.lastName}
+                                    {currentUser?.user?.firstName}{" "}
+                                    {currentUser?.user?.lastName}
                                   </p>
                                 </div>
                                 <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
@@ -772,7 +784,7 @@ const RentUnitPage = () => {
                                     Contact Email
                                   </p>
                                   <p className="font-medium">
-                                    {currentUser?.email}
+                                    {currentUser?.user?.email}
                                   </p>
                                 </div>
                               </div>

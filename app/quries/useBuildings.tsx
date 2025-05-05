@@ -1,7 +1,7 @@
 "use client";
 
 import axiosClient from "@/lib/axios-client";
-import { APIResponse, Building } from "@/types";
+import { APIResponse, Building, CommonUserData, Manager } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect } from "react";
@@ -28,7 +28,6 @@ export const useGetAllBuildingsQuery = () => {
         const buildings = response.data.data;
         const refinedBuildings = buildings?.map((building) => ({
           ...building,
-          id: building._id,
         }));
         return refinedBuildings;
       } catch (error) {
@@ -43,6 +42,14 @@ export const useGetAllBuildingsQuery = () => {
   });
 };
 
+export type BuildingDetail = BuildingWithStat & {
+  units: UnitWithId[];
+  managerId:
+    | ({
+        userId: CommonUserData;
+      } & Manager)
+    | null;
+};
 export const useGetBuildingQuery = (id?: string) => {
   const query = useQuery({
     queryKey: ["getBuilding", id],
@@ -51,9 +58,9 @@ export const useGetBuildingQuery = (id?: string) => {
         if (!id) {
           throw new Error("Building ID is required");
         }
-        const response = await axiosClient.get<
-          APIResponse<BuildingWithStat & { units: UnitWithId[] }>
-        >(`/buildings/${id}`);
+        const response = await axiosClient.get<APIResponse<BuildingDetail>>(
+          `/buildings/${id}`,
+        );
         const building = response.data.data;
         if (!building) {
           throw new Error("Building not found");

@@ -51,13 +51,13 @@ import SearchInput from "@/components/custom/search-input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useGetBuildingQuery } from "@/app/quries/useBuildings";
-import type { UnitWithId } from "@/app/quries/useUnits";
+import { useDeleteUnitMutation, type UnitWithId } from "@/app/quries/useUnits";
 import {
   UnitDetailsSheet,
   type UnitAction,
 } from "@/components/custom/unit-details-sheet";
 import LogJSON from "@/components/custom/log-json";
-import { warningToast } from "@/components/custom/toasts";
+import { errorToast, warningToast } from "@/components/custom/toasts";
 
 const FloorPlan = ({ buildingID }: { buildingID: string }) => {
   const isAdmin = true;
@@ -77,6 +77,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
 
   const building = getBuildingQuery.data;
   const units = building?.units || [];
+  const deleteUnitMutation = useDeleteUnitMutation();
 
   // DEBUG: Log when building or floor changes
   useEffect(() => {
@@ -125,7 +126,20 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
       {
         icon: <Trash className="h-4 w-4" />,
         label: "Delete",
-        onClick: () => console.log("Delete clicked"),
+        onClick: async () => {
+          const unitId = selectedUnit?.id;
+          if (!unitId) {
+            errorToast("Unit Id not found to delete a unit.");
+            return;
+          }
+
+          await deleteUnitMutation.mutateAsync({
+            unitId,
+            buildingId: buildingID,
+          });
+          setIsUnitDetailsDrawerOpen(false);
+          setSelectedUnit(null);
+        },
         variant: "destructive" as const,
       },
     ];

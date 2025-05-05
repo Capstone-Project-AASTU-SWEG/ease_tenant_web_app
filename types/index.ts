@@ -344,12 +344,14 @@ export interface BaseApplication {
   id: string;
   type: APPLICATION_TYPE;
   status: APPLICATION_STATUS;
-  submittedAt: string;
   submittedBy: User;
   priority: PRIORITY_LEVEL;
-  lastUpdated: string;
   notes?: string;
   assignedTo: User;
+  submittedAt: string;
+  lastUpdated: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**

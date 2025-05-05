@@ -42,7 +42,7 @@ const managerFormSchema = z
     phone: z
       .string()
       .min(10, { message: "Please enter a valid phone number." }),
-    assignedBuildingId: z.string().optional(),
+    assignedBuilding: z.string().optional(),
     employmentDate: z.date().optional(),
     salary: z.coerce.number().min(0).optional(),
     password: z
@@ -65,7 +65,7 @@ export default function ManagerSignup() {
       phone: "",
       password: "",
       confirmPassword: "",
-      assignedBuildingId: "",
+      assignedBuilding: "",
       salary: 0,
       employmentDate: new Date(),
     },
@@ -86,7 +86,7 @@ export default function ManagerSignup() {
       email: values.email,
       password: values.password,
       phone: values.phone,
-      assignedBuildingId: values.assignedBuildingId,
+      assignedBuilding: values.assignedBuilding,
       employmentDate: values.employmentDate,
       ...optional,
     });
@@ -139,6 +139,9 @@ export default function ManagerSignup() {
                 })) || []
               }
               label="Select Building"
+              onChange={(data) => {
+                form.setValue("assignedBuilding", data.at(0)?.value);
+              }}
             />
 
             <Group align={"start"} className="grid sm:grid-cols-2">

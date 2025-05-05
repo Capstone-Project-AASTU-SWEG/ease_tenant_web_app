@@ -17,7 +17,7 @@ export const useGetApplicationsOfBuildingQuery = (buildingId: string) => {
       try {
         const response = await axiosClient.get<
           APIResponse<ApplicationWithId[]>
-        >(`/buildings/${buildingId}`);
+        >(`/applications`);
         const applications = response.data.data;
 
         return applications;
