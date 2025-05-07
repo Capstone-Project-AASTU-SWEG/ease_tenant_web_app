@@ -1,19 +1,23 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RentalApplication, Tenant } from "@/types";
-import {
-  Briefcase,
-  Building2,
-  Calendar,
-  FileText,
-  Download,
-} from "lucide-react";
+"use client"
 
-import { formatDateTime } from "../_utils";
-import { Button } from "@/components/ui/button";
-import { useGetBuildingQuery } from "@/app/quries/useBuildings";
-import { Loader } from "@/components/custom/loader";
-import { Center } from "@/components/custom/center";
-import LogJSON from "@/components/custom/log-json";
+import { useState } from "react"
+import { Briefcase, Building2, Calendar, FileText, Download, Users, DollarSign, MapPin, ClipboardList, ChevronRight } from 'lucide-react'
+import { motion } from "framer-motion"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { RentalApplication, Tenant } from "@/types"
+import { formatDateTime } from "../_utils"
+import { useGetBuildingQuery } from "@/app/quries/useBuildings"
+import { Loader } from "@/components/custom/loader"
+import { Center } from "@/components/custom/center"
+
+const fadeIn = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+}
 
 /**
  * Rental Application Detail Component
@@ -23,158 +27,219 @@ export function RentalApplicationDetail({
 }: {
   application: RentalApplication;
 }) {
-  const getBuildingQuery = useGetBuildingQuery("6817cf0d67320596899e2d34");
-  const building = getBuildingQuery.data;
-  const submittedBy = application.submittedBy as Tenant;
+  const [activeTab, setActiveTab] = useState("details")
+  const getBuildingQuery = useGetBuildingQuery("6817cf0d67320596899e2d34")
+  const building = getBuildingQuery.data
+  const submittedBy = application.submittedBy as Tenant
 
   if (getBuildingQuery.isLoading) {
     return (
       <Center className="h-[4rem]">
-        <Loader variant="dots" />;
+        <Loader variant="dots" />
       </Center>
-    );
+    )
   }
 
   return (
-    <>
-      {/* Business Details */}
-      <LogJSON data={{ building, submittedBy }} />
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <Briefcase className="mr-2 h-4 w-4 text-blue-500" />
-            Business Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Business Name
-              </p>
-              <p>{submittedBy.businessName}</p>
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={fadeIn}
+      className="space-y-6"
+    >
+      {/* Application Summary */}
+      <div className="rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+              <Building2 className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">
-                Business Type
-              </p>
-              <p>{submittedBy.businessType}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Employees</p>
-              <p>{application.leaseDetails.numberOfEmployees}</p>
+              <h2 className="text-xl font-semibold text-slate-900">{submittedBy.businessName}</h2>
+              <p className="text-sm text-slate-500">{submittedBy.businessType}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Unit Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <Building2 className="mr-2 h-4 w-4 text-blue-500" />
-            Unit Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Building</p>
-              <p>{building?.name}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Unit Number</p>
-              <p>{application.unit.unitNumber}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Floor</p>
-              <p>{application.unit.floorNumber}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Monthly Rent</p>
-              <p>${application.unit.monthlyRent.toLocaleString()}</p>
-            </div>
+          <Badge variant="outline" className="bg-blue-50 px-3 py-1 text-blue-700">
+            ${application.unit.monthlyRent.toLocaleString()}/month
+          </Badge>
+        </div>
+        
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-slate-400" />
+            <span className="text-sm">
+              Unit {application.unit.unitNumber}, Floor {application.unit.floorNumber}
+            </span>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Lease Details */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-base">
-            <Calendar className="mr-2 h-4 w-4 text-blue-500" />
-            Lease Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Requested Start Date
-              </p>
-              <p>
-                {formatDateTime(
-                  application.leaseDetails.requestedStartDate.toLocaleString(),
-                )}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Requested Duration
-              </p>
-              <p>{application.leaseDetails.requestedDuration} months</p>
-            </div>
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-slate-400" />
+            <span className="text-sm">{application.leaseDetails.numberOfEmployees} Employees</span>
           </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-slate-400" />
+            <span className="text-sm">{application.leaseDetails.requestedDuration} Month Lease</span>
+          </div>
+        </div>
+      </div>
 
-          {application.leaseDetails.specialRequirements && (
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Special Requirements
-              </p>
-              <p className="text-sm">
-                {application.leaseDetails.specialRequirements}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 bg-slate-50">
+          <TabsTrigger value="details" className="data-[state=active]:bg-white">
+            <ClipboardList className="mr-2 h-4 w-4" />
+            Details
+          </TabsTrigger>
+          <TabsTrigger value="business" className="data-[state=active]:bg-white">
+            <Briefcase className="mr-2 h-4 w-4" />
+            Business
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="data-[state=active]:bg-white">
+            <FileText className="mr-2 h-4 w-4" />
+            Documents
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Documents */}
-      {application.documents && application.documents.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-base">
-              <FileText className="mr-2 h-4 w-4 text-blue-500" />
-              Documents
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {application.documents.map((doc) => (
-                <div
-                  key={doc.name}
-                  className="flex items-center justify-between rounded-md bg-slate-50 p-2"
-                >
-                  <div className="flex items-center">
-                    <div className="flex h-8 w-8 items-center justify-center rounded bg-slate-200 text-xs font-medium">
-                      {doc.type.toUpperCase()}
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium">{doc.name}</p>
-                      {/* <p className="text-xs text-slate-500">
-                        Uploaded {formatDate(doc.uploadedAt)}
-                      </p> */}
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <Download className="h-4 w-4" />
-                  </Button>
+        {/* Details Tab */}
+        <TabsContent value="details" className="mt-6 space-y-6">
+          {/* Unit Details */}
+          <Card className="overflow-hidden border-none bg-white shadow-sm">
+            <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
+              <CardTitle className="flex items-center text-base font-medium">
+                <Building2 className="mr-2 h-4 w-4 text-blue-500" />
+                Unit Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-sm font-medium text-slate-500">Building</p>
+                  <p className="font-medium text-slate-900">{building?.name}</p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </>
-  );
+                <div>
+                  <p className="mb-1 text-sm font-medium text-slate-500">Unit Number</p>
+                  <p className="font-medium text-slate-900">{application.unit.unitNumber}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium text-slate-500">Floor</p>
+                  <p className="font-medium text-slate-900">{application.unit.floorNumber}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium text-slate-500">Monthly Rent</p>
+                  <p className="font-medium text-slate-900">${application.unit.monthlyRent.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lease Details */}
+          <Card className="overflow-hidden border-none bg-white shadow-sm">
+            <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
+              <CardTitle className="flex items-center text-base font-medium">
+                <Calendar className="mr-2 h-4 w-4 text-blue-500" />
+                Lease Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-sm font-medium text-slate-500">Requested Start Date</p>
+                  <p className="font-medium text-slate-900">
+                    {formatDateTime(application.leaseDetails.requestedStartDate.toLocaleString())}
+                  </p>
+                </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium text-slate-500">Requested Duration</p>
+                  <p className="font-medium text-slate-900">{application.leaseDetails.requestedDuration} months</p>
+                </div>
+              </div>
+
+              {application.leaseDetails.specialRequirements && (
+                <div className="mt-6">
+                  <p className="mb-1 text-sm font-medium text-slate-500">Special Requirements</p>
+                  <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
+                    {application.leaseDetails.specialRequirements}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Business Tab */}
+        <TabsContent value="business" className="mt-6">
+          <Card className="overflow-hidden border-none bg-white shadow-sm">
+            <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
+              <CardTitle className="flex items-center text-base font-medium">
+                <Briefcase className="mr-2 h-4 w-4 text-blue-500" />
+                Business Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-sm font-medium text-slate-500">Business Name</p>
+                  <p className="font-medium text-slate-900">{submittedBy.businessName}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium text-slate-500">Business Type</p>
+                  <p className="font-medium text-slate-900">{submittedBy.businessType}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium text-slate-500">Employees</p>
+                  <p className="font-medium text-slate-900">{application.leaseDetails.numberOfEmployees}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium text-slate-500">Contact Email</p>
+                  <p className="font-medium text-slate-900">{submittedBy.email || "N/A"}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Documents Tab */}
+        <TabsContent value="documents" className="mt-6">
+          <Card className="overflow-hidden border-none bg-white shadow-sm">
+            <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
+              <CardTitle className="flex items-center text-base font-medium">
+                <FileText className="mr-2 h-4 w-4 text-blue-500" />
+                Documents
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {application.documents && application.documents.length > 0 ? (
+                <div className="space-y-3">
+                  {application.documents.map((doc) => (
+                    <div
+                      key={doc.name}
+                      className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-3 transition-colors hover:bg-slate-100"
+                    >
+                      <div className="flex items-center">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-blue-100 text-blue-700">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-slate-900">{doc.name}</p>
+                          <p className="text-xs text-slate-500">{doc.type.toUpperCase()}</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full p-0">
+                        <Download className="h-4 w-4" />
+                        <span className="sr-only">Download</span>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-center">
+                  <FileText className="mb-2 h-8 w-8 text-slate-300" />
+                  <p className="text-sm text-slate-500">No documents available</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </motion.div>
+  )
 }

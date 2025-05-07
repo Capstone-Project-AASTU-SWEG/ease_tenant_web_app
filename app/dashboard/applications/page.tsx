@@ -16,13 +16,23 @@ import {
   Trash2,
   MessageSquare,
   Check,
+  Home,
+  Building,
+  Wrench,
+  Briefcase,
+  MoreHorizontal,
+  Calendar,
+  AlertTriangle,
+  ArrowLeft,
+  User,
+  Mail,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,19 +42,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import PageWrapper from "@/components/custom/page-wrapper";
 import SearchInput from "@/components/custom/search-input";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   Application,
   APPLICATION_STATUS,
@@ -52,6 +55,7 @@ import {
   PRIORITY_LEVEL,
   RentalApplication,
   Tenant,
+  WithTimestampsStr,
 } from "@/types";
 import {
   formatDateTime,
@@ -68,17 +72,57 @@ import {
   updateApplicationStatus,
 } from "../buildings/_hooks/useApplications";
 import { getBuildingByID } from "../buildings/_hooks/useBuildings";
-import { Group } from "@/components/custom/group";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
 import { RentalApplicationDetail } from "./_components/rental-application-detail";
 import PageHeader from "@/components/custom/page-header";
 import { useGetApplicationsOfBuildingQuery } from "@/app/quries/useApplications";
 import LogJSON from "@/components/custom/log-json";
+import Stat from "@/components/custom/stat";
+import {
+  CustomTabs,
+  CustomTabsList,
+  TabItem,
+} from "@/components/custom/custom-tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const tabs: TabItem[] = [
+  {
+    value: "all",
+    label: "All",
+    icon: Home,
+    // badge: showBadges ? 42 : undefined,
+  },
+  {
+    value: "rental",
+    label: "Rental",
+    icon: Building,
+    // badge: showBadges ? 16 : undefined,
+  },
+  {
+    value: "maintenance",
+    label: "Maintenance",
+    icon: Wrench,
+    // badge: showBadges ? 8 : undefined,
+  },
+  {
+    value: "provider",
+    label: "Provider",
+    icon: Users,
+    // badge: showBadges ? 12 : undefined,
+  },
+  {
+    value: "service",
+    label: "Service",
+    icon: Briefcase,
+    // badge: showBadges ? 5 : undefined,
+  },
+  {
+    value: "other",
+    label: "Other",
+    icon: MoreHorizontal,
+    // badge: showBadges ? 1 : undefined,
+  },
+];
 
 const ApplicationsPage = () => {
   // State for applications data
@@ -98,8 +142,9 @@ const ApplicationsPage = () => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // State for selected application and detail view
-  const [selectedApplication, setSelectedApplication] =
-    useState<Application | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<
+    (Application & WithTimestampsStr) | null
+  >(null);
   const [showDetailView, setShowDetailView] = useState(false);
 
   // Filter and sort applications based on current filters
@@ -203,7 +248,9 @@ const ApplicationsPage = () => {
   }, [applications]);
 
   // Handle application selection
-  const handleSelectApplication = (application: Application) => {
+  const handleSelectApplication = (
+    application: Application & WithTimestampsStr,
+  ) => {
     setSelectedApplication(application);
     setShowDetailView(true);
   };
@@ -242,120 +289,58 @@ const ApplicationsPage = () => {
       <main className="mt-4">
         {/* Stats Cards */}
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="bg-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Total Applications
-                  </p>
-                  <p className="text-3xl font-bold">{stats.total}</p>
-                </div>
-                <div className="rounded-full bg-blue-100 p-3">
-                  <FileText className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Pending Review</span>
-                  <span className="font-medium">
-                    {stats.pending + stats.inReview}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Total Applications */}
+          <Stat
+            icon={FileText}
+            iconColor="text-blue-600"
+            iconBg="bg-blue-100"
+            title="Total Applications"
+            value={stats.total.toString()}
+            moreInfo={`${stats.pending + stats.inReview} Pending Review`}
+          />
 
-          <Card className="bg-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Approved</p>
-                  <p className="text-3xl font-bold">{stats.approved}</p>
-                </div>
-                <div className="rounded-full bg-green-100 p-3">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Approval Rate</span>
-                  <span className="font-medium">
-                    {stats.total
-                      ? Math.round((stats.approved / stats.total) * 100)
-                      : 0}
-                    %
-                  </span>
-                </div>
-                <Progress
-                  value={stats.total ? (stats.approved / stats.total) * 100 : 0}
-                  className="mt-2 h-1"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Approved */}
+          <Stat
+            icon={CheckCircle}
+            iconColor="text-green-600"
+            iconBg="bg-green-100"
+            title="Approved"
+            value={stats.approved.toString()}
+            progressValue={
+              stats.total ? (stats.approved / stats.total) * 100 : 0
+            }
+            progressLabel="Approval Rate"
+            progressSuffix="%"
+            showProgress
+          />
 
-          <Card className="bg-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Urgent</p>
-                  <p className="text-3xl font-bold">{stats.urgent}</p>
-                </div>
-                <div className="rounded-full bg-red-100 p-3">
-                  <AlertCircle className="h-6 w-6 text-red-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Of Total</span>
-                  <span className="font-medium">
-                    {stats.total
-                      ? Math.round((stats.urgent / stats.total) * 100)
-                      : 0}
-                    %
-                  </span>
-                </div>
-                <Progress
-                  value={stats.total ? (stats.urgent / stats.total) * 100 : 0}
-                  className="mt-2 h-1"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Urgent */}
+          <Stat
+            icon={AlertCircle}
+            iconColor="text-red-600"
+            iconBg="bg-red-100"
+            title="Urgent"
+            value={stats.urgent.toString()}
+            progressValue={stats.total ? (stats.urgent / stats.total) * 100 : 0}
+            progressLabel="Of Total"
+            progressSuffix="%"
+            showProgress
+          />
 
-          <Card className="bg-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Unassigned
-                  </p>
-                  <p className="text-3xl font-bold">{stats.unassigned}</p>
-                </div>
-                <div className="rounded-full bg-amber-100 p-3">
-                  <Users className="h-6 w-6 text-amber-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Needs Assignment</span>
-                  <span className="font-medium">
-                    {stats.total
-                      ? Math.round((stats.unassigned / stats.total) * 100)
-                      : 0}
-                    %
-                  </span>
-                </div>
-                <Progress
-                  value={
-                    stats.total ? (stats.unassigned / stats.total) * 100 : 0
-                  }
-                  className="mt-2 h-1"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Unassigned */}
+          <Stat
+            icon={Users}
+            iconColor="text-amber-600"
+            iconBg="bg-amber-100"
+            title="Unassigned"
+            value={stats.unassigned.toString()}
+            progressValue={
+              stats.total ? (stats.unassigned / stats.total) * 100 : 0
+            }
+            progressLabel="Needs Assignment"
+            progressSuffix="%"
+            showProgress
+          />
         </div>
 
         {/* Filters and Search */}
@@ -500,32 +485,14 @@ const ApplicationsPage = () => {
             </div>
           </div>
 
-          <Tabs
-            defaultValue="all"
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(value as APPLICATION_TYPE)}
-          >
-            <TabsList>
-              <TabsTrigger className="px-6" value="all">
-                All
-              </TabsTrigger>
-              <TabsTrigger className="px-6" value="rental">
-                Rental
-              </TabsTrigger>
-              <TabsTrigger className="px-6" value="maintenance">
-                Maintenance
-              </TabsTrigger>
-              <TabsTrigger className="px-6" value="provider">
-                Provider
-              </TabsTrigger>
-              <TabsTrigger className="px-6" value="service">
-                Service
-              </TabsTrigger>
-              <TabsTrigger className="px-6" value="other">
-                Other
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <CustomTabs variant={"outline"}>
+            <CustomTabsList
+              items={tabs}
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as APPLICATION_TYPE)}
+              fullWidth={false}
+            />
+          </CustomTabs>
         </div>
 
         {/* Applications List */}
@@ -603,8 +570,8 @@ const ApplicationsPage = () => {
 };
 
 type RenderApplicationCardProps = {
-  application: Application;
-  onSelectApplication: (application: Application) => void;
+  application: Application & WithTimestampsStr;
+  onSelectApplication: (application: Application & WithTimestampsStr) => void;
 };
 
 // Render application card based on type
@@ -620,7 +587,6 @@ const RenderApplicationCard = ({
       transition={{ duration: 0.3 }}
       className="group"
     >
-      <LogJSON data={{application}} position="bottom-left" />
       <Card
         className="mb-4 cursor-pointer overflow-hidden border-l-4 transition-all duration-200 hover:shadow-md"
         style={{
@@ -713,6 +679,7 @@ const RenderApplicationCard = ({
                   {application.submittedBy?.lastName}
                 </span>
               </div>
+
               <div className="flex items-center space-x-3">
                 <Badge
                   className={`${getPriorityColor(application.priority)} text-xs`}
@@ -721,7 +688,7 @@ const RenderApplicationCard = ({
                     application.priority.slice(1)}
                 </Badge>
                 <span className="text-slate-500">
-                  {timeElapsed(application.submittedAt)}
+                  {timeElapsed(application.createdAt)}
                 </span>
               </div>
             </div>
@@ -733,7 +700,7 @@ const RenderApplicationCard = ({
 };
 
 type RenderApplicationDetailProps = {
-  application: Application;
+  application: Application & WithTimestampsStr;
   showDetailView: boolean;
   setShowDetailView: (show: boolean) => void;
   onStatusChange: (appID: string, status: APPLICATION_STATUS) => void;
@@ -748,263 +715,418 @@ const RenderApplicationDetail = ({
   onStatusChange,
   onDeleteApplication,
 }: RenderApplicationDetailProps) => {
+  const [activeTab, setActiveTab] = useState("details");
+
   if (!application) return null;
 
   const submittedBy = application.submittedBy as Tenant;
 
+  // Animation variants
+  const fadeIn = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.3 } },
+  };
+
   return (
-    <Sheet open={showDetailView} onOpenChange={setShowDetailView}>
-      <SheetContent className="max-h-screen w-full max-w-4xl overflow-y-auto p-0 sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
-        <SheetHeader className="px-6 pb-2 pt-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="rounded-full bg-slate-100 p-2">
-                {getApplicationTypeIcon(application.type)}
-              </div>
-              <div>
-                <SheetTitle className="text-xl">
-                  {application.type === "rental" &&
-                    `${submittedBy.businessName} - Unit ${(application as RentalApplication).unit.unitNumber}`}
-                </SheetTitle>
-                <SheetDescription className="flex items-center gap-2">
-                  <span>{getApplicationTypeLabel(application.type)}</span>
-                  <span>•</span>
-                  <span>ID: {application.id}</span>
-                </SheetDescription>
-              </div>
-            </div>
-            <Group spacing="md">
-              <Badge className={`${getStatusColor(application.status)}`}>
-                <span className="flex items-center gap-1">
-                  {getStatusIcon(application.status)}
-                  <span>{formatStatusLabel(application.status)}</span>
-                </span>
-              </Badge>
-              <Badge className={`${getPriorityColor(application.priority)}`}>
-                {application.priority.charAt(0).toUpperCase() +
-                  application.priority.slice(1)}
-              </Badge>
+    <AnimatePresence>
+      {showDetailView && (
+        <Sheet open={showDetailView} onOpenChange={setShowDetailView}>
+          <SheetContent
+            side="right"
+            className="max-h-screen w-full max-w-4xl overflow-hidden p-0 sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
+          >
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              variants={fadeIn}
+              className="flex h-full flex-col"
+            >
+              {/* Header */}
+              <div className="sticky top-0 z-10 border-b bg-white px-6 py-4 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowDetailView(false)}
+                    className="h-8 w-8 rounded-full"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="sr-only">Back</span>
+                  </Button>
 
-              {/* TODO: Add closeing button here */}
-              <Button
-                variant="ghost"
-                className="flex size-8 items-center justify-center rounded-full hover:bg-slate-100"
-                onClick={() => setShowDetailView(false)}
-              >
-                <XCircle className="h-5 w-5 text-slate-500" />
-              </Button>
-            </Group>
-          </div>
-        </SheetHeader>
-
-        <ScrollArea className="">
-          <div className="px-6 py-4">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              {/* Left column - Application details */}
-              <div className="space-y-6 md:col-span-2">
-                {/* Application specific content */}
-                {application.type === "rental" && (
-                  <RentalApplicationDetail
-                    application={application as RentalApplication}
-                  />
-                )}
-
-                {/* Submission details */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">
-                      Submission Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-500">
-                        Submitted By
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      className={`${getStatusColor(application.status)} px-2 py-1`}
+                    >
+                      <span className="flex items-center gap-1">
+                        {getStatusIcon(application.status)}
+                        <span>{formatStatusLabel(application.status)}</span>
                       </span>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage
-                            src={application.submittedBy.firstName}
-                            alt={application.submittedBy.firstName}
-                          />
-                          <AvatarFallback className="text-xs">
-                            {(
-                              application.submittedBy.firstName +
-                              " " +
-                              application.submittedBy.lastName
-                            )
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm">
-                          {application.submittedBy.firstName}{" "}
-                          {application.submittedBy.lastName}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-500">
-                        Submitted On
+                    </Badge>
+                    <Badge
+                      className={`${getPriorityColor(application.priority)} px-2 py-1`}
+                    >
+                      {application.priority.charAt(0).toUpperCase() +
+                        application.priority.slice(1)}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                    {getApplicationTypeIcon(application.type)}
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-semibold text-slate-900">
+                      {application.type === "rental" &&
+                        `${submittedBy.businessName} - Unit ${(application as RentalApplication).unit.unitNumber}`}
+                    </h2>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <FileText className="h-3.5 w-3.5" />
+                        {getApplicationTypeLabel(application.type)}
                       </span>
-                      <span className="text-sm">
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5" />
                         {formatDateTime(application.createdAt || "")}
                       </span>
+                      <span>•</span>
+                      <span>ID: {application.id}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-500">
-                        Last Updated
-                      </span>
-                      <span className="text-sm">
-                        {formatDateTime(application.updatedAt || "")}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-500">Email</span>
-                      <span className="text-sm">
-                        {application.submittedBy.email}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
-                {/* Notes section */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Notes</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {application.notes ? (
-                      <p className="text-sm text-slate-600">
-                        {application.notes}
-                      </p>
-                    ) : (
-                      <p className="text-sm italic text-slate-500">
-                        No notes available
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+                <Tabs
+                  value={activeTab}
+                  onValueChange={setActiveTab}
+                  className="mt-6"
+                >
+                  <CustomTabs variant={"pills"}>
+                    <CustomTabsList
+                      items={[
+                        { label: "Details", value: "details" },
+                        { label: "Submission", value: "submission" },
+                        { label: "Actions", value: "actions" },
+                      ]}
+                      defaultValue={"details"}
+                      value={activeTab}
+                      onValueChange={(value) => {
+                        setActiveTab(
+                          value as "details" | "submission" | "actions",
+                        );
+                      }}
+                    />
+                  </CustomTabs>
+                  {/* Content */}
+                  <ScrollArea className="h-[35rem] flex-1">
+                    <div className="py-4">
+                      <TabsContent value="details" className="m-0">
+                        {/* Application specific content */}
+                        {application.type === "rental" && (
+                          <div className="space-y-6">
+                            <RentalApplicationDetail
+                              application={application as RentalApplication}
+                            />
+                          </div>
+                        )}
+
+                        {/* Notes section */}
+                        <Card className="mt-6 border-none shadow-sm">
+                          <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
+                            <CardTitle className="text-base font-medium">
+                              Notes
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4">
+                            {application.notes ? (
+                              <p className="text-sm text-slate-600">
+                                {application.notes}
+                              </p>
+                            ) : (
+                              <div className="flex h-20 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-center">
+                                <p className="text-sm text-slate-500">
+                                  No notes available
+                                </p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="submission" className="m-0 space-y-6">
+                        {/* Applicant Information */}
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
+                            <CardTitle className="flex items-center text-base font-medium">
+                              <User className="mr-2 h-4 w-4 text-blue-500" />
+                              Applicant Information
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-4">
+                              <Avatar className="h-16 w-16 border">
+                                <AvatarImage
+                                  src={`https://avatar.vercel.sh/${submittedBy.email}`}
+                                  alt={submittedBy.firstName}
+                                />
+                                <AvatarFallback className="text-lg">
+                                  {(
+                                    submittedBy.firstName +
+                                    " " +
+                                    submittedBy.lastName
+                                  )
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h3 className="text-lg font-medium">
+                                  {submittedBy.firstName} {submittedBy.lastName}
+                                </h3>
+                                <div className="mt-1 flex flex-col gap-1 text-sm text-slate-500">
+                                  <span className="flex items-center gap-2">
+                                    <Mail className="h-3.5 w-3.5" />
+                                    {submittedBy.email}
+                                  </span>
+                                  {submittedBy.businessName && (
+                                    <span className="flex items-center gap-2">
+                                      <Building className="h-3.5 w-3.5" />
+                                      {submittedBy.businessName}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Submission Timeline */}
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
+                            <CardTitle className="flex items-center text-base font-medium">
+                              <Calendar className="mr-2 h-4 w-4 text-blue-500" />
+                              Submission Timeline
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4">
+                            <div className="space-y-4">
+                              <div className="flex items-start gap-3">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                  <FileText className="h-3 w-3" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-medium">
+                                      Application Submitted
+                                    </p>
+                                    <Badge
+                                      variant="outline"
+                                      className="font-normal"
+                                    >
+                                      {formatDateTime(
+                                        application.createdAt || "",
+                                      )}
+                                    </Badge>
+                                  </div>
+                                  <p className="mt-1 text-sm text-slate-500">
+                                    {submittedBy.firstName}{" "}
+                                    {submittedBy.lastName} submitted this
+                                    application
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                                  <Clock className="h-3 w-3" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-medium">Last Updated</p>
+                                    <Badge
+                                      variant="outline"
+                                      className="font-normal"
+                                    >
+                                      {formatDateTime(
+                                        application.updatedAt || "",
+                                      )}
+                                    </Badge>
+                                  </div>
+                                  <p className="mt-1 text-sm text-slate-500">
+                                    Application status was updated to{" "}
+                                    {formatStatusLabel(application.status)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+
+                      <TabsContent value="actions" className="m-0 space-y-6">
+                        {/* Status Management */}
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
+                            <CardTitle className="flex items-center text-base font-medium">
+                              <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
+                              Status Management
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4 p-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="status">Current Status</Label>
+                              <div
+                                className={`flex items-center gap-2 rounded-md border p-3 ${getStatusColor(application.status)}`}
+                              >
+                                {getStatusIcon(application.status)}
+                                <span className="font-medium">
+                                  {formatStatusLabel(application.status)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Change Status</Label>
+                              <div className="grid grid-cols-2 gap-3">
+                                <Button
+                                  variant="outline"
+                                  className="justify-start gap-2 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800"
+                                  onClick={() =>
+                                    onStatusChange(application.id, "pending")
+                                  }
+                                >
+                                  <Clock className="h-4 w-4" />
+                                  <span>Pending</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="justify-start gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+                                  onClick={() =>
+                                    onStatusChange(application.id, "in_review")
+                                  }
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  <span>In Review</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="justify-start gap-2 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
+                                  onClick={() =>
+                                    onStatusChange(application.id, "approved")
+                                  }
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span>Approved</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="justify-start gap-2 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
+                                  onClick={() =>
+                                    onStatusChange(application.id, "rejected")
+                                  }
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                  <span>Rejected</span>
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Quick Actions */}
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
+                            <CardTitle className="flex items-center text-base font-medium">
+                              <MessageSquare className="mr-2 h-4 w-4 text-blue-500" />
+                              Quick Actions
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <Button className="justify-start gap-2">
+                                <MessageSquare className="h-4 w-4" />
+                                <span>Contact Applicant</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="justify-start gap-2"
+                              >
+                                <FileText className="h-4 w-4" />
+                                <span>Generate Report</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="justify-start gap-2"
+                              >
+                                <Calendar className="h-4 w-4" />
+                                <span>Schedule Meeting</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="justify-start gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      "Are you sure you want to delete this application? This action cannot be undone.",
+                                    )
+                                  ) {
+                                    onDeleteApplication(application.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span>Delete Application</span>
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Danger Zone */}
+                        <Card className="border-none shadow-sm">
+                          <CardHeader className="border-b bg-red-50 pb-3 pt-3">
+                            <CardTitle className="flex items-center text-base font-medium text-red-700">
+                              <AlertTriangle className="mr-2 h-4 w-4" />
+                              Danger Zone
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="bg-red-50 p-4">
+                            <p className="mb-4 text-sm text-red-700">
+                              These actions are destructive and cannot be
+                              undone. Please proceed with caution.
+                            </p>
+                            <Button
+                              variant="destructive"
+                              className="w-full"
+                              onClick={() => {
+                                if (
+                                  confirm(
+                                    "Are you sure you want to delete this application? This action cannot be undone.",
+                                  )
+                                ) {
+                                  onDeleteApplication(application.id);
+                                  setShowDetailView(false);
+                                }
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Permanently Delete Application</span>
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+                    </div>
+                    <ScrollBar />
+                  </ScrollArea>
+                </Tabs>
               </div>
-
-              {/* Right column - Metadata and actions */}
-              <div className="space-y-6">
-                {/* Status and assignment */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">
-                      Status & Assignment
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Application Status</Label>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-between"
-                          >
-                            <span className="flex items-center gap-2">
-                              {getStatusIcon(application.status)}
-                              {formatStatusLabel(application.status)}
-                            </span>
-                            <ChevronDown className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() =>
-                              onStatusChange(application.id, "pending")
-                            }
-                            className="flex items-center gap-2"
-                          >
-                            <Clock className="h-4 w-4" />
-                            <span>Pending</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              onStatusChange(application.id, "in_review")
-                            }
-                            className="flex items-center gap-2"
-                          >
-                            <FileText className="h-4 w-4" />
-                            <span>In Review</span>
-                          </DropdownMenuItem>
-
-                          <DropdownMenuItem
-                            onClick={() =>
-                              onStatusChange(application.id, "approved")
-                            }
-                            className="flex items-center gap-2"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                            <span>Approved</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              onStatusChange(application.id, "rejected")
-                            }
-                            className="flex items-center gap-2 text-red-500"
-                          >
-                            <XCircle className="h-4 w-4" />
-                            <span>Rejected</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Actions */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon">
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Contact Applicant</TooltipContent>
-                      </Tooltip>
-
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  "Are you sure you want to delete this application? This action cannot be undone.",
-                                )
-                              ) {
-                                onDeleteApplication(application.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete Application</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </ScrollArea>
-      </SheetContent>
-    </Sheet>
+            </motion.div>
+          </SheetContent>
+        </Sheet>
+      )}
+    </AnimatePresence>
   );
 };
 

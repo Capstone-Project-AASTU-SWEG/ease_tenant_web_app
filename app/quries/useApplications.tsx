@@ -1,7 +1,7 @@
 "use client";
 
 import axiosClient from "@/lib/axios-client";
-import { APIResponse, Application } from "@/types";
+import { APIResponse, Application, Tenant, WithTimestampsStr } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect } from "react";
@@ -16,8 +16,8 @@ export const useGetApplicationsOfBuildingQuery = (buildingId: string) => {
     queryFn: async () => {
       try {
         const response = await axiosClient.get<
-          APIResponse<ApplicationWithId[]>
-        >(`/applications`);
+          APIResponse<(ApplicationWithId & { submittedBy: Tenant} & WithTimestampsStr)[]>
+        >(`/applications/rent`);
         const applications = response.data.data;
 
         return applications;
@@ -52,7 +52,7 @@ export const useCreateRentalApplicationMutation = () => {
     mutationKey: ["createTenantMutation"],
     mutationFn: async (payload: FormData) => {
       try {
-        await axiosClient.post("/applications", payload, {
+        await axiosClient.post("/applications/rent", payload, {
           headers: {
             "Content-Type": "multipart/form-data",
           },

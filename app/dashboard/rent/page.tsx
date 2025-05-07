@@ -608,7 +608,7 @@ const RentUnitPage = () => {
 
                           <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="grid grid-cols-1 gap-5">
-                              <Group>
+                              <Group align={"start"}>
                                 <NumberFormField
                                   control={form.control}
                                   label={`Lease Duration [${building.leaseTerms.minLeasePeriodMonths} - ${building.leaseTerms.maxLeasePeriodMonths}]`}

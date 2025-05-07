@@ -3,6 +3,7 @@
 import axiosClient from "@/lib/axios-client";
 import {
   APIResponse,
+  CommonUserData,
   MaintenanceWorker,
   Manager,
   ServiceProvider,
@@ -17,9 +18,15 @@ export const useGetAllTenants = () => {
     queryFn: async () => {
       try {
         const response =
-          await axiosClient.get<APIResponse<Tenant[]>>("/tenants");
+          await axiosClient.get<
+            APIResponse<(Tenant & { userId: CommonUserData })[]>
+          >("/tenants");
         const data = response.data;
-        return data.data;
+        const refinedData = data.data?.map((tenant) => ({
+          ...tenant,
+          ...tenant.userId,
+        }));
+        return refinedData;
       } catch (error) {
         console.log({ error });
         if (axios.isAxiosError(error)) {
@@ -38,14 +45,12 @@ export const useGetAllManagers = () => {
     queryFn: async () => {
       try {
         const response =
-          await axiosClient.get<
-            APIResponse<{ _id: string; userId: Manager }[]>
-          >("/managers");
+          await axiosClient.get<APIResponse<{ user: Manager }[]>>("/managers");
         const data = response.data;
 
-        const refineData = data.data?.map((item) => ({
-          id: item._id,
-          ...item.userId,
+        const refineData = data.data?.map((manager) => ({
+          ...manager,
+          ...manager.user,
         }));
 
         return refineData;

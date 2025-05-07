@@ -36,6 +36,8 @@ import { Group } from "@/components/custom/group";
 import type { UnitWithId } from "@/app/quries/useUnits";
 import { useRouter } from "next/navigation";
 import { BuildingWithStat } from "@/app/quries/useBuildings";
+import { Center } from "./center";
+import Stack from "./stack";
 
 export interface UnitAction {
   icon: React.ReactNode;
@@ -188,13 +190,13 @@ export function UnitDetailsSheet({
           </div>
 
           {/* Action buttons */}
-          <div className="flex flex-wrap gap-2 border-b border-t px-6 py-3">
+          <div className="flex justify-center flex-wrap gap-2 border-b border-t px-6 py-3">
             {unitActions.map((action, index) => (
               <Button
                 key={index}
                 variant={action.variant}
                 onClick={action.onClick}
-                className="flex-1"
+                // className="flex-1"
               >
                 {action.icon}
                 <span className="ml-2">{action.label}</span>
@@ -355,10 +357,13 @@ const ImageGallery = ({
 
   if (!images || images.length === 0) {
     return (
-      <div className="rounded-lg border bg-slate-50 p-6 text-center dark:bg-slate-900">
+      <Center className="rounded-lg border bg-slate-50 h-[10rem] text-center dark:bg-slate-900">
+        <Stack>
         <ImageIcon className="mx-auto mb-2 h-10 w-10 text-slate-400" />
         <p className="text-sm text-slate-500">No images available</p>
-      </div>
+
+        </Stack>
+      </Center>
     );
   }
 

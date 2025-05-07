@@ -5,6 +5,38 @@ import { APIResponse, CommonUserData, Tenant } from "@/types";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 
+export const useUserSignInMutation = () => {
+  return useMutation({
+    mutationKey: ["userSignIn"],
+    mutationFn: async (payload: { email: string; password: string }) => {
+      try {
+        const response = await axiosClient.post<APIResponse<{ token: string }>>(
+          "/users/sign-in",
+          payload,
+        );
+
+        const data = response.data.data;
+        if (!data) {
+          throw new Error("User data not found.");
+        }
+
+        return data;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while signing in a user.",
+          );
+        }
+        throw new Error(
+          "An unexpected error occurred while signing in a user.",
+        );
+      }
+    },
+  });
+};
+
 export const useTenantSignUp = () => {
   return useMutation({
     mutationKey: ["tenantSignUp"],

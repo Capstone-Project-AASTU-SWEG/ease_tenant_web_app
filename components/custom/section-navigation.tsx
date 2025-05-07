@@ -73,4 +73,5 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   );
 };
 
+
 export default TabNavigation;

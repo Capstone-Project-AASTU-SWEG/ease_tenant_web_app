@@ -9,7 +9,7 @@ const Layout = ({ children }: Props) => {
   return (
     <section className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="overflow-auto flex-1">{children}</div>
+      <div className="flex-1 overflow-auto">{children}</div>
     </section>
   );
 };

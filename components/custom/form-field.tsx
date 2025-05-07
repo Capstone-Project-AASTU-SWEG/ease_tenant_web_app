@@ -27,6 +27,7 @@ import { Button } from "../ui/button";
 import { format } from "date-fns";
 import { Calendar } from "../ui/calendar";
 import { Checkbox } from "../ui/checkbox";
+import Stack from "./stack";
 
 interface TextFormFieldProps<T extends FieldValues> {
   control: UseFormReturn<T>["control"];
@@ -414,7 +415,9 @@ export const PasswordFormField = <T extends FieldValues>({
 interface CheckboxFormFieldProps<T extends FieldValues> {
   control: UseFormReturn<T>["control"];
   name: Path<T>;
-  label: string;
+  label?: string;
+  title?: string;
+  description?: string;
   placeholder?: string;
   classNames?: {
     formItem?: ClassValue;
@@ -429,6 +432,8 @@ export const CheckboxFormField = <T extends FieldValues>({
   name,
   label,
   classNames,
+  title,
+  description,
 }: CheckboxFormFieldProps<T>) => {
   return (
     <HookFormField
@@ -443,9 +448,27 @@ export const CheckboxFormField = <T extends FieldValues>({
             )}
           >
             <Checkbox className={cn("", classNames?.input)} {...field} />
-            <span className={cn("font-normal", classNames?.formLabel)}>
-              {label}
-            </span>
+            {label && (
+              <span className={cn("font-normal", classNames?.formLabel)}>
+                {label}
+              </span>
+            )}
+
+            {(title || description) && (
+              <Stack spacing={"xs"}>
+                {title && (
+                  <label
+                    htmlFor="isDefault"
+                    className="text-sm font-medium leading-none"
+                  >
+                    {title}
+                  </label>
+                )}
+                {description && (
+                  <p className="text-xs text-muted-foreground">{description}</p>
+                )}
+              </Stack>
+            )}
           </FormControl>
           {error && (
             <FormMessage className="font-light">{error.message}</FormMessage>

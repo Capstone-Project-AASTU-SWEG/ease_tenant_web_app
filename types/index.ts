@@ -290,10 +290,6 @@ export type Building = {
   updatedAt: Date;
 };
 
-/* ========== REST OF THE TYPES REMAIN THE SAME ========== */
-// [Previous type definitions continue with the same structure,
-//  just using the new UPPER_CASE enum names where referenced]
-
 /* ========== UTILITY TYPES ========== */
 export type PaginatedResult<T> = {
   data: T[];
@@ -308,6 +304,11 @@ export type WithTimestamps = {
   updatedAt: Date;
 };
 
+export type WithTimestampsStr = {
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type APIResponse<T> = {
   success: boolean;
   data?: T;
@@ -315,9 +316,6 @@ export type APIResponse<T> = {
   message?: string;
 };
 
-// ======================================================
-// Type Definitions
-// ======================================================
 
 /**
  * Application status types
@@ -376,3 +374,43 @@ export interface RentalApplication extends BaseApplication {
  * Union type for all application types
  */
 export type Application = RentalApplication;
+
+// Lease status enum
+export enum LEASE_STATUS {
+  DRAFT = "draft",
+  SENT = "sent",
+  SIGNED = "signed",
+  ACTIVE = "active",
+  EXPIRED = "expired",
+  TERMINATED = "terminated",
+}
+
+// Template type
+export type LeaseTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isDefault: boolean;
+};
+
+// Lease type
+export type Lease = {
+  id: string;
+  templateId: string;
+  templateName: string;
+  unitId: string;
+  unitNumber: string;
+  tenantId: string;
+  tenantName: string;
+  status: LEASE_STATUS;
+  startDate: Date;
+  endDate: Date;
+  monthlyRent: number;
+  securityDeposit: number;
+  createdAt: Date;
+  updatedAt: Date;
+  sentAt?: Date;
+  signedAt?: Date;
+};

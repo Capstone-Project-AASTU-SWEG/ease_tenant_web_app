@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import ASSETS from "../_assets";
 import { Stack } from "@/components/custom/stack";
 import { Title } from "@/components/custom/title";
@@ -13,7 +13,7 @@ import { Form } from "@/components/ui/form";
 import { Text } from "@/components/custom/text";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { signIn } from "@/lib/auth-client";
+// import { signIn } from "@/lib/auth-client";
 import { CustomButton } from "@/components/custom/button";
 import { errorToast, successToast } from "@/components/custom/toasts";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,7 @@ import {
   EmailFormField,
   PasswordFormField,
 } from "@/components/custom/form-field";
+import { useUserSignInMutation } from "../_queries/useAuth";
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -30,7 +31,6 @@ const signInSchema = z.object({
 type SignInSchema = z.infer<typeof signInSchema>;
 
 const SignIn = () => {
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const form = useForm<SignInSchema>({
     defaultValues: {
@@ -40,50 +40,29 @@ const SignIn = () => {
     resolver: zodResolver(signInSchema),
   });
 
+  const userSignInMutation = useUserSignInMutation();
+
   const handleSubmit = (values: SignInSchema) => {
-    signIn.email({
-      email: values.email,
-      password: values.password,
-      fetchOptions: {
-        onRequest: () => {
-          setIsLoading(true);
-        },
-        onSuccess: () => {
-          setIsLoading(false);
-          router.push("/");
-          setTimeout(() => {
-            successToast("You signed in successfully.");
-          }, 400);
-        },
-        onError: (ctx) => {
-          errorToast("Error signing up: " + ctx.error.message);
-          setIsLoading(false);
-        },
-      },
-    });
+    userSignInMutation.mutate(values);
   };
 
-  // const handleGoogleSignOn = () => {
-  //   signIn.social({
-  //     provider: "google",
-  //     fetchOptions: {
-  //       onRequest: () => {
-  //         setIsLoading(true);
-  //       },
-  //       onSuccess: () => {
-  //         setIsLoading(false);
-  //         router.push("/");
-  //         setTimeout(() => {
-  //           successToast("You signed in successfully.");
-  //         }, 400);
-  //       },
-  //       onError: (ctx) => {
-  //         errorToast("Error signing in: " + ctx.error.message);
-  //         setIsLoading(false);
-  //       },
-  //     },
-  //   });
-  // };
+  useEffect(() => {
+    if (userSignInMutation.isSuccess) {
+      const token = userSignInMutation.data.token;
+      localStorage.setItem("token", token);
+      successToast("You signed in successfully." + token);
+      router.push("/dashboard");
+    }
+  }, [router, userSignInMutation.data, userSignInMutation.isSuccess]);
+
+  useEffect(() => {
+    if (userSignInMutation.isError) {
+      errorToast("Error signing in: " + userSignInMutation.error.message);
+    }
+  }, [userSignInMutation.isError, userSignInMutation.error?.message]);
+
+  const isLoading = userSignInMutation.isPending;
+
   return (
     <main>
       <section className="grid grid-cols-1 gap-10 lg:grid-cols-[7fr_5fr]">
@@ -131,6 +110,7 @@ const SignIn = () => {
 
                 <Stack className="mt-8">
                   <CustomButton
+                    className="rounded-md"
                     size="lg"
                     loading={isLoading}
                     disabled={isLoading}

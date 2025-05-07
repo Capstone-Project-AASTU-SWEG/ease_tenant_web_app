@@ -5,18 +5,23 @@ import { useRouter } from "next/navigation";
 import {
   FileText,
   Plus,
-  Filter,
-  Search,
   MoreHorizontal,
   CheckCircle2,
   Clock,
   Send,
   FileSignature,
   AlertCircle,
+  Search,
+  Filter,
+  ChevronDown,
+  Building,
+  Users,
+  Calendar,
+  DollarSign,
+  ArrowUpDown,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
@@ -35,53 +40,18 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 
-import { Title } from "@/components/custom/title";
-import { Text } from "@/components/custom/text";
 import PageWrapper from "@/components/custom/page-wrapper";
-import { Group } from "@/components/custom/group";
-import { CreateLeaseTemplateDialog } from "./_components/create-lease-template-dialog";
-import { CreateLeaseDialog } from "./_components/create-lease-dialog";
-
-// Lease status enum
-enum LEASE_STATUS {
-  DRAFT = "draft",
-  SENT = "sent",
-  SIGNED = "signed",
-  ACTIVE = "active",
-  EXPIRED = "expired",
-  TERMINATED = "terminated",
-}
-
-// Template type
-type LeaseTemplate = {
-  id: string;
-  name: string;
-  description: string;
-  createdAt: Date;
-  updatedAt: Date;
-  isDefault: boolean;
-};
-
-// Lease type
-type Lease = {
-  id: string;
-  templateId: string;
-  templateName: string;
-  unitId: string;
-  unitNumber: string;
-  tenantId: string;
-  tenantName: string;
-  status: LEASE_STATUS;
-  startDate: Date;
-  endDate: Date;
-  monthlyRent: number;
-  securityDeposit: number;
-  createdAt: Date;
-  updatedAt: Date;
-  sentAt?: Date;
-  signedAt?: Date;
-};
+import { CreateLeaseTemplateDrawer } from "./_components/create-lease-template-drawer";
+import { CreateLeaseDrawer } from "./_components/create-lease-drawer";
+import PageHeader from "@/components/custom/page-header";
+import Stat from "@/components/custom/stat";
+import { Lease, LEASE_STATUS, LeaseTemplate } from "@/types";
+import { useGetLeaseTemplatesQuery } from "@/app/quries/useLeases";
+import LogJSON from "@/components/custom/log-json";
+import { formatDate } from "../applications/_utils";
 
 export default function LeasesPage() {
   const router = useRouter();
@@ -91,41 +61,10 @@ export default function LeasesPage() {
     useState(false);
   const [createLeaseDialogOpen, setCreateLeaseDialogOpen] = useState(false);
 
+  const getLeaseTemplatesQuery = useGetLeaseTemplatesQuery();
+
   // Sample data for templates
-  const templates: LeaseTemplate[] = [
-    {
-      id: "template1",
-      name: "Standard Office Lease",
-      description: "Standard 12-month lease for office spaces",
-      createdAt: new Date("2023-01-15"),
-      updatedAt: new Date("2023-06-20"),
-      isDefault: true,
-    },
-    {
-      id: "template2",
-      name: "Retail Space Lease",
-      description: "Lease template for retail spaces with special provisions",
-      createdAt: new Date("2023-02-10"),
-      updatedAt: new Date("2023-02-10"),
-      isDefault: false,
-    },
-    {
-      id: "template3",
-      name: "Short-Term Flexible Lease",
-      description: "3-6 month flexible lease with renewal options",
-      createdAt: new Date("2023-03-05"),
-      updatedAt: new Date("2023-07-12"),
-      isDefault: false,
-    },
-    {
-      id: "template4",
-      name: "Premium Office Suite Lease",
-      description: "Lease for premium office suites with additional services",
-      createdAt: new Date("2023-04-18"),
-      updatedAt: new Date("2023-04-18"),
-      isDefault: false,
-    },
-  ];
+  const templates = getLeaseTemplatesQuery.data || [];
 
   // Sample data for leases
   const leases: Lease[] = [
@@ -146,75 +85,6 @@ export default function LeasesPage() {
       updatedAt: new Date("2022-12-15"),
       sentAt: new Date("2022-12-16"),
       signedAt: new Date("2022-12-20"),
-    },
-    {
-      id: "lease2",
-      templateId: "template2",
-      templateName: "Retail Space Lease",
-      unitId: "unit2",
-      unitNumber: "102",
-      tenantId: "tenant2",
-      tenantName: "Global Retail Inc.",
-      status: LEASE_STATUS.SENT,
-      startDate: new Date("2023-02-01"),
-      endDate: new Date("2024-01-31"),
-      monthlyRent: 3200,
-      securityDeposit: 6400,
-      createdAt: new Date("2023-01-15"),
-      updatedAt: new Date("2023-01-15"),
-      sentAt: new Date("2023-01-16"),
-    },
-    {
-      id: "lease3",
-      templateId: "template3",
-      templateName: "Short-Term Flexible Lease",
-      unitId: "unit3",
-      unitNumber: "201",
-      tenantId: "tenant3",
-      tenantName: "Tech Startup LLC",
-      status: LEASE_STATUS.DRAFT,
-      startDate: new Date("2023-03-01"),
-      endDate: new Date("2023-08-31"),
-      monthlyRent: 1800,
-      securityDeposit: 3600,
-      createdAt: new Date("2023-02-20"),
-      updatedAt: new Date("2023-02-22"),
-    },
-    {
-      id: "lease4",
-      templateId: "template1",
-      templateName: "Standard Office Lease",
-      unitId: "unit4",
-      unitNumber: "202",
-      tenantId: "tenant4",
-      tenantName: "Legal Services Co.",
-      status: LEASE_STATUS.SIGNED,
-      startDate: new Date("2023-04-01"),
-      endDate: new Date("2024-03-31"),
-      monthlyRent: 2800,
-      securityDeposit: 5600,
-      createdAt: new Date("2023-03-10"),
-      updatedAt: new Date("2023-03-10"),
-      sentAt: new Date("2023-03-11"),
-      signedAt: new Date("2023-03-15"),
-    },
-    {
-      id: "lease5",
-      templateId: "template4",
-      templateName: "Premium Office Suite Lease",
-      unitId: "unit5",
-      unitNumber: "301",
-      tenantId: "tenant5",
-      tenantName: "Executive Consulting Group",
-      status: LEASE_STATUS.EXPIRED,
-      startDate: new Date("2022-05-01"),
-      endDate: new Date("2023-04-30"),
-      monthlyRent: 4500,
-      securityDeposit: 9000,
-      createdAt: new Date("2022-04-15"),
-      updatedAt: new Date("2022-04-15"),
-      sentAt: new Date("2022-04-16"),
-      signedAt: new Date("2022-04-20"),
     },
   ];
 
@@ -255,307 +125,565 @@ export default function LeasesPage() {
   const getStatusBadge = (status: LEASE_STATUS) => {
     switch (status) {
       case LEASE_STATUS.DRAFT:
-        return <Badge variant="outline">Draft</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-muted/50 text-muted-foreground"
+          >
+            <div className="flex items-center gap-1.5">
+              <FileText className="h-3 w-3" />
+              <span>Draft</span>
+            </div>
+          </Badge>
+        );
       case LEASE_STATUS.SENT:
-        return <Badge variant="secondary">Sent</Badge>;
+        return (
+          <Badge
+            variant="secondary"
+            className="border-0 bg-blue-100 text-blue-700 hover:bg-blue-200"
+          >
+            <div className="flex items-center gap-1.5">
+              <Send className="h-3 w-3" />
+              <span>Sent</span>
+            </div>
+          </Badge>
+        );
       case LEASE_STATUS.SIGNED:
-        return <Badge variant="default">Signed</Badge>;
+        return (
+          <Badge
+            variant="default"
+            className="border-0 bg-purple-100 text-purple-700 hover:bg-purple-200"
+          >
+            <div className="flex items-center gap-1.5">
+              <FileSignature className="h-3 w-3" />
+              <span>Signed</span>
+            </div>
+          </Badge>
+        );
       case LEASE_STATUS.ACTIVE:
         return (
-          <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-            Active
+          <Badge
+            variant="default"
+            className="border-0 bg-green-100 text-green-700 hover:bg-green-200"
+          >
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3 w-3" />
+              <span>Active</span>
+            </div>
           </Badge>
         );
       case LEASE_STATUS.EXPIRED:
-        return <Badge variant="destructive">Expired</Badge>;
+        return (
+          <Badge
+            variant="destructive"
+            className="border-0 bg-amber-100 text-amber-700 hover:bg-amber-200"
+          >
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3" />
+              <span>Expired</span>
+            </div>
+          </Badge>
+        );
       case LEASE_STATUS.TERMINATED:
-        return <Badge variant="destructive">Terminated</Badge>;
+        return (
+          <Badge
+            variant="destructive"
+            className="border-0 bg-red-100 text-red-700 hover:bg-red-200"
+          >
+            <div className="flex items-center gap-1.5">
+              <AlertCircle className="h-3 w-3" />
+              <span>Terminated</span>
+            </div>
+          </Badge>
+        );
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
   };
 
+  // Get summary stats
+  const getLeaseStats = () => {
+    const active = leases.filter(
+      (lease) => lease.status === LEASE_STATUS.ACTIVE,
+    ).length;
+    const pending = leases.filter(
+      (lease) =>
+        lease.status === LEASE_STATUS.SENT ||
+        lease.status === LEASE_STATUS.DRAFT,
+    ).length;
+    const expired = leases.filter(
+      (lease) => lease.status === LEASE_STATUS.EXPIRED,
+    ).length;
+    const totalRent = leases
+      .filter((lease) => lease.status === LEASE_STATUS.ACTIVE)
+      .reduce((sum, lease) => sum + lease.monthlyRent, 0);
+
+    return { active, pending, expired, totalRent };
+  };
+
+  const stats = getLeaseStats();
+
   return (
-    <PageWrapper>
-      {/* <BackgroundDots /> */}
-      <header className="mb-6">
-        <Title size="h2">Lease Management</Title>
-        <Text variant="dimmed">
-          Create, manage, and track lease agreements for your properties
-        </Text>
-      </header>
-
-      <main className="space-y-6">
-        <Group className="justify-between">
-          <Group>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search leases or templates..."
-                className="w-[300px] pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
+    <PageWrapper className="py-0">
+      <LogJSON data={{ templates }} />
+      <PageHeader
+        title="Lease Management"
+        description="Create, manage, and track lease agreements for your properties."
+        rightSection={
+          activeTab === "templates" ? (
+            <Button
+              size="sm"
+              className="h-9"
+              onClick={() => setCreateTemplateDialogOpen(true)}
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              New Template
             </Button>
-          </Group>
+          ) : (
+            <Button
+              size="sm"
+              className="h-9"
+              onClick={() => setCreateLeaseDialogOpen(true)}
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              New Lease
+            </Button>
+          )
+        }
+      />
 
-          <Group>
-            {activeTab === "templates" ? (
-              <Button onClick={() => setCreateTemplateDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Template
-              </Button>
-            ) : (
-              <Button onClick={() => setCreateLeaseDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Lease
-              </Button>
-            )}
-          </Group>
-        </Group>
-        <Tabs
-          defaultValue="leases"
-          value={activeTab}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onValueChange={(value) => setActiveTab(value as any)}
-        >
-          <TabsList className="mb-4">
-            <TabsTrigger value="leases" className="px-6">
-              Leases
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="px-6">
-              Templates
-            </TabsTrigger>
-          </TabsList>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Stat
+          title="Active Leases"
+          value={String(10)}
+          icon={CheckCircle2}
+          moreInfo="Currently active lease agreements"
+        />
 
-          <TabsContent value="leases" className="mt-0">
-            <div className="rounded-md border">
-              <ScrollArea className="h-[calc(100vh-280px)]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tenant</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead>Template</TableHead>
-                      <TableHead>Start Date</TableHead>
-                      <TableHead>End Date</TableHead>
-                      <TableHead>Monthly Rent</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-[80px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredLeases.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
-                          No leases found.
-                        </TableCell>
+        <Stat
+          title="Pending Leases"
+          value={String(stats.pending)}
+          icon={Clock}
+          iconColor="text-blue-500"
+          moreInfo="Awaiting signature or in draft"
+        />
+
+        <Stat
+          title="Expired Leases"
+          value={String(stats.expired)}
+          icon={AlertCircle}
+          iconColor="text-amber-500"
+          moreInfo="Leases that need renewal"
+        />
+
+        <Stat
+          title="Monthly Revenue"
+          value={`$${stats.totalRent.toLocaleString()}`}
+          icon={DollarSign}
+          iconColor="text-primary"
+          moreInfo="From active lease agreements"
+        />
+      </div>
+
+      <div className="mb-8 mt-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <Tabs
+            defaultValue="leases"
+            value={activeTab}
+            onValueChange={(value) =>
+              setActiveTab(value as "leases" | "templates")
+            }
+            className="w-full"
+          >
+            <div className="flex items-center justify-between">
+              <TabsList className="bg-muted/50 p-1">
+                <TabsTrigger
+                  value="leases"
+                  className="rounded-md data-[state=active]:bg-primary"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Leases
+                </TabsTrigger>
+                <TabsTrigger
+                  value="templates"
+                  className="rounded-md data-[state=active]:bg-primary"
+                >
+                  <FileSignature className="mr-2 h-4 w-4" />
+                  Templates
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search..."
+                    className="w-[200px] pl-9 md:w-[300px]"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 gap-1">
+                      <Filter className="h-3.5 w-3.5" />
+                      <span>Filter</span>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[200px]">
+                    <DropdownMenuItem>All Statuses</DropdownMenuItem>
+                    <DropdownMenuItem>Active Only</DropdownMenuItem>
+                    <DropdownMenuItem>Pending Only</DropdownMenuItem>
+                    <DropdownMenuItem>Expired Only</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            <TabsContent value="leases" className="mt-6 space-y-4">
+              <Card className="border shadow-sm">
+                <ScrollArea className="h-[calc(100vh-360px)]">
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-[200px]">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span>Tenant</span>
+                            <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-1">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <span>Unit</span>
+                          </div>
+                        </TableHead>
+                        <TableHead>Template</TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span>Term</span>
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <span>Monthly Rent</span>
+                          </div>
+                        </TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-[80px]"></TableHead>
                       </TableRow>
-                    ) : (
-                      filteredLeases.map((lease) => (
-                        <TableRow key={lease.id}>
-                          <TableCell className="font-medium">
-                            {lease.tenantName}
+                    </TableHeader>
+                    <TableBody>
+                      {filteredLeases.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-24 text-center">
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
+                              <FileText className="h-10 w-10 text-muted-foreground/50" />
+                              <p>No leases found</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCreateLeaseDialogOpen(true)}
+                                className="mt-2"
+                              >
+                                <Plus className="mr-1 h-4 w-4" />
+                                Create New Lease
+                              </Button>
+                            </div>
                           </TableCell>
-                          <TableCell>{lease.unitNumber}</TableCell>
-                          <TableCell>{lease.templateName}</TableCell>
-                          <TableCell>
-                            {lease.startDate.toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {lease.endDate.toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            ${lease.monthlyRent.toLocaleString()}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(lease.status)}</TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(`/dashboard/leases/${lease.id}`)
-                                  }
-                                >
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  View Details
-                                </DropdownMenuItem>
-                                {lease.status === LEASE_STATUS.DRAFT && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleSendLease(lease.id)}
+                        </TableRow>
+                      ) : (
+                        filteredLeases.map((lease) => (
+                          <TableRow
+                            key={lease.id}
+                            className="cursor-pointer transition-colors hover:bg-muted/30"
+                            onClick={() =>
+                              router.push(`/dashboard/leases/${lease.id}`)
+                            }
+                          >
+                            <TableCell className="font-medium">
+                              {lease.tenantName}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="font-normal">
+                                {lease.unitNumber}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="max-w-[200px] truncate">
+                              {lease.templateName}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1 text-sm">
+                                <span>
+                                  {lease.startDate.toLocaleDateString()}
+                                </span>
+                                <span className="text-muted-foreground">→</span>
+                                <span>
+                                  {lease.endDate.toLocaleDateString()}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              ${lease.monthlyRent.toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(lease.status)}
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
                                   >
-                                    <Send className="mr-2 h-4 w-4" />
-                                    Send to Tenant
-                                  </DropdownMenuItem>
-                                )}
-                                {lease.status === LEASE_STATUS.SENT && (
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-[180px]"
+                                >
                                   <DropdownMenuItem
                                     onClick={() =>
                                       router.push(
-                                        `/dashboard/leases/${lease.id}/remind`,
+                                        `/dashboard/leases/${lease.id}`,
                                       )
                                     }
+                                    className="cursor-pointer"
                                   >
-                                    <Clock className="mr-2 h-4 w-4" />
-                                    Send Reminder
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    View Details
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(
-                                      `/dashboard/leases/${lease.id}/edit`,
-                                    )
-                                  }
-                                >
-                                  <FileSignature className="mr-2 h-4 w-4" />
-                                  Edit Lease
-                                </DropdownMenuItem>
-                                {lease.status === LEASE_STATUS.ACTIVE && (
+                                  {lease.status === LEASE_STATUS.DRAFT && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleSendLease(lease.id)}
+                                      className="cursor-pointer"
+                                    >
+                                      <Send className="mr-2 h-4 w-4" />
+                                      Send to Tenant
+                                    </DropdownMenuItem>
+                                  )}
+                                  {lease.status === LEASE_STATUS.SENT && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        router.push(
+                                          `/dashboard/leases/${lease.id}/remind`,
+                                        )
+                                      }
+                                      className="cursor-pointer"
+                                    >
+                                      <Clock className="mr-2 h-4 w-4" />
+                                      Send Reminder
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     onClick={() =>
                                       router.push(
-                                        `/dashboard/leases/${lease.id}/renew`,
+                                        `/dashboard/leases/${lease.id}/edit`,
                                       )
                                     }
+                                    className="cursor-pointer"
                                   >
-                                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Renew Lease
+                                    <FileSignature className="mr-2 h-4 w-4" />
+                                    Edit Lease
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(
-                                      `/dashboard/leases/${lease.id}/terminate`,
-                                    )
-                                  }
-                                  className="text-destructive"
-                                >
-                                  <AlertCircle className="mr-2 h-4 w-4" />
-                                  Terminate Lease
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            </div>
-          </TabsContent>
+                                  {lease.status === LEASE_STATUS.ACTIVE && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        router.push(
+                                          `/dashboard/leases/${lease.id}/renew`,
+                                        )
+                                      }
+                                      className="cursor-pointer"
+                                    >
+                                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                                      Renew Lease
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      router.push(
+                                        `/dashboard/leases/${lease.id}/terminate`,
+                                      )
+                                    }
+                                    className="cursor-pointer text-destructive"
+                                  >
+                                    <AlertCircle className="mr-2 h-4 w-4" />
+                                    Terminate Lease
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="templates" className="mt-0">
-            <div className="rounded-md border">
-              <ScrollArea className="h-[calc(100vh-280px)]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Template Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Last Updated</TableHead>
-                      <TableHead>Default</TableHead>
-                      <TableHead className="w-[80px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTemplates.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          No templates found.
-                        </TableCell>
+            <TabsContent value="templates" className="mt-6 space-y-4">
+              <Card className="border shadow-sm">
+                <ScrollArea className="h-[calc(100vh-360px)]">
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-[250px]">
+                          <div className="flex items-center gap-1">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <span>Template Name</span>
+                            <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />
+                          </div>
+                        </TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Last Updated</TableHead>
+                        <TableHead>Default</TableHead>
+                        <TableHead className="w-[80px]"></TableHead>
                       </TableRow>
-                    ) : (
-                      filteredTemplates.map((template) => (
-                        <TableRow key={template.id}>
-                          <TableCell className="font-medium">
-                            {template.name}
-                          </TableCell>
-                          <TableCell>{template.description}</TableCell>
-                          <TableCell>
-                            {template.createdAt.toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {template.updatedAt.toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {template.isDefault && (
-                              <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(
-                                      `/dashboard/leases/templates/${template.id}`,
-                                    )
-                                  }
-                                >
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  View Template
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(
-                                      `/dashboard/leases/templates/${template.id}/edit`,
-                                    )
-                                  }
-                                >
-                                  <FileSignature className="mr-2 h-4 w-4" />
-                                  Edit Template
-                                </DropdownMenuItem>
-                                {!template.isDefault && (
-                                  <DropdownMenuItem>
-                                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Set as Default
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => setCreateLeaseDialogOpen(true)}
-                                >
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  Create Lease
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTemplates.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="h-24 text-center">
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
+                              <FileText className="h-10 w-10 text-muted-foreground/50" />
+                              <p>No templates found</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  setCreateTemplateDialogOpen(true)
+                                }
+                                className="mt-2"
+                              >
+                                <Plus className="mr-1 h-4 w-4" />
+                                Create New Template
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
+                      ) : (
+                        filteredTemplates.map((template) => (
+                          <TableRow
+                            key={template.id}
+                            className="cursor-pointer transition-colors hover:bg-muted/30"
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/leases/templates/${template.id}`,
+                              )
+                            }
+                          >
+                            <TableCell className="font-medium">
+                              {template.name}
+                            </TableCell>
+                            <TableCell className="max-w-[300px] truncate">
+                              {template.description}
+                            </TableCell>
+                            <TableCell>
+                              {formatDate(template.createdAt)}
+                            </TableCell>
+                            <TableCell>
+                              {formatDate(template.updatedAt)}
+                            </TableCell>
+                            <TableCell>
+                              {template.isDefault && (
+                                <Badge
+                                  variant="outline"
+                                  className="border-0 bg-green-100 text-green-700"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    <span>Default</span>
+                                  </div>
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-[180px]"
+                                >
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      router.push(
+                                        `/dashboard/leases/templates/${template.id}`,
+                                      )
+                                    }
+                                    className="cursor-pointer"
+                                  >
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    View Template
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      router.push(
+                                        `/dashboard/leases/templates/${template.id}/edit`,
+                                      )
+                                    }
+                                    className="cursor-pointer"
+                                  >
+                                    <FileSignature className="mr-2 h-4 w-4" />
+                                    Edit Template
+                                  </DropdownMenuItem>
+                                  {!template.isDefault && (
+                                    <DropdownMenuItem className="cursor-pointer">
+                                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                                      Set as Default
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      setCreateLeaseDialogOpen(true)
+                                    }
+                                    className="cursor-pointer"
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Create Lease
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
 
       {/* Dialogs */}
-      <CreateLeaseTemplateDialog
+      <CreateLeaseTemplateDrawer
         isOpen={createTemplateDialogOpen}
         onOpenChange={setCreateTemplateDialogOpen}
         onCreateTemplate={handleCreateTemplate}
       />
 
-      <CreateLeaseDialog
+      <CreateLeaseDrawer
         isOpen={createLeaseDialogOpen}
         onOpenChange={setCreateLeaseDialogOpen}
         templates={templates}

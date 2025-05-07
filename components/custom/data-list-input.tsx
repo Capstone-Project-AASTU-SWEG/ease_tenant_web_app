@@ -122,9 +122,13 @@ export function DataListInput({
           >
             <div className="flex flex-wrap gap-1">
               {selected.length > 0 ? (
-                <span className="text-muted-foreground">
-                  {selected.length} items added.
-                </span>
+                maxItems === 1 ? (
+                  <span>{selected.at(0)?.label}.</span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {selected.length} items added.
+                  </span>
+                )
               ) : (
                 <span className="text-muted-foreground">{placeholder}</span>
               )}
@@ -134,29 +138,31 @@ export function DataListInput({
         </PopoverTrigger>
         {/* Items */}
 
-        <div className="mt-2 flex flex-wrap gap-2">
-          {selected.map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground"
-            >
-              {item.label}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="ml-1 h-5 w-5 rounded-full hover:bg-destructive/20"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemove(item);
-                }}
+        {(!maxItems || maxItems > 1) && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {selected.map((item, index) => (
+              <div
+                key={index}
+                className="flex items-center rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground"
               >
-                <X className="h-3 w-3" />
-                <span className="sr-only">Remove {item.label}</span>
-              </Button>
-            </div>
-          ))}
-        </div>
+                {item.label}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="ml-1 h-5 w-5 rounded-full hover:bg-destructive/20"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemove(item);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                  <span className="sr-only">Remove {item.label}</span>
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
           <Command onKeyDown={handleKeyDown}>
             <CommandInput

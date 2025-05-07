@@ -2,6 +2,7 @@
 // Utility Functions
 // ======================================================
 
+import { APPLICATION_STATUS, APPLICATION_TYPE, PRIORITY_LEVEL } from "@/types";
 import {
   AlertCircle,
   Briefcase,
@@ -13,7 +14,6 @@ import {
   UserCog,
   XCircle,
 } from "lucide-react";
-import { ApplicationStatus, ApplicationType, PriorityLevel } from "@/types";
 
 /**
  * Format date to a readable string
@@ -66,7 +66,7 @@ export const timeElapsed = (dateString: string): string => {
 /**
  * Get color for application status
  */
-export const getStatusColor = (status: ApplicationStatus): string => {
+export const getStatusColor = (status: APPLICATION_STATUS): string => {
   switch (status) {
     case "approved":
       return "bg-green-100 text-green-800 hover:bg-green-200";
@@ -76,8 +76,6 @@ export const getStatusColor = (status: ApplicationStatus): string => {
       return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
     case "in_review":
       return "bg-blue-100 text-blue-800 hover:bg-blue-200";
-    case "on_hold":
-      return "bg-slate-100 text-slate-800 hover:bg-slate-200";
     default:
       return "bg-slate-100 text-slate-800 hover:bg-slate-200";
   }
@@ -86,7 +84,7 @@ export const getStatusColor = (status: ApplicationStatus): string => {
 /**
  * Get icon for application status
  */
-export const getStatusIcon = (status: ApplicationStatus) => {
+export const getStatusIcon = (status: APPLICATION_STATUS) => {
   switch (status) {
     case "approved":
       return <CheckCircle className="h-4 w-4" />;
@@ -96,8 +94,6 @@ export const getStatusIcon = (status: ApplicationStatus) => {
       return <Clock className="h-4 w-4" />;
     case "in_review":
       return <FileText className="h-4 w-4" />;
-    case "on_hold":
-      return <AlertCircle className="h-4 w-4" />;
     default:
       return <Clock className="h-4 w-4" />;
   }
@@ -106,7 +102,7 @@ export const getStatusIcon = (status: ApplicationStatus) => {
 /**
  * Get color for priority level
  */
-export const getPriorityColor = (priority: PriorityLevel): string => {
+export const getPriorityColor = (priority: PRIORITY_LEVEL): string => {
   switch (priority) {
     case "urgent":
       return "bg-red-100 text-red-800 hover:bg-red-200";
@@ -124,18 +120,18 @@ export const getPriorityColor = (priority: PriorityLevel): string => {
 /**
  * Get icon for application type
  */
-export const getApplicationTypeIcon = (type: ApplicationType) => {
+export const getApplicationTypeIcon = (type: APPLICATION_TYPE) => {
   switch (type) {
     case "rental":
       return <Building2 className="h-5 w-5" />;
     case "maintenance":
       return <PenTool className="h-5 w-5" />;
-    case "provider":
-      return <UserCog className="h-5 w-5" />;
-    case "service":
-      return <Briefcase className="h-5 w-5" />;
-    case "other":
-      return <FileText className="h-5 w-5" />;
+    // case "provider":
+    //   return <UserCog className="h-5 w-5" />;
+    // case "service":
+    //   return <Briefcase className="h-5 w-5" />;
+    // case "other":
+    //   return <FileText className="h-5 w-5" />;
     default:
       return <FileText className="h-5 w-5" />;
   }
@@ -144,18 +140,18 @@ export const getApplicationTypeIcon = (type: ApplicationType) => {
 /**
  * Get label for application type
  */
-export const getApplicationTypeLabel = (type: ApplicationType): string => {
+export const getApplicationTypeLabel = (type: APPLICATION_TYPE): string => {
   switch (type) {
     case "rental":
       return "Rental Application";
     case "maintenance":
       return "Maintenance Request";
-    case "provider":
-      return "Provider Registration";
-    case "service":
-      return "Service Offering";
-    case "other":
-      return "Other Request";
+    // case "provider":
+    //   return "Provider Registration";
+    // case "service":
+    //   return "Service Offering";
+    // case "other":
+    //   return "Other Request";
     default:
       return "Application";
   }
@@ -164,12 +160,12 @@ export const getApplicationTypeLabel = (type: ApplicationType): string => {
 /**
  * Format status label
  */
-export const formatStatusLabel = (status: ApplicationStatus): string => {
+export const formatStatusLabel = (status: APPLICATION_STATUS): string => {
   switch (status) {
     case "in_review":
       return "In Review";
-    case "on_hold":
-      return "On Hold";
+    // case "on_hold":
+    //   return "On Hold";
     default:
       return status.charAt(0).toUpperCase() + status.slice(1);
   }

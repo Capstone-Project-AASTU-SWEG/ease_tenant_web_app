@@ -60,6 +60,7 @@ import {
 } from "@/app/quries/useBuildings";
 import LogJSON from "@/components/custom/log-json";
 import { errorToast } from "@/components/custom/toasts";
+import { useRouter } from "next/navigation";
 
 // Extended building type with calculated fields
 type ExtendedBuilding = BuildingWithStat & {
@@ -273,6 +274,7 @@ const BuildingCard = ({
   const controls = useAnimation();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
+  const router = useRouter();
 
   const deleteBuildingMutation = useDeleteBuildingMutation();
 
@@ -316,7 +318,12 @@ const BuildingCard = ({
       animate={controls}
       className="h-full"
     >
-      <Card className="group relative h-full overflow-hidden rounded-lg border-none bg-white/5 shadow-md backdrop-blur-sm transition-all duration-300 dark:bg-black/5">
+      <Card
+        className="group relative h-full overflow-hidden rounded-lg border-none bg-white/5 shadow-md backdrop-blur-sm transition-all duration-300 dark:bg-black/5"
+        onDoubleClick={() => {
+          router.push(`/dashboard/buildings/${building.id}`);
+        }}
+      >
         {/* Image with overlay */}
         <div className="absolute inset-0 z-0">
           <Image

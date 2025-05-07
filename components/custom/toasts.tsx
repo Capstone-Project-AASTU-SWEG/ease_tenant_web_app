@@ -35,7 +35,7 @@ const TOAST_CONFIG: Record<ToastType, ToastConfig> = {
 };
 
 // Toast variant styles using `cva` for better theming
-const toastVariants = cva("!border-l-4 rounded-sm", {
+const toastVariants = cva("!border-l-4 rounded-none", {
   variants: {
     type: {
       success: "!bg-white !border-l-green-500",
@@ -78,6 +78,8 @@ const createToast = (type: ToastType) => {
         // closeButton: true,
         classNames: {
           toast: toastVariants({ type }),
+          content: "rounded-none z-[999999]",
+
         },
       },
     );
