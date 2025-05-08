@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Filter,
@@ -22,10 +22,12 @@ import {
   Briefcase,
   MoreHorizontal,
   Calendar,
-  AlertTriangle,
   ArrowLeft,
   User,
   Mail,
+  Info,
+  UserPlus,
+  UserCog,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -47,7 +49,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import PageWrapper from "@/components/custom/page-wrapper";
 import SearchInput from "@/components/custom/search-input";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   Application,
   APPLICATION_STATUS,
@@ -67,15 +69,16 @@ import {
   getStatusIcon,
   timeElapsed,
 } from "./_utils";
-import {
-  removeApplication,
-  updateApplicationStatus,
-} from "../buildings/_hooks/useApplications";
+
 import { getBuildingByID } from "../buildings/_hooks/useBuildings";
 
 import { RentalApplicationDetail } from "./_components/rental-application-detail";
 import PageHeader from "@/components/custom/page-header";
-import { useGetApplicationsOfBuildingQuery } from "@/app/quries/useApplications";
+import {
+  useDeleteApplicationMutation,
+  useGetApplicationsOfBuildingQuery,
+  useUpdateApplicationStatusMutation,
+} from "@/app/quries/useApplications";
 import LogJSON from "@/components/custom/log-json";
 import Stat from "@/components/custom/stat";
 import {
@@ -83,7 +86,9 @@ import {
   CustomTabsList,
   TabItem,
 } from "@/components/custom/custom-tabs";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { successToast } from "@/components/custom/toasts";
+import { useRouter } from "next/navigation";
 
 const tabs: TabItem[] = [
   {
@@ -253,19 +258,6 @@ const ApplicationsPage = () => {
   ) => {
     setSelectedApplication(application);
     setShowDetailView(true);
-  };
-
-  // Handle application status change
-  const handleStatusChange = (
-    applicationId: string,
-    newStatus: APPLICATION_STATUS,
-  ) => {
-    updateApplicationStatus(applicationId, newStatus);
-  };
-
-  // Handle application deletion
-  const handleDeleteApplication = (applicationId: string) => {
-    removeApplication(applicationId);
   };
 
   // Toggle sort direction
@@ -485,7 +477,7 @@ const ApplicationsPage = () => {
             </div>
           </div>
 
-          <CustomTabs variant={"outline"}>
+          <CustomTabs variant={"pills"}>
             <CustomTabsList
               items={tabs}
               value={activeTab}
@@ -558,11 +550,10 @@ const ApplicationsPage = () => {
       {/* Application Detail Dialog */}
       {selectedApplication && (
         <RenderApplicationDetail
+          key={selectedApplication.id}
           application={selectedApplication}
           setShowDetailView={setShowDetailView}
           showDetailView={showDetailView}
-          onStatusChange={handleStatusChange}
-          onDeleteApplication={handleDeleteApplication}
         />
       )}
     </PageWrapper>
@@ -633,8 +624,12 @@ const RenderApplicationCard = ({
               {application.type === "rental" && (
                 <div className="space-y-1">
                   <p className="font-medium">
-                    TODO: Bussiness Name
-                    {(application as RentalApplication).submittedBy.email}
+                    {/* TODO: Bussiness Name */}
+                    {
+                      (application as RentalApplication).submittedBy[
+                        "businessName"
+                      ]
+                    }
                   </p>
                   <p className="text-sm text-slate-600">
                     Unit {(application as RentalApplication).unit.unitNumber} at{" "}
@@ -703,23 +698,43 @@ type RenderApplicationDetailProps = {
   application: Application & WithTimestampsStr;
   showDetailView: boolean;
   setShowDetailView: (show: boolean) => void;
-  onStatusChange: (appID: string, status: APPLICATION_STATUS) => void;
-  onDeleteApplication: (appID: string) => void;
 };
 
 // Render application detail view
 const RenderApplicationDetail = ({
-  application,
+  application: app,
   showDetailView,
   setShowDetailView,
-  onStatusChange,
-  onDeleteApplication,
 }: RenderApplicationDetailProps) => {
   const [activeTab, setActiveTab] = useState("details");
+  const updateApplicationStatusMutation = useUpdateApplicationStatusMutation();
 
-  if (!application) return null;
+  const deleteApplicationMutation = useDeleteApplicationMutation();
+
+  const router = useRouter();
+
+  const [application, setApplication] = useState(app);
 
   const submittedBy = application.submittedBy as Tenant;
+  const handleStatusChange = (appID: string, status: APPLICATION_STATUS) => {
+    updateApplicationStatusMutation.mutate({
+      appId: appID,
+      status,
+    });
+
+    setApplication((prev) => ({ ...prev, status: status }));
+  };
+
+  const handleDeleteApplication = (appID: string) => {
+    deleteApplicationMutation.mutate({ appId: appID });
+  };
+
+  useEffect(() => {
+    if (deleteApplicationMutation.isSuccess) {
+      setShowDetailView(false);
+      successToast("Application deleted successfully.");
+    }
+  }, [deleteApplicationMutation.isSuccess, setShowDetailView]);
 
   // Animation variants
   const fadeIn = {
@@ -735,6 +750,7 @@ const RenderApplicationDetail = ({
             side="right"
             className="max-h-screen w-full max-w-4xl overflow-hidden p-0 sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
           >
+            <SheetTitle />
             <motion.div
               initial="hidden"
               animate="visible"
@@ -806,9 +822,13 @@ const RenderApplicationDetail = ({
                   <CustomTabs variant={"pills"}>
                     <CustomTabsList
                       items={[
-                        { label: "Details", value: "details" },
-                        { label: "Submission", value: "submission" },
-                        { label: "Actions", value: "actions" },
+                        { label: "Details", value: "details", icon: Info },
+                        {
+                          label: "Submission",
+                          value: "submission",
+                          icon: UserPlus,
+                        },
+                        { label: "Actions", value: "actions", icon: UserCog },
                       ]}
                       defaultValue={"details"}
                       value={activeTab}
@@ -995,7 +1015,13 @@ const RenderApplicationDetail = ({
                                   variant="outline"
                                   className="justify-start gap-2 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800"
                                   onClick={() =>
-                                    onStatusChange(application.id, "pending")
+                                    handleStatusChange(
+                                      application.id,
+                                      "pending",
+                                    )
+                                  }
+                                  disabled={
+                                    updateApplicationStatusMutation.isPending
                                   }
                                 >
                                   <Clock className="h-4 w-4" />
@@ -1005,7 +1031,13 @@ const RenderApplicationDetail = ({
                                   variant="outline"
                                   className="justify-start gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
                                   onClick={() =>
-                                    onStatusChange(application.id, "in_review")
+                                    handleStatusChange(
+                                      application.id,
+                                      "in_review",
+                                    )
+                                  }
+                                  disabled={
+                                    updateApplicationStatusMutation.isPending
                                   }
                                 >
                                   <FileText className="h-4 w-4" />
@@ -1015,7 +1047,13 @@ const RenderApplicationDetail = ({
                                   variant="outline"
                                   className="justify-start gap-2 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
                                   onClick={() =>
-                                    onStatusChange(application.id, "approved")
+                                    handleStatusChange(
+                                      application.id,
+                                      "approved",
+                                    )
+                                  }
+                                  disabled={
+                                    updateApplicationStatusMutation.isPending
                                   }
                                 >
                                   <CheckCircle className="h-4 w-4" />
@@ -1025,7 +1063,13 @@ const RenderApplicationDetail = ({
                                   variant="outline"
                                   className="justify-start gap-2 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
                                   onClick={() =>
-                                    onStatusChange(application.id, "rejected")
+                                    handleStatusChange(
+                                      application.id,
+                                      "rejected",
+                                    )
+                                  }
+                                  disabled={
+                                    updateApplicationStatusMutation.isPending
                                   }
                                 >
                                   <XCircle className="h-4 w-4" />
@@ -1050,19 +1094,26 @@ const RenderApplicationDetail = ({
                                 <MessageSquare className="h-4 w-4" />
                                 <span>Contact Applicant</span>
                               </Button>
-                              <Button
-                                variant="outline"
-                                className="justify-start gap-2"
-                              >
-                                <FileText className="h-4 w-4" />
-                                <span>Generate Report</span>
-                              </Button>
+
                               <Button
                                 variant="outline"
                                 className="justify-start gap-2"
                               >
                                 <Calendar className="h-4 w-4" />
                                 <span>Schedule Meeting</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="justify-start gap-2"
+                                onClick={() => {
+                                  // TODO: MAKE END POINT
+                                  router.push(
+                                    `/dashboard/leases?appId=${application.id}`,
+                                  );
+                                }}
+                              >
+                                <FileText className="h-4 w-4" />
+                                <span>Send Lease</span>
                               </Button>
                               <Button
                                 variant="outline"
@@ -1073,47 +1124,15 @@ const RenderApplicationDetail = ({
                                       "Are you sure you want to delete this application? This action cannot be undone.",
                                     )
                                   ) {
-                                    onDeleteApplication(application.id);
+                                    handleDeleteApplication(application.id);
                                   }
                                 }}
+                                disabled={deleteApplicationMutation.isPending}
                               >
                                 <Trash2 className="h-4 w-4" />
                                 <span>Delete Application</span>
                               </Button>
                             </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Danger Zone */}
-                        <Card className="border-none shadow-sm">
-                          <CardHeader className="border-b bg-red-50 pb-3 pt-3">
-                            <CardTitle className="flex items-center text-base font-medium text-red-700">
-                              <AlertTriangle className="mr-2 h-4 w-4" />
-                              Danger Zone
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="bg-red-50 p-4">
-                            <p className="mb-4 text-sm text-red-700">
-                              These actions are destructive and cannot be
-                              undone. Please proceed with caution.
-                            </p>
-                            <Button
-                              variant="destructive"
-                              className="w-full"
-                              onClick={() => {
-                                if (
-                                  confirm(
-                                    "Are you sure you want to delete this application? This action cannot be undone.",
-                                  )
-                                ) {
-                                  onDeleteApplication(application.id);
-                                  setShowDetailView(false);
-                                }
-                              }}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Permanently Delete Application</span>
-                            </Button>
                           </CardContent>
                         </Card>
                       </TabsContent>

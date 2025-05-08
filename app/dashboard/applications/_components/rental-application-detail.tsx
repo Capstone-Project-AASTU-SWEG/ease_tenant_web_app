@@ -1,23 +1,32 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Briefcase, Building2, Calendar, FileText, Download, Users, DollarSign, MapPin, ClipboardList, ChevronRight } from 'lucide-react'
-import { motion } from "framer-motion"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { RentalApplication, Tenant } from "@/types"
-import { formatDateTime } from "../_utils"
-import { useGetBuildingQuery } from "@/app/quries/useBuildings"
-import { Loader } from "@/components/custom/loader"
-import { Center } from "@/components/custom/center"
+import { useState } from "react";
+import {
+  Briefcase,
+  Building2,
+  Calendar,
+  FileText,
+  Download,
+  Users,
+  MapPin,
+  ClipboardList,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { RentalApplication, Tenant } from "@/types";
+import { formatDateTime } from "../_utils";
+import { useGetBuildingQuery } from "@/app/quries/useBuildings";
+import { Loader } from "@/components/custom/loader";
+import { Center } from "@/components/custom/center";
+import { CustomTabs, CustomTabsList } from "@/components/custom/custom-tabs";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-}
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
 
 /**
  * Rental Application Detail Component
@@ -27,21 +36,21 @@ export function RentalApplicationDetail({
 }: {
   application: RentalApplication;
 }) {
-  const [activeTab, setActiveTab] = useState("details")
-  const getBuildingQuery = useGetBuildingQuery("6817cf0d67320596899e2d34")
-  const building = getBuildingQuery.data
-  const submittedBy = application.submittedBy as Tenant
+  const [activeTab, setActiveTab] = useState("details");
+  const getBuildingQuery = useGetBuildingQuery("6817cf0d67320596899e2d34");
+  const building = getBuildingQuery.data;
+  const submittedBy = application.submittedBy as Tenant;
 
   if (getBuildingQuery.isLoading) {
     return (
       <Center className="h-[4rem]">
         <Loader variant="dots" />
       </Center>
-    )
+    );
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial="hidden"
       animate="visible"
       variants={fadeIn}
@@ -55,49 +64,73 @@ export function RentalApplicationDetail({
               <Building2 className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">{submittedBy.businessName}</h2>
-              <p className="text-sm text-slate-500">{submittedBy.businessType}</p>
+              <h2 className="text-xl font-semibold text-slate-900">
+                {submittedBy.businessName}
+              </h2>
+              <p className="text-sm text-slate-500">
+                {submittedBy.businessType}
+              </p>
             </div>
           </div>
-          <Badge variant="outline" className="bg-blue-50 px-3 py-1 text-blue-700">
+          <Badge
+            variant="outline"
+            className="bg-blue-50 px-3 py-1 text-blue-700"
+          >
             ${application.unit.monthlyRent.toLocaleString()}/month
           </Badge>
         </div>
-        
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-slate-400" />
             <span className="text-sm">
-              Unit {application.unit.unitNumber}, Floor {application.unit.floorNumber}
+              Unit {application.unit.unitNumber}, Floor{" "}
+              {application.unit.floorNumber}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-slate-400" />
-            <span className="text-sm">{application.leaseDetails.numberOfEmployees} Employees</span>
+            <span className="text-sm">
+              {application.leaseDetails.numberOfEmployees} Employees
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-slate-400" />
-            <span className="text-sm">{application.leaseDetails.requestedDuration} Month Lease</span>
+            <span className="text-sm">
+              {application.leaseDetails.requestedDuration} Month Lease
+            </span>
           </div>
         </div>
       </div>
 
       {/* Tabs Navigation */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-slate-50">
-          <TabsTrigger value="details" className="data-[state=active]:bg-white">
-            <ClipboardList className="mr-2 h-4 w-4" />
-            Details
-          </TabsTrigger>
-          <TabsTrigger value="business" className="data-[state=active]:bg-white">
-            <Briefcase className="mr-2 h-4 w-4" />
-            Business
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="data-[state=active]:bg-white">
-            <FileText className="mr-2 h-4 w-4" />
-            Documents
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <CustomTabs>
+          <CustomTabsList
+            tabVariant={"outline"}
+            value={activeTab}
+            onValueChange={(value) => {
+              setActiveTab(value);
+            }}
+            items={[
+              {
+                value: "details",
+                label: "Details",
+                icon: ClipboardList,
+              },
+              {
+                value: "business",
+                label: "Business",
+                icon: Briefcase,
+              },
+              {
+                label: "Documents",
+                value: "documents",
+                icon: FileText,
+              },
+            ]}
+          />
+        </CustomTabs>
 
         {/* Details Tab */}
         <TabsContent value="details" className="mt-6 space-y-6">
@@ -112,20 +145,34 @@ export function RentalApplicationDetail({
             <CardContent className="p-6">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
-                  <p className="mb-1 text-sm font-medium text-slate-500">Building</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Building
+                  </p>
                   <p className="font-medium text-slate-900">{building?.name}</p>
                 </div>
                 <div>
-                  <p className="mb-1 text-sm font-medium text-slate-500">Unit Number</p>
-                  <p className="font-medium text-slate-900">{application.unit.unitNumber}</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Unit Number
+                  </p>
+                  <p className="font-medium text-slate-900">
+                    {application.unit.unitNumber}
+                  </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-sm font-medium text-slate-500">Floor</p>
-                  <p className="font-medium text-slate-900">{application.unit.floorNumber}</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Floor
+                  </p>
+                  <p className="font-medium text-slate-900">
+                    {application.unit.floorNumber}
+                  </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-sm font-medium text-slate-500">Monthly Rent</p>
-                  <p className="font-medium text-slate-900">${application.unit.monthlyRent.toLocaleString()}</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Monthly Rent
+                  </p>
+                  <p className="font-medium text-slate-900">
+                    ${application.unit.monthlyRent.toLocaleString()}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -142,20 +189,30 @@ export function RentalApplicationDetail({
             <CardContent className="p-6">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
-                  <p className="mb-1 text-sm font-medium text-slate-500">Requested Start Date</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Requested Start Date
+                  </p>
                   <p className="font-medium text-slate-900">
-                    {formatDateTime(application.leaseDetails.requestedStartDate.toLocaleString())}
+                    {formatDateTime(
+                      application.leaseDetails.requestedStartDate.toLocaleString(),
+                    )}
                   </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-sm font-medium text-slate-500">Requested Duration</p>
-                  <p className="font-medium text-slate-900">{application.leaseDetails.requestedDuration} months</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Requested Duration
+                  </p>
+                  <p className="font-medium text-slate-900">
+                    {application.leaseDetails.requestedDuration} months
+                  </p>
                 </div>
               </div>
 
               {application.leaseDetails.specialRequirements && (
                 <div className="mt-6">
-                  <p className="mb-1 text-sm font-medium text-slate-500">Special Requirements</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Special Requirements
+                  </p>
                   <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
                     {application.leaseDetails.specialRequirements}
                   </div>
@@ -177,20 +234,36 @@ export function RentalApplicationDetail({
             <CardContent className="p-6">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
-                  <p className="mb-1 text-sm font-medium text-slate-500">Business Name</p>
-                  <p className="font-medium text-slate-900">{submittedBy.businessName}</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Business Name
+                  </p>
+                  <p className="font-medium text-slate-900">
+                    {submittedBy.businessName}
+                  </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-sm font-medium text-slate-500">Business Type</p>
-                  <p className="font-medium text-slate-900">{submittedBy.businessType}</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Business Type
+                  </p>
+                  <p className="font-medium text-slate-900">
+                    {submittedBy.businessType}
+                  </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-sm font-medium text-slate-500">Employees</p>
-                  <p className="font-medium text-slate-900">{application.leaseDetails.numberOfEmployees}</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Employees
+                  </p>
+                  <p className="font-medium text-slate-900">
+                    {application.leaseDetails.numberOfEmployees}
+                  </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-sm font-medium text-slate-500">Contact Email</p>
-                  <p className="font-medium text-slate-900">{submittedBy.email || "N/A"}</p>
+                  <p className="mb-1 text-sm font-medium text-slate-500">
+                    Contact Email
+                  </p>
+                  <p className="font-medium text-slate-900">
+                    {submittedBy.email || "N/A"}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -219,11 +292,19 @@ export function RentalApplicationDetail({
                           <FileText className="h-5 w-5" />
                         </div>
                         <div className="ml-3">
-                          <p className="text-sm font-medium text-slate-900">{doc.name}</p>
-                          <p className="text-xs text-slate-500">{doc.type.toUpperCase()}</p>
+                          <p className="text-sm font-medium text-slate-900">
+                            {doc.name}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {doc.type.toUpperCase()}
+                          </p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full p-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 rounded-full p-0"
+                      >
                         <Download className="h-4 w-4" />
                         <span className="sr-only">Download</span>
                       </Button>
@@ -233,7 +314,9 @@ export function RentalApplicationDetail({
               ) : (
                 <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-center">
                   <FileText className="mb-2 h-8 w-8 text-slate-300" />
-                  <p className="text-sm text-slate-500">No documents available</p>
+                  <p className="text-sm text-slate-500">
+                    No documents available
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -241,5 +324,5 @@ export function RentalApplicationDetail({
         </TabsContent>
       </Tabs>
     </motion.div>
-  )
+  );
 }

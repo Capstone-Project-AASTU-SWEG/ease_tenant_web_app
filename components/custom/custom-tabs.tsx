@@ -39,7 +39,7 @@ const tabsContainerVariants = cva("w-full transition-all", {
   },
 });
 
-const tabsListVariants = cva("flex transition-all", {
+const tabsListVariants = cva("flex gap-3 transition-all", {
   variants: {
     variant: {
       default: "w-full",
@@ -53,7 +53,7 @@ const tabsListVariants = cva("flex transition-all", {
       vertical: "flex-col",
     },
     fullWidth: {
-      true: "grid w-full",
+      true: " w-full",
       false: "inline-flex",
     },
   },
@@ -65,14 +65,16 @@ const tabsListVariants = cva("flex transition-all", {
 });
 
 const tabTriggerVariants = cva(
-  "inline-flex items-center rounded-md justify-center whitespace-nowrap font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center rounded-lg justify-center whitespace-nowrap font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
           "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
+        subtle:
+          "data-[state=active]:bg-primary/10 data-[state=active]:shadow-sm",
         outline:
-          "data-[state=active]:bg-background data-[state=active]:border-primary/50 data-[state=active]:shadow-sm",
+          "data-[state=active]:bg-background border-[1.6px]  border-transparent data-[state=active]:border-primary data-[state=active]:shadow-sm",
         pills:
           "rounded-full border border-transparent data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
         underline:
@@ -81,7 +83,7 @@ const tabTriggerVariants = cva(
           "data-[state=active]:font-semibold data-[state=active]:text-foreground",
       },
       size: {
-        default: "px-3 py-2.5 text-sm",
+        default: "px-3 py-2 text-sm",
         sm: "px-2 py-1.5 text-xs",
         lg: "px-4 py-3 text-base",
       },
@@ -153,7 +155,6 @@ const CustomTabs = React.forwardRef<HTMLDivElement, CustomTabsProps>(
     return (
       <div
         ref={ref}
-        
         className={cn(
           tabsContainerVariants({ variant, size }),
           {

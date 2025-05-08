@@ -33,7 +33,7 @@ import { USER_TYPE } from "@/types";
 
 const adminNavigationItems = [
   { href: "/dashboard", icon: BarChart3, label: "Overview" },
-  { href: "/dashboard/tenants", icon: UsersIcon, label: "Tenants" },
+  { href: "/dashboard/users", icon: UsersIcon, label: "Users" },
   { href: "/dashboard/buildings", icon: Building, label: "Buildings" },
   { href: "/dashboard/leases", icon: FileText, label: "Leases" },
   { href: "/dashboard/applications", icon: UserPlus, label: "Applications" },
@@ -49,7 +49,7 @@ const adminNavigationItems = [
 ];
 
 const tenantNavigationItems = [
-  { href: "/dashboard/tenants", icon: UsersIcon, label: "Overview" },
+  { href: "/dashboard/tenant", icon: UsersIcon, label: "Overview" },
   { href: "/dashboard/buildings", icon: Building, label: "Buildings" },
   {
     href: "/dashboard/marketplace",
@@ -147,7 +147,7 @@ export default function AppSidebar() {
                 tooltip="Logout"
                 className="rounded-full text-white/90 hover:bg-white/10"
               >
-                <button onClick={() => router.push("#")}>
+                <button onClick={() => router.push("/auth/sign-in")}>
                   <LogOut className="" />
                   <span>Logout</span>
                 </button>

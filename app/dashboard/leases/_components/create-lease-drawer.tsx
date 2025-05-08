@@ -34,6 +34,8 @@ import {
 } from "@/components/custom/form-field";
 import CustomSheetHeader from "@/components/custom/sheet-header";
 import { Group } from "@/components/custom/group";
+import { RentalApplication, Tenant, WithTimestampsStr } from "@/types";
+import LogJSON from "@/components/custom/log-json";
 // import LogJSON from "@/components/custom/log-json";
 
 // Template type
@@ -66,6 +68,13 @@ interface CreateLeaseDrawerProps {
   onOpenChange: (open: boolean) => void;
   templates: LeaseTemplate[];
   onCreateLease: (lease: Partial<CreateLeaseFormValues>) => void;
+  application:
+    | (RentalApplication & {
+        id: string;
+      } & {
+        submittedBy: Tenant;
+      } & WithTimestampsStr)
+    | undefined;
 }
 
 export function CreateLeaseDrawer({
@@ -73,6 +82,7 @@ export function CreateLeaseDrawer({
   onOpenChange,
   templates,
   onCreateLease,
+  application,
 }: CreateLeaseDrawerProps) {
   const [activeTab, setActiveTab] = useState("details");
   const [selectedTemplate, setSelectedTemplate] =
@@ -89,11 +99,11 @@ export function CreateLeaseDrawer({
     resolver: zodResolver(createLeaseSchema),
     defaultValues: {
       templateId: templates.find((t) => t.isDefault)?.id || "",
-      unitId: "",
-      tenantId: "",
+      unitId: application?.unit.id || "",
+      tenantId: application?.submittedBy.id || "",
       startDate: new Date(),
       endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-      monthlyRent: 0,
+      monthlyRent: application?.unit.monthlyRent || 0,
       securityDeposit: 0,
       notes: "",
       sendImmediately: true,
@@ -133,6 +143,7 @@ export function CreateLeaseDrawer({
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent className="w-full max-w-[600px] overflow-hidden p-0 sm:max-w-[700px] md:max-w-[900px]">
+        <LogJSON data={{ formData: form.getValues(), application }} />
         <div className="flex h-full flex-col">
           {isSuccess ? (
             <div className="flex flex-1 flex-col items-center justify-center p-8">

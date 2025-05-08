@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   FileText,
   Plus,
@@ -52,6 +52,7 @@ import { Lease, LEASE_STATUS, LeaseTemplate } from "@/types";
 import { useGetLeaseTemplatesQuery } from "@/app/quries/useLeases";
 import LogJSON from "@/components/custom/log-json";
 import { formatDate } from "../applications/_utils";
+import { useGetApplicationByIdQuery } from "@/app/quries/useApplications";
 
 export default function LeasesPage() {
   const router = useRouter();
@@ -62,6 +63,11 @@ export default function LeasesPage() {
   const [createLeaseDialogOpen, setCreateLeaseDialogOpen] = useState(false);
 
   const getLeaseTemplatesQuery = useGetLeaseTemplatesQuery();
+
+  const searchParam = useSearchParams();
+  const appId = searchParam.get("appId") as string;
+
+  const getApplicationByIdQuery = useGetApplicationByIdQuery(appId);
 
   // Sample data for templates
   const templates = getLeaseTemplatesQuery.data || [];
@@ -223,9 +229,17 @@ export default function LeasesPage() {
 
   const stats = getLeaseStats();
 
+  useEffect(() => {
+    if (appId && getApplicationByIdQuery.isSuccess) {
+      // open drawer for creating lease info
+      setCreateLeaseDialogOpen(true);
+
+    }
+  }, [appId, getApplicationByIdQuery.isSuccess]);
+
   return (
     <PageWrapper className="py-0">
-      <LogJSON data={{ templates }} />
+      <LogJSON data={{ templates, app: getApplicationByIdQuery.data }} />
       <PageHeader
         title="Lease Management"
         description="Create, manage, and track lease agreements for your properties."
@@ -688,6 +702,7 @@ export default function LeasesPage() {
         onOpenChange={setCreateLeaseDialogOpen}
         templates={templates}
         onCreateLease={handleCreateLease}
+        application={getApplicationByIdQuery.data}
       />
     </PageWrapper>
   );

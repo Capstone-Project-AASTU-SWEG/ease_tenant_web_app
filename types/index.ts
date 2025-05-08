@@ -316,7 +316,6 @@ export type APIResponse<T> = {
   message?: string;
 };
 
-
 /**
  * Application status types
  */
@@ -368,6 +367,8 @@ export interface RentalApplication extends BaseApplication {
   documentsMetadata: {
     name: string;
   }[];
+
+  submittedBy: User & Tenant;
 }
 
 /**
