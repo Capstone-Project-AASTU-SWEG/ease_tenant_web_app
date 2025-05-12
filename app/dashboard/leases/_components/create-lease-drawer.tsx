@@ -36,6 +36,8 @@ import CustomSheetHeader from "@/components/custom/sheet-header";
 import { Group } from "@/components/custom/group";
 import { RentalApplication, Tenant, WithTimestampsStr } from "@/types";
 import LogJSON from "@/components/custom/log-json";
+import { useGetAllUnitsOfBuildingQuery } from "@/app/quries/useUnits";
+import { useGetBuilding, useGetBuildingTenants } from "@/hooks/use-building";
 // import LogJSON from "@/components/custom/log-json";
 
 // Template type
@@ -89,8 +91,16 @@ export function CreateLeaseDrawer({
     useState<LeaseTemplate | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const { getBuildingQuery } = useGetBuilding();
+  const { getBuildingTenantsQuery } = useGetBuildingTenants();
+
   // Sample data for units and tenants
-  const units = [{ value: "unit1", label: "101 - Office (1000 sq ft)" }];
+  const units = getBuildingQuery.data?.units || [];
+
+  const unitsDataItems = units?.map((unit) => ({
+    value: unit.id,
+    label: unit.unitNumber,
+  }));
 
   const tenants = [{ value: "tenant1", label: "Acme Corporation" }];
 
@@ -143,7 +153,13 @@ export function CreateLeaseDrawer({
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent className="w-full max-w-[600px] overflow-hidden p-0 sm:max-w-[700px] md:max-w-[900px]">
-        <LogJSON data={{ formData: form.getValues(), application }} />
+        <LogJSON
+          data={{
+            // formData: form.getValues(),
+            // application,
+            abc: getBuildingTenantsQuery.data,
+          }}
+        />
         <div className="flex h-full flex-col">
           {isSuccess ? (
             <div className="flex flex-1 flex-col items-center justify-center p-8">
@@ -257,7 +273,7 @@ export function CreateLeaseDrawer({
                                     control={form.control}
                                     name="unitId"
                                     label="Unit"
-                                    options={units}
+                                    options={unitsDataItems}
                                   />
                                   <SelectFormField
                                     control={form.control}

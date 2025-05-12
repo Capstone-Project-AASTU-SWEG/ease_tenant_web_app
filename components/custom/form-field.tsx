@@ -278,7 +278,7 @@ export const SelectFormField = <T extends FieldValues>({
               >
                 <SelectValue
                   placeholder={placeholder}
-                  defaultValue={field.value || options[0].value}
+                  defaultValue={field.value || options[0]?.value}
                 />
               </SelectTrigger>
               <SelectContent>

@@ -20,3 +20,25 @@ export function formatCurrency(amount: number) {
     minimumFractionDigits: 0,
   }).format(amount);
 }
+
+export const storeBuildingId = (buildingId: string) => {
+  localStorage.setItem("buildingId", buildingId);
+};
+export const getBuildingIdFromStore = () => {
+  return localStorage.getItem("buildingId") as string;
+};
+export const storeUnitId = (unitId: string) => {
+  localStorage.setItem("unitId", unitId);
+};
+export const getUnitIdFromStore = () => {
+  return localStorage.getItem("unitId") as string;
+};
+export const storeApplicationId = (applicationId: string) => {
+  localStorage.setItem("applicationId", applicationId);
+};
+export const getApplicationIdFromStore = () => {
+  return localStorage.getItem("applicationId") as string;
+};
+export const getTenantIdFromStore = () => {
+  return localStorage.getItem("tenantId") as string;
+};

@@ -61,6 +61,7 @@ import {
 import LogJSON from "@/components/custom/log-json";
 import { errorToast } from "@/components/custom/toasts";
 import { useRouter } from "next/navigation";
+import { storeBuildingId } from "@/utils";
 
 // Extended building type with calculated fields
 type ExtendedBuilding = BuildingWithStat & {
@@ -321,6 +322,7 @@ const BuildingCard = ({
       <Card
         className="group relative h-full overflow-hidden rounded-lg border-none bg-white/5 shadow-md backdrop-blur-sm transition-all duration-300 dark:bg-black/5"
         onDoubleClick={() => {
+          storeBuildingId(building.id);
           router.push(`/dashboard/buildings/${building.id}`);
         }}
       >

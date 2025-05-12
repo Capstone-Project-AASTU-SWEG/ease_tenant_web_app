@@ -61,7 +61,7 @@ const TitleSection = ({
       <div className="relative">
         <Title
           size="h1"
-          className="bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-center text-5xl font-bold tracking-tight text-transparent md:text-6xl"
+          className="text-5xl font-bold tracking-tight md:text-6xl"
         >
           Create Your Account
         </Title>
@@ -148,7 +148,6 @@ const UserTypeCard = ({
               transition: {
                 duration: 0.2,
                 type: "spring",
-                stiffness: 300,
               },
             }
           : {}
@@ -174,7 +173,7 @@ const UserTypeCard = ({
       }
       className={`group relative border-2 backdrop-blur-md ${type.borderColor} transition-all duration-300 ${
         type.color
-      } cursor-pointer overflow-hidden rounded-md ${isFocused ? "w-full max-w-xl" : "w-[120px] md:w-[150px]"}`}
+      } cursor-pointer overflow-hidden rounded-lg ${isFocused ? "w-full max-w-xl" : "w-[120px] md:w-[150px]"}`}
       style={{
         zIndex: isFocused ? 10 : 5 - index,
       }}
@@ -396,14 +395,6 @@ const iconVariants: Variants = {
   },
 };
 
-const backgroundVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { duration: 1.5 },
-  },
-};
-
 export default function SignupSelector() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -426,53 +417,6 @@ export default function SignupSelector() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* Animated background elements */}
-      <motion.div
-        className="absolute inset-0 z-0"
-        variants={backgroundVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <motion.div
-          className="absolute -right-[10%] -top-[30%] h-[500px] w-[500px] rounded-full bg-primary/5 blur-[120px]"
-          animate={{
-            y: [0, 30, 0],
-            opacity: [0.5, 0.7, 0.5],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Number.POSITIVE_INFINITY,
-            repeatType: "mirror",
-          }}
-        />
-        <motion.div
-          className="absolute -bottom-[20%] -left-[10%] h-[400px] w-[400px] rounded-full bg-amber-500/5 blur-[100px]"
-          animate={{
-            y: [0, -40, 0],
-            opacity: [0.4, 0.6, 0.4],
-          }}
-          transition={{
-            duration: 18,
-            repeat: Number.POSITIVE_INFINITY,
-            repeatType: "mirror",
-            delay: 2,
-          }}
-        />
-        <motion.div
-          className="absolute right-[20%] top-[30%] h-[300px] w-[300px] rounded-full bg-emerald-500/5 blur-[80px]"
-          animate={{
-            x: [0, 30, 0],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Number.POSITIVE_INFINITY,
-            repeatType: "mirror",
-            delay: 5,
-          }}
-        />
-      </motion.div>
-
       <Center className="z-10 mx-auto flex h-screen max-w-6xl flex-col px-6 py-10">
         <TitleSection
           mounted={mounted}
