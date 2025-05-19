@@ -130,14 +130,13 @@ const Page = () => {
   const stats = calculateStats();
 
   return (
-    <PageWrapper>
+    <PageWrapper className="py-0">
       <LogJSON data={{ units }} />
+      <PageHeader
+        title="Unit Management"
+        description="View and manage all units in this building"
+      />
       <div className="mb-6">
-        <PageHeader
-          title="Unit Management"
-          description="View and manage all units in this building"
-        />
-
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatsCard
             title="Total Units"

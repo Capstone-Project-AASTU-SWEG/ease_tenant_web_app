@@ -25,6 +25,7 @@ import Image from "next/image";
 import BackButton from "./back-btn";
 import SubmitButton from "./submit-btn";
 import ASSETS from "../../_assets";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ========== ANIMATIONS ==========
 const contentVariants = {
@@ -176,7 +177,7 @@ export default function ManagerSignup() {
 
       {/* Right Column - Form with proper scrolling */}
       <div className="flex h-screen flex-1 flex-col bg-background md:w-1/2">
-        <div className="h-full overflow-y-auto px-6 py-12">
+        <div className="h-full overflow-y-auto p-6">
           <div className="mb-8">
             <h2 className="text-3xl font-bold tracking-tight">
               Property Manager Registration
@@ -187,139 +188,141 @@ export default function ManagerSignup() {
             </p>
           </div>
 
-          <Form {...form}>
-            <form
-              id="manager-signup-form"
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col gap-8"
-            >
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={contentVariants}
+          <ScrollArea>
+            <Form {...form}>
+              <form
+                id="manager-signup-form"
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="flex flex-col gap-8"
               >
-                <Card className="border-none shadow-none">
-                  <CardContent className="p-0">
-                    <div className="space-y-10">
-                      {/* Building Selection Section */}
-                      <div className="space-y-6">
-                        <h3 className="text-xl font-semibold">
-                          Building Assignment
-                        </h3>
-                        <div className="grid gap-6">
-                          <DataListInput
-                            maxItems={1}
-                            items={
-                              buildings.data?.map((building) => ({
-                                label: building.name,
-                                value: building.id,
-                              })) || []
-                            }
-                            label="Select Building"
-                            onChange={(data) => {
-                              form.setValue(
-                                "assignedBuilding",
-                                data.at(0)?.value,
-                              );
-                            }}
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  variants={contentVariants}
+                >
+                  <Card className="border-none shadow-none">
+                    <CardContent className="p-0">
+                      <div className="space-y-10">
+                        {/* Building Selection Section */}
+                        <div className="space-y-6">
+                          <h3 className="text-xl font-semibold">
+                            Building Assignment
+                          </h3>
+                          <div className="grid gap-6">
+                            <DataListInput
+                              maxItems={1}
+                              items={
+                                buildings.data?.map((building) => ({
+                                  label: building.name,
+                                  value: building.id,
+                                })) || []
+                              }
+                              label="Select Building"
+                              onChange={(data) => {
+                                form.setValue(
+                                  "assignedBuilding",
+                                  data.at(0)?.value,
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Personal Information Section */}
+                        <div className="space-y-6">
+                          <h3 className="text-xl font-semibold">
+                            Personal Information
+                          </h3>
+                          <div className="grid gap-6">
+                            <Group className="grid sm:grid-cols-2">
+                              <TextFormField
+                                control={form.control}
+                                name="firstName"
+                                label="First Name"
+                                placeholder="John"
+                              />
+                              <TextFormField
+                                control={form.control}
+                                name="lastName"
+                                label="Last Name"
+                                placeholder="Doe"
+                              />
+                            </Group>
+
+                            <Group className="grid sm:grid-cols-2">
+                              <EmailFormField
+                                control={form.control}
+                                name="email"
+                                label="Email"
+                                placeholder="john.doe@acmecorp.com"
+                              />
+                              <TextFormField
+                                control={form.control}
+                                name="phone"
+                                label="Phone Number"
+                                placeholder="(123) 456-7890"
+                              />
+                            </Group>
+                          </div>
+                        </div>
+
+                        {/* Employment Details Section */}
+                        <div className="space-y-6">
+                          <h3 className="text-xl font-semibold">
+                            Employment Details
+                          </h3>
+                          <div className="grid gap-6">
+                            <Group className="grid sm:grid-cols-2">
+                              <DateFormField
+                                control={form.control}
+                                name="employmentDate"
+                                label="Employment Date"
+                              />
+                              <NumberFormField
+                                control={form.control}
+                                name="salary"
+                                label="Salary"
+                                placeholder="50,000"
+                              />
+                            </Group>
+                          </div>
+                        </div>
+
+                        {/* Account Section */}
+                        <div className="space-y-6">
+                          <h3 className="text-xl font-semibold">
+                            Account Information
+                          </h3>
+                          <div className="grid gap-6">
+                            <Group className="grid sm:grid-cols-2">
+                              <PasswordFormField
+                                control={form.control}
+                                name="password"
+                                label="Password"
+                                placeholder="••••••••"
+                              />
+                              <PasswordFormField
+                                control={form.control}
+                                name="confirmPassword"
+                                label="Confirm Password"
+                                placeholder="••••••••"
+                              />
+                            </Group>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <SubmitButton
+                            isSubmitting={managerSignUpMutation.isPending}
                           />
                         </div>
                       </div>
-
-                      {/* Personal Information Section */}
-                      <div className="space-y-6">
-                        <h3 className="text-xl font-semibold">
-                          Personal Information
-                        </h3>
-                        <div className="grid gap-6">
-                          <Group className="grid sm:grid-cols-2">
-                            <TextFormField
-                              control={form.control}
-                              name="firstName"
-                              label="First Name"
-                              placeholder="John"
-                            />
-                            <TextFormField
-                              control={form.control}
-                              name="lastName"
-                              label="Last Name"
-                              placeholder="Doe"
-                            />
-                          </Group>
-
-                          <Group className="grid sm:grid-cols-2">
-                            <EmailFormField
-                              control={form.control}
-                              name="email"
-                              label="Email"
-                              placeholder="john.doe@acmecorp.com"
-                            />
-                            <TextFormField
-                              control={form.control}
-                              name="phone"
-                              label="Phone Number"
-                              placeholder="(123) 456-7890"
-                            />
-                          </Group>
-                        </div>
-                      </div>
-
-                      {/* Employment Details Section */}
-                      <div className="space-y-6">
-                        <h3 className="text-xl font-semibold">
-                          Employment Details
-                        </h3>
-                        <div className="grid gap-6">
-                          <Group className="grid sm:grid-cols-2">
-                            <DateFormField
-                              control={form.control}
-                              name="employmentDate"
-                              label="Employment Date"
-                            />
-                            <NumberFormField
-                              control={form.control}
-                              name="salary"
-                              label="Salary"
-                              placeholder="50,000"
-                            />
-                          </Group>
-                        </div>
-                      </div>
-
-                      {/* Account Section */}
-                      <div className="space-y-6">
-                        <h3 className="text-xl font-semibold">
-                          Account Information
-                        </h3>
-                        <div className="grid gap-6">
-                          <Group className="grid sm:grid-cols-2">
-                            <PasswordFormField
-                              control={form.control}
-                              name="password"
-                              label="Password"
-                              placeholder="••••••••"
-                            />
-                            <PasswordFormField
-                              control={form.control}
-                              name="confirmPassword"
-                              label="Confirm Password"
-                              placeholder="••••••••"
-                            />
-                          </Group>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <SubmitButton
-                          isSubmitting={managerSignUpMutation.isPending}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </form>
-          </Form>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </form>
+            </Form>
+          </ScrollArea>
         </div>
       </div>
     </div>

@@ -20,9 +20,9 @@ const BackButton = () => {
       >
         <div className="flex items-center space-x-2">
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 transition-all duration-300 group-hover:bg-primary/20">
-            <ArrowLeft className="h-3.5 w-3.5 text-white/50 transition-transform duration-300 group-hover:-translate-x-0.5 group-hover:text-white" />
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 md:text-white/50 md:group-hover:-translate-x-0.5 md:group-hover:text-white" />
           </div>
-          <span className="text-sm font-medium text-white/50 transition-colors duration-300 group-hover:text-white">
+          <span className="text-sm font-medium text-primary transition-colors duration-300 md:text-white/50 md:group-hover:text-white">
             Return to Sign Up
           </span>
         </div>

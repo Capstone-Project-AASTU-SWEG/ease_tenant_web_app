@@ -34,6 +34,7 @@ import Image from "next/image";
 import SubmitButton from "./submit-btn";
 import ASSETS from "../../_assets";
 import BackButton from "./back-btn";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ========== ANIMATIONS ==========
 const contentVariants = {
@@ -118,7 +119,7 @@ export default function TenantSignup() {
   }, [signUpMutation.isError, signUpMutation.error]);
 
   return (
-    <div className="flex h-screen flex-row overflow-hidden">
+    <div className="flex flex-row overflow-hidden">
       <BackButton />
 
       {/* Left Column - Background Image using Next.js Image component */}
@@ -169,8 +170,8 @@ export default function TenantSignup() {
       </div>
 
       {/* Right Column - Form with proper scrolling */}
-      <div className="flex h-screen flex-1 flex-col bg-background md:w-1/2">
-        <div className="h-full overflow-y-auto px-6 py-12">
+      <div className="flex h-[100dvh] flex-1 flex-col overflow-hidden bg-background md:w-1/2">
+        <div className="h-full overflow-y-auto p-6">
           <Stack spacing={"sm"} className="mb-8">
             <h2 className="text-3xl font-bold tracking-tight">
               Commercial Tenant Registration
@@ -181,195 +182,199 @@ export default function TenantSignup() {
             </p>
           </Stack>
 
-          <Form {...form}>
-            <form
-              id="tenant-signup-form"
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col gap-8"
-            >
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={contentVariants}
+          <ScrollArea className="">
+            <Form {...form}>
+              <form
+                id="tenant-signup-form"
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="flex flex-col gap-8"
               >
-                <Card className="border-none shadow-none">
-                  <CardContent className="p-0">
-                    <div className="flex flex-col gap-10">
-                      {/* Contact Section */}
-                      <div className="flex flex-col gap-6">
-                        <h3 className="text-xl font-semibold">
-                          Contact Information
-                        </h3>
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  variants={contentVariants}
+                >
+                  <Card className="border-none shadow-none">
+                    <CardContent className="p-0">
+                      <div className="flex flex-col gap-10">
+                        {/* Contact Section */}
+                        <section className="flex flex-col gap-6">
+                          <h3 className="text-xl font-semibold">
+                            Contact Information
+                          </h3>
+                          <Stack className="gap-6">
+                            <Group className="grid sm:grid-cols-2">
+                              <TextFormField
+                                control={form.control}
+                                name="firstName"
+                                label="First Name"
+                                placeholder="John"
+                              />
+                              <TextFormField
+                                control={form.control}
+                                name="lastName"
+                                label="Last Name"
+                                placeholder="Doe"
+                              />
+                            </Group>
+                            <TextFormField
+                              control={form.control}
+                              name="occupation"
+                              label="Occupation"
+                              placeholder="Property Manager"
+                            />
+
+                            <Group className="grid sm:grid-cols-2">
+                              <EmailFormField
+                                control={form.control}
+                                name="email"
+                                label="Email"
+                                placeholder="john.doe@acmecorp.com"
+                              />
+                              <TextFormField
+                                control={form.control}
+                                name="phone"
+                                label="Phone Number"
+                                placeholder="(123) 456-7890"
+                              />
+                            </Group>
+
+                            <Group className="grid sm:grid-cols-2">
+                              <TextFormField
+                                control={form.control}
+                                name="workPhoneNumber"
+                                label="Work Phone Number"
+                                placeholder="(123) 456-7890"
+                              />
+                              <TextFormField
+                                control={form.control}
+                                name="emergencyContact"
+                                label="Emergency Contact"
+                                placeholder="(123) 456-7890"
+                              />
+                            </Group>
+                          </Stack>
+                        </section>
+
+                        {/* Business Section */}
                         <Stack className="gap-6">
-                          <Group className="grid sm:grid-cols-2">
+                          <h3 className="text-xl font-semibold">
+                            Business Information
+                          </h3>
+                          <div className="grid gap-6">
                             <TextFormField
                               control={form.control}
-                              name="firstName"
-                              label="First Name"
-                              placeholder="John"
+                              name="businessName"
+                              label="Business Name"
+                              placeholder="Acme Corporation"
                             />
-                            <TextFormField
-                              control={form.control}
-                              name="lastName"
-                              label="Last Name"
-                              placeholder="Doe"
-                            />
-                          </Group>
-                          <TextFormField
-                            control={form.control}
-                            name="occupation"
-                            label="Occupation"
-                            placeholder="Property Manager"
-                          />
 
-                          <Group className="grid sm:grid-cols-2">
-                            <EmailFormField
+                            <SelectFormField
                               control={form.control}
-                              name="email"
-                              label="Email"
-                              placeholder="john.doe@acmecorp.com"
+                              name="businessType"
+                              label="Business Type"
+                              options={BUSINESS_TYPE_OPTIONS}
                             />
+
+                            <TextareaFormField
+                              control={form.control}
+                              name="businessDescription"
+                              label="Business Description"
+                              placeholder="Brief description of your business activities"
+                            />
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <TextFormField
+                                control={form.control}
+                                name="businessRegistrationNumber"
+                                label="Business Registration Number"
+                                placeholder="12-3456789"
+                              />
+                              <TextFormField
+                                control={form.control}
+                                name="taxId"
+                                label="Tax ID (EIN)"
+                                placeholder="12-3456789"
+                              />
+                            </div>
                             <TextFormField
                               control={form.control}
-                              name="phone"
-                              label="Phone Number"
-                              placeholder="(123) 456-7890"
-                            />
-                          </Group>
-
-                          <Group className="grid sm:grid-cols-2">
-                            <TextFormField
-                              control={form.control}
-                              name="workPhoneNumber"
-                              label="Work Phone Number"
-                              placeholder="(123) 456-7890"
-                            />
-                            <TextFormField
-                              control={form.control}
-                              name="emergencyContact"
-                              label="Emergency Contact"
-                              placeholder="(123) 456-7890"
-                            />
-                          </Group>
-                        </Stack>
-                      </div>
-
-                      {/* Business Section */}
-                      <Stack className="gap-6">
-                        <h3 className="text-xl font-semibold">
-                          Business Information
-                        </h3>
-                        <div className="grid gap-6">
-                          <TextFormField
-                            control={form.control}
-                            name="businessName"
-                            label="Business Name"
-                            placeholder="Acme Corporation"
-                          />
-
-                          <SelectFormField
-                            control={form.control}
-                            name="businessType"
-                            label="Business Type"
-                            options={BUSINESS_TYPE_OPTIONS}
-                          />
-
-                          <TextareaFormField
-                            control={form.control}
-                            name="businessDescription"
-                            label="Business Description"
-                            placeholder="Brief description of your business activities"
-                          />
-
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <TextFormField
-                              control={form.control}
-                              name="businessRegistrationNumber"
-                              label="Business Registration Number"
-                              placeholder="12-3456789"
-                            />
-                            <TextFormField
-                              control={form.control}
-                              name="taxId"
-                              label="Tax ID (EIN)"
-                              placeholder="12-3456789"
+                              name="businessWebsite"
+                              label="Business Website"
+                              placeholder="https://yourbusiness.com"
                             />
                           </div>
-                          <TextFormField
-                            control={form.control}
-                            name="businessWebsite"
-                            label="Business Website"
-                            placeholder="https://yourbusiness.com"
+                        </Stack>
+
+                        {/* Account Section */}
+                        <div className="flex flex-col gap-6">
+                          <h3 className="text-xl font-semibold">
+                            Account Information
+                          </h3>
+                          <Stack>
+                            <Group className="grid sm:grid-cols-2">
+                              <PasswordFormField
+                                control={form.control}
+                                name="password"
+                                label="Password"
+                                placeholder="••••••••"
+                              />
+                              <PasswordFormField
+                                control={form.control}
+                                name="confirmPassword"
+                                label="Confirm Password"
+                                placeholder="••••••••"
+                              />
+                            </Group>
+
+                            <Stack>
+                              <FormField
+                                control={form.control}
+                                name="termsAccepted"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg bg-white/20 p-4">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                      />
+                                    </FormControl>
+                                    <div className="space-y-1 leading-none">
+                                      <FormLabel>
+                                        I accept the{" "}
+                                        <a
+                                          href="/terms"
+                                          className="text-primary underline underline-offset-4"
+                                        >
+                                          terms and conditions
+                                        </a>
+                                      </FormLabel>
+                                      <FormDescription>
+                                        By creating an account, you agree to our
+                                        terms of service and privacy policy.
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </div>
+                                  </FormItem>
+                                )}
+                              />
+                            </Stack>
+                          </Stack>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <SubmitButton
+                            isSubmitting={signUpMutation.isPending}
                           />
                         </div>
-                      </Stack>
-
-                      {/* Account Section */}
-                      <div className="flex flex-col gap-6">
-                        <h3 className="text-xl font-semibold">
-                          Account Information
-                        </h3>
-                        <Stack>
-                          <Group className="grid sm:grid-cols-2">
-                            <PasswordFormField
-                              control={form.control}
-                              name="password"
-                              label="Password"
-                              placeholder="••••••••"
-                            />
-                            <PasswordFormField
-                              control={form.control}
-                              name="confirmPassword"
-                              label="Confirm Password"
-                              placeholder="••••••••"
-                            />
-                          </Group>
-
-                          <Stack>
-                            <FormField
-                              control={form.control}
-                              name="termsAccepted"
-                              render={({ field }) => (
-                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg bg-white/20 p-4">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value}
-                                      onCheckedChange={field.onChange}
-                                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                                    />
-                                  </FormControl>
-                                  <div className="space-y-1 leading-none">
-                                    <FormLabel>
-                                      I accept the{" "}
-                                      <a
-                                        href="/terms"
-                                        className="text-primary underline underline-offset-4"
-                                      >
-                                        terms and conditions
-                                      </a>
-                                    </FormLabel>
-                                    <FormDescription>
-                                      By creating an account, you agree to our
-                                      terms of service and privacy policy.
-                                    </FormDescription>
-                                    <FormMessage />
-                                  </div>
-                                </FormItem>
-                              )}
-                            />
-                          </Stack>
-                        </Stack>
                       </div>
-
-                      <div className="flex justify-end">
-                        <SubmitButton isSubmitting={signUpMutation.isPending} />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </form>
-          </Form>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </form>
+            </Form>
+          </ScrollArea>
         </div>
       </div>
     </div>

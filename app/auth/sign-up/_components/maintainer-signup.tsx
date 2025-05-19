@@ -13,14 +13,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { errorToast, successToast } from "@/components/custom/toasts";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,6 +22,15 @@ import Image from "next/image";
 import BackButton from "./back-btn";
 import SubmitButton from "./submit-btn";
 import ASSETS from "../../_assets";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import Stack from "@/components/custom/stack";
+import { Group } from "@/components/custom/group";
+import {
+  EmailFormField,
+  PasswordFormField,
+  SelectFormField,
+  TextFormField,
+} from "@/components/custom/form-field";
 
 // ========== ANIMATIONS ==========
 const contentVariants = {
@@ -174,7 +175,7 @@ export default function MaintainerSignup() {
 
       {/* Right Column - Form with proper scrolling */}
       <div className="flex h-screen flex-1 flex-col bg-background md:w-1/2">
-        <div className="h-full overflow-y-auto px-6 py-12">
+        <div className="h-full overflow-y-auto p-6">
           <div className="mb-8">
             <h2 className="text-3xl font-bold tracking-tight">
               Maintenance Staff Registration
@@ -184,285 +185,195 @@ export default function MaintainerSignup() {
             </p>
           </div>
 
-          <Form {...form}>
-            <form
-              id="maintainer-signup-form"
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col gap-8"
-            >
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={contentVariants}
+          <ScrollArea>
+            <Form {...form}>
+              <form
+                id="maintainer-signup-form"
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="flex flex-col gap-8"
               >
-                <Card className="border-none shadow-none">
-                  <CardContent className="p-0">
-                    <div className="space-y-10">
-                      {/* Personal Information Section */}
-                      <div className="space-y-6">
-                        <h3 className="text-xl font-semibold">
-                          Personal Information
-                        </h3>
-                        <div className="grid gap-6">
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <FormField
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  variants={contentVariants}
+                >
+                  <Card className="border-none shadow-none">
+                    <CardContent className="p-0">
+                      <div className="space-y-10">
+                        {/* Personal Information Section */}
+                        <section className="flex flex-col gap-6">
+                          <h3 className="text-xl font-semibold">
+                            Contact Information
+                          </h3>
+                          <Stack className="gap-6">
+                            <Group className="grid sm:grid-cols-2">
+                              <TextFormField
+                                control={form.control}
+                                name="firstName"
+                                label="First Name"
+                                placeholder="John"
+                              />
+                              <TextFormField
+                                control={form.control}
+                                name="lastName"
+                                label="Last Name"
+                                placeholder="Doe"
+                              />
+                            </Group>
+
+                            <Group className="grid sm:grid-cols-2">
+                              <EmailFormField
+                                control={form.control}
+                                name="email"
+                                label="Email"
+                                placeholder="john.doe@acmecorp.com"
+                              />
+                              <TextFormField
+                                control={form.control}
+                                name="phone"
+                                label="Phone Number"
+                                placeholder="(123) 456-7890"
+                              />
+                            </Group>
+                          </Stack>
+                        </section>
+
+                        {/* Professional Details Section */}
+                        <div className="space-y-6">
+                          <h3 className="text-xl font-semibold">
+                            Professional Details
+                          </h3>
+                          <div className="grid gap-6">
+                            <SelectFormField
                               control={form.control}
-                              name="firstName"
+                              name="specialization"
+                              label="Specialization"
+                              options={[
+                                {
+                                  value: "general",
+                                  label: "General Maintenance",
+                                },
+                                {
+                                  value: "plumbing",
+                                  label: "Plumbing",
+                                },
+                                {
+                                  value: "electrical",
+                                  label: "Electrical",
+                                },
+                              ]}
+                            />
+                            <SelectFormField
+                              control={form.control}
+                              name="experience"
+                              label="Experience Level"
+                              placeholder="Select your experience level"
+                              options={[
+                                {
+                                  value: "entry",
+                                  label: "Entry Level (0-2 years)",
+                                },
+                                {
+                                  value: "intermediate",
+                                  label: "Intermediate (3-5 years)",
+                                },
+                                {
+                                  value: "experienced",
+                                  label: "Experienced (6-10 years)",
+                                },
+                                {
+                                  value: "expert",
+                                  label: "Expert (10+ years)",
+                                },
+                              ]}
+                            />
+
+                            {/* <FormField
+                              control={form.control}
+                              name="certifications"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>First Name</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="John" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="lastName"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Last Name</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Doe" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-
-                          <FormField
-                            control={form.control}
-                            name="email"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="email"
-                                    placeholder="john.doe@example.com"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="phone"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Phone Number</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="tel"
-                                    placeholder="(123) 456-7890"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Professional Details Section */}
-                      <div className="space-y-6">
-                        <h3 className="text-xl font-semibold">
-                          Professional Details
-                        </h3>
-                        <div className="grid gap-6">
-                          <FormField
-                            control={form.control}
-                            name="specialization"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Specialization</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select your specialization" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="general">
-                                      General Maintenance
-                                    </SelectItem>
-                                    <SelectItem value="plumbing">
-                                      Plumbing
-                                    </SelectItem>
-                                    <SelectItem value="electrical">
-                                      Electrical
-                                    </SelectItem>
-                                    <SelectItem value="hvac">HVAC</SelectItem>
-                                    <SelectItem value="carpentry">
-                                      Carpentry
-                                    </SelectItem>
-                                    <SelectItem value="landscaping">
-                                      Landscaping
-                                    </SelectItem>
-                                    <SelectItem value="cleaning">
-                                      Cleaning
-                                    </SelectItem>
-                                    <SelectItem value="other">Other</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="experience"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Experience Level</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select your experience level" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="entry">
-                                      Entry Level (0-2 years)
-                                    </SelectItem>
-                                    <SelectItem value="intermediate">
-                                      Intermediate (3-5 years)
-                                    </SelectItem>
-                                    <SelectItem value="experienced">
-                                      Experienced (6-10 years)
-                                    </SelectItem>
-                                    <SelectItem value="expert">
-                                      Expert (10+ years)
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="certifications"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Certifications (Optional)</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="List any relevant certifications"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Account Section */}
-                      <div className="space-y-6">
-                        <h3 className="text-xl font-semibold">
-                          Account Information
-                        </h3>
-                        <div className="grid gap-6">
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <FormField
-                              control={form.control}
-                              name="password"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Password</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="password"
-                                      placeholder="••••••••"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormDescription>
-                                    Password must be at least 8 characters long.
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="confirmPassword"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Confirm Password</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="password"
-                                      placeholder="••••••••"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-
-                          <FormField
-                            control={form.control}
-                            name="termsAccepted"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg bg-white/20 p-4">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                                  />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
                                   <FormLabel>
-                                    I accept the{" "}
-                                    <a
-                                      href="/terms"
-                                      className="text-primary underline underline-offset-4"
-                                    >
-                                      terms and conditions
-                                    </a>
+                                    Certifications (Optional)
                                   </FormLabel>
-                                  <FormDescription>
-                                    By creating an account, you agree to our
-                                    terms of service and privacy policy.
-                                  </FormDescription>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="List any relevant certifications"
+                                      {...field}
+                                    />
+                                  </FormControl>
                                   <FormMessage />
-                                </div>
-                              </FormItem>
-                            )}
-                          />
+                                </FormItem>
+                              )}
+                            /> */}
+                          </div>
+                        </div>
+
+                        {/* Account Section */}
+                        <div className="space-y-6">
+                          <h3 className="text-xl font-semibold">
+                            Account Information
+                          </h3>
+                          <div className="grid gap-6">
+                            <Group className="grid sm:grid-cols-2">
+                              <PasswordFormField
+                                control={form.control}
+                                name="password"
+                                label="Password"
+                                placeholder="••••••••"
+                              />
+                              <PasswordFormField
+                                control={form.control}
+                                name="confirmPassword"
+                                label="Confirm Password"
+                                placeholder="••••••••"
+                              />
+                            </Group>
+
+                            <FormField
+                              control={form.control}
+                              name="termsAccepted"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg bg-white/20 p-4">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                    />
+                                  </FormControl>
+                                  <div className="space-y-1 leading-none">
+                                    <FormLabel>
+                                      I accept the{" "}
+                                      <a
+                                        href="/terms"
+                                        className="text-primary underline underline-offset-4"
+                                      >
+                                        terms and conditions
+                                      </a>
+                                    </FormLabel>
+                                    <FormDescription>
+                                      By creating an account, you agree to our
+                                      terms of service and privacy policy.
+                                    </FormDescription>
+                                    <FormMessage />
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <SubmitButton isSubmitting={isSubmitting} />
                         </div>
                       </div>
-
-                      <div className="flex justify-end">
-                        <SubmitButton isSubmitting={isSubmitting} />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </form>
-          </Form>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </form>
+            </Form>
+          </ScrollArea>
         </div>
       </div>
     </div>

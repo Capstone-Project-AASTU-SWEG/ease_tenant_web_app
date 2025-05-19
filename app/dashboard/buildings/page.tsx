@@ -407,7 +407,7 @@ export default function BuildingsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+                  className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 items-start"
                 >
                   {filteredBuildings.length > 0 ? (
                     filteredBuildings.map((building, index) => (
@@ -626,9 +626,9 @@ const BuildingCard = ({
       initial="hidden"
       animate={controls}
       whileHover={{ y: -5 }}
-      className="h-full"
+      // className="h-full"
     >
-      <Card className="group relative h-full overflow-hidden rounded-xl border-none bg-white shadow-md transition-all duration-300 hover:shadow-xl dark:bg-slate-900">
+      <Card className="group relative h-full overflow-hidden rounded-lg border-none bg-white shadow-md transition-all duration-300 hover:shadow-lg dark:bg-slate-900">
         {/* Ribbon for special properties */}
         {building.availableUnits > 0 && building.occupancy < 90 && (
           <div className="absolute right-0 top-0 z-20 bg-gradient-to-r from-green-500 to-emerald-600 px-3 py-1 text-xs font-medium text-white shadow-md">

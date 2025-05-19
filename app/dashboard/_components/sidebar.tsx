@@ -5,7 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   BarChart3,
-  Bell,
   Building,
   FileText,
   LogOut,
@@ -67,7 +66,7 @@ const adminNavigationItems: NavigationItem[] = [
   },
   { href: "/dashboard/maintenance", icon: Wrench, label: "Maintenance" },
   { href: "/dashboard/messages", icon: MessageCircle, label: "Chat" },
-  { href: "#", icon: Bell, label: "Notifications" },
+  // { href: "#", icon: Bell, label: "Notifications" },
   { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
@@ -81,7 +80,7 @@ const tenantNavigationItems: NavigationItem[] = [
   },
   { href: "/dashboard/maintenance", icon: Wrench, label: "Maintenance" },
   { href: "/dashboard/messages", icon: MessageCircle, label: "Chat" },
-  { href: "#", icon: Bell, label: "Notifications" },
+  // { href: "#", icon: Bell, label: "Notifications" },
   { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
