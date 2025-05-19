@@ -3,7 +3,7 @@
 import type React from "react";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import {
   ArrowUpRight,
@@ -17,11 +17,14 @@ import {
   Trash,
   ChevronLeft,
   ChevronRight,
-  MapPin,
   Building,
-  Tag,
   Check,
   ExternalLink,
+  X,
+  User,
+  Phone,
+  Banknote,
+  Layers,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -35,9 +38,10 @@ import { StatusBadgeStyles, UnitTypeIcons } from "@/constants/icons";
 import { Group } from "@/components/custom/group";
 import type { UnitWithId } from "@/app/quries/useUnits";
 import { useRouter } from "next/navigation";
-import { BuildingWithStat } from "@/app/quries/useBuildings";
+import type { BuildingWithStat } from "@/app/quries/useBuildings";
 import { Center } from "./center";
 import Stack from "./stack";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface UnitAction {
   icon: React.ReactNode;
@@ -111,7 +115,7 @@ export function UnitDetailsSheet({
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
-        className="w-full overflow-y-auto p-0 sm:max-w-md md:max-w-lg lg:max-w-xl"
+        className="w-full overflow-hidden p-0 sm:max-w-md md:max-w-lg lg:max-w-xl"
         side="right"
       >
         <SheetTitle className="sr-only">Unit Detail</SheetTitle>
@@ -132,14 +136,17 @@ export function UnitDetailsSheet({
             <Button
               variant="ghost"
               size="icon"
-              className="absolute left-4 top-4 h-8 w-8 rounded-full bg-black/30 text-white backdrop-blur-sm hover:bg-black/50"
+              className="absolute left-4 top-4 z-10 h-9 w-9 rounded-full bg-black/20 text-white backdrop-blur-md hover:bg-black/40"
               onClick={() => onOpenChange(false)}
             >
-              <ChevronLeft className="h-5 w-5" />
+              <X className="h-5 w-5" />
             </Button>
-            <div className="absolute bottom-4 left-4 flex flex-col gap-1">
+            <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-1">
               <Badge
-                className={cn("w-fit border", StatusBadgeStyles[unit.status])}
+                className={cn(
+                  "w-fit border px-3 py-1 text-xs font-medium shadow-sm backdrop-blur-sm",
+                  StatusBadgeStyles[unit.status],
+                )}
               >
                 {unit.status}
               </Badge>
@@ -147,21 +154,23 @@ export function UnitDetailsSheet({
           </div>
 
           {/* Unit title and info */}
-          <div className="px-6 py-4">
+          <div className="px-6 py-5">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-2xl font-bold">Unit {unit.unitNumber}</h2>
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Unit {unit.unitNumber}
+                </h2>
                 <div className="mt-1 flex items-center gap-2 text-muted-foreground">
                   <Building className="h-4 w-4" />
-                  <span>{building.name}</span>
+                  <span className="text-sm">{building.name}</span>
                 </div>
               </div>
               <div
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full",
+                  "flex h-12 w-12 items-center justify-center rounded-full",
                   isOccupied
-                    ? "bg-primary/10"
-                    : "bg-slate-100 dark:bg-slate-800",
+                    ? "bg-primary/10 text-primary"
+                    : "bg-slate-100 text-slate-600 dark:bg-slate-800",
                 )}
               >
                 {UnitTypeIcons[unit.type]}
@@ -169,155 +178,209 @@ export function UnitDetailsSheet({
             </div>
 
             {/* Key details */}
-            <div className="mt-4 grid grid-cols-2 gap-4 rounded-lg bg-muted/30 p-3">
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground">Size</span>
-                <div className="flex items-center gap-1.5 font-medium">
-                  <SquareFoot className="h-4 w-4 text-primary" />
-                  {unit.sizeSqFt} sq ft
+            <div className="mt-5 grid grid-cols-2 gap-4">
+              <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-900/50">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                    <SquareFoot className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Size</p>
+                    <p className="font-medium">{unit.sizeSqFt} sq ft</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground">
-                  Monthly Rate
-                </span>
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Tag className="h-4 w-4 text-primary" />
-                  {unit.monthlyRent}
+              <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-900/50">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                    <Banknote className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Monthly Rate
+                    </p>
+                    <p className="font-medium">${unit.monthlyRent}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="flex justify-center flex-wrap gap-2 border-b border-t px-6 py-3">
+          <div className="flex flex-wrap gap-2 border-b border-t px-6 py-3">
             {unitActions.map((action, index) => (
               <Button
                 key={index}
                 variant={action.variant}
                 onClick={action.onClick}
-                // className="flex-1"
+                className="flex-1 gap-1.5 shadow-sm"
+                size="sm"
               >
                 {action.icon}
-                <span className="ml-2">{action.label}</span>
+                <span>{action.label}</span>
               </Button>
             ))}
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="px-6 py-4">
-              <div className="grid gap-6">
-                {/* Unit type */}
-                <div>
-                  <h3 className="mb-2 font-semibold">Unit Type</h3>
-                  <Group className="text-sm" spacing="xs">
-                    {UnitTypeIcons[unit.type]} {unit.type}
-                  </Group>
-                </div>
+            <div className="space-y-6 px-6 py-5">
+              {/* Unit type */}
+              <div>
+                <h3 className="mb-3 text-sm font-medium uppercase text-muted-foreground">
+                  Unit Type
+                </h3>
+                <Group className="text-sm" spacing="xs">
+                  <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900/50">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
+                      {UnitTypeIcons[unit.type]}
+                    </div>
+                    <span className="font-medium">{unit.type}</span>
+                  </div>
+                </Group>
+              </div>
 
-                {/* Current tenant info (if occupied) */}
-                {isOccupied && (
-                  <div className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-50/50 p-4 dark:from-blue-950/20 dark:to-blue-950/10">
-                    <h3 className="mb-3 font-semibold">Current Tenant</h3>
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-                        <Store className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Acme Corporation</p>
-                        <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>Lease ends Dec 31, 2025</span>
+              {/* Current tenant info (if occupied) */}
+              {isOccupied && (
+                <div>
+                  <h3 className="mb-3 text-sm font-medium uppercase text-muted-foreground">
+                    Current Tenant
+                  </h3>
+                  <Card className="overflow-hidden border-none bg-gradient-to-br from-blue-50 to-blue-50/50 shadow-sm dark:from-blue-950/20 dark:to-blue-950/10">
+                    <CardHeader className="pb-2 pt-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
+                          <Store className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">
+                            Acme Corporation
+                          </CardTitle>
+                          <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span>Lease ends Dec 31, 2025</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Additional tenant details */}
-                    <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Contact</p>
-                        <p>John Smith</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Phone</p>
-                        <p>(555) 123-4567</p>
-                      </div>
-                    </div>
-
-                    <Button variant="outline" size="sm" className="mt-3 w-full">
-                      <ExternalLink className="mr-2 h-3.5 w-3.5" />
-                      View Tenant Details
-                    </Button>
-                  </div>
-                )}
-
-                {/* Unit features/amenities */}
-                <div>
-                  <h3 className="mb-2 font-semibold">Features & Amenities</h3>
-                  <div className="grid gap-2">
-                    {unit.amenities.length > 0 ? (
-                      <div className="grid gap-1.5">
-                        {unit.amenities.map((feature, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center gap-2 text-sm"
-                          >
-                            <Check className="h-4 w-4 text-primary" />
-                            <span>{feature}</span>
+                    </CardHeader>
+                    <CardContent className="pb-4">
+                      {/* Additional tenant details */}
+                      <div className="mt-3 space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex items-center gap-2 rounded-lg bg-white/50 px-3 py-2 dark:bg-slate-900/10">
+                            <User className="h-4 w-4 text-blue-500" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Contact
+                              </p>
+                              <p className="text-sm font-medium">John Smith</p>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        No amenities listed
-                      </p>
-                    )}
-                  </div>
-                </div>
+                          <div className="flex items-center gap-2 rounded-lg bg-white/50 px-3 py-2 dark:bg-slate-900/10">
+                            <Phone className="h-4 w-4 text-blue-500" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Phone
+                              </p>
+                              <p className="text-sm font-medium">
+                                (555) 123-4567
+                              </p>
+                            </div>
+                          </div>
+                        </div>
 
-                {/* Location */}
-                <div>
-                  <h3 className="mb-2 font-semibold">Location</h3>
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    <span>Floor {unit.floorNumber || 1}</span>
-                  </div>
-                </div>
-
-                {/* Maintenance history */}
-                <div>
-                  <h3 className="mb-2 font-semibold">Maintenance History</h3>
-                  <div className="space-y-3">
-                    <div className="rounded-lg border p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium">HVAC System Upgrade</div>
-                        <Badge variant="outline" className="font-normal">
-                          Completed
-                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 w-full bg-white/50 dark:bg-slate-900/10"
+                        >
+                          <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                          View Tenant Details
+                        </Button>
                       </div>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock className="h-3.5 w-3.5" />
-                        <span>March 15, 2023</span>
-                      </div>
-                      <Separator className="my-2" />
-                      <p className="text-sm">
-                        Replaced air conditioning unit and upgraded ventilation
-                        system.
-                      </p>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 </div>
+              )}
 
-                {/* Notes section */}
-                <div>
-                  <h3 className="mb-2 font-semibold">Unit Description</h3>
-                  <div className="rounded-lg border border-dashed p-3">
+              {/* Unit features/amenities */}
+              <div>
+                <h3 className="mb-3 text-sm font-medium uppercase text-muted-foreground">
+                  Features & Amenities
+                </h3>
+                {unit.amenities.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {unit.amenities.map((feature, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-900/50"
+                      >
+                        <Check className="h-4 w-4 text-primary" />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg bg-slate-50 p-4 text-center dark:bg-slate-900/50">
                     <p className="text-sm text-muted-foreground">
-                      {unit.description || "No additional notes for this unit."}
+                      No amenities listed
                     </p>
                   </div>
+                )}
+              </div>
+
+              {/* Location */}
+              <div>
+                <h3 className="mb-3 text-sm font-medium uppercase text-muted-foreground">
+                  Location
+                </h3>
+                <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-4 py-3 dark:bg-slate-900/50">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                    <Layers className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Floor</p>
+                    <p className="font-medium">{unit.floorNumber || 1}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Maintenance history */}
+              <div>
+                <h3 className="mb-3 text-sm font-medium uppercase text-muted-foreground">
+                  Maintenance History
+                </h3>
+                <Card className="border-none shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">HVAC System Upgrade</div>
+                      <Badge variant="outline" className="font-normal">
+                        Completed
+                      </Badge>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>March 15, 2023</span>
+                    </div>
+                    <Separator className="my-3" />
+                    <p className="text-sm">
+                      Replaced air conditioning unit and upgraded ventilation
+                      system.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Notes section */}
+              <div>
+                <h3 className="mb-3 text-sm font-medium uppercase text-muted-foreground">
+                  Unit Description
+                </h3>
+                <div className="rounded-xl border border-dashed bg-slate-50/50 p-4 dark:bg-slate-900/20">
+                  <p className="text-sm text-muted-foreground">
+                    {unit.description || "No additional notes for this unit."}
+                  </p>
                 </div>
               </div>
             </div>
@@ -357,33 +420,50 @@ const ImageGallery = ({
 
   if (!images || images.length === 0) {
     return (
-      <Center className="rounded-lg border bg-slate-50 h-[10rem] text-center dark:bg-slate-900">
-        <Stack>
-        <ImageIcon className="mx-auto mb-2 h-10 w-10 text-slate-400" />
-        <p className="text-sm text-slate-500">No images available</p>
-
-        </Stack>
-      </Center>
+      <div className="h-[240px] w-full bg-gradient-to-b from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Center className="h-full w-full">
+          <Stack className="items-center text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700">
+              <ImageIcon className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+            </div>
+            <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
+              No images available
+            </p>
+          </Stack>
+        </Center>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <div className="relative overflow-hidden rounded-lg">
+    <div>
+      <div className="relative overflow-hidden">
         <AspectRatio ratio={16 / 9} className="bg-slate-100 dark:bg-slate-800">
-          <Image
-            src={images[activeIndex] || "/placeholder.svg"}
-            alt={"Unit image"}
-            fill
-            className="object-cover"
-            unoptimized
-          />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="h-full w-full"
+            >
+              <Image
+                src={images[activeIndex] || "/placeholder.svg"}
+                alt={"Unit image"}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </motion.div>
+          </AnimatePresence>
+
           {images.length > 1 && (
             <>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-2 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full bg-black/30 text-white backdrop-blur-sm hover:bg-black/50"
+                className="absolute left-3 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full bg-black/20 text-white backdrop-blur-md hover:bg-black/40"
                 onClick={handlePrevious}
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -391,18 +471,18 @@ const ImageGallery = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full bg-black/30 text-white backdrop-blur-sm hover:bg-black/50"
+                className="absolute right-3 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full bg-black/20 text-white backdrop-blur-md hover:bg-black/40"
                 onClick={handleNext}
               >
                 <ChevronRight className="h-5 w-5" />
               </Button>
-              <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
+              <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
                 {images.map((_, index) => (
                   <button
                     key={index}
                     className={cn(
-                      "h-1.5 w-1.5 rounded-full bg-white/50 transition-all",
-                      activeIndex === index && "w-3 bg-white",
+                      "h-1.5 w-1.5 rounded-full bg-white/50 backdrop-blur-sm transition-all",
+                      activeIndex === index && "w-4 bg-white",
                     )}
                     onClick={() => setActiveIndex(index)}
                   />
@@ -414,15 +494,15 @@ const ImageGallery = ({
       </div>
 
       {images.length > 1 && (
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+        <div className="mt-3 flex gap-2 overflow-x-auto px-6 pb-1">
           {images.map((url, index) => (
             <motion.button
               key={url}
               className={cn(
-                "h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border-2",
+                "relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-lg",
                 activeIndex === index
-                  ? "border-primary"
-                  : "border-transparent hover:border-primary/50",
+                  ? "ring-2 ring-primary ring-offset-2 dark:ring-offset-slate-950"
+                  : "opacity-70 hover:opacity-100",
               )}
               onClick={() => setActiveIndex(index)}
               whileHover={{ scale: 1.05 }}
@@ -431,7 +511,7 @@ const ImageGallery = ({
               <Image
                 src={url || "/placeholder.svg"}
                 alt={`Thumbnail ${index + 1}`}
-                width={64}
+                width={80}
                 height={64}
                 className="h-full w-full object-cover"
               />

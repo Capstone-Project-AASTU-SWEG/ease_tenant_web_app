@@ -42,3 +42,9 @@ export const getApplicationIdFromStore = () => {
 export const getTenantIdFromStore = () => {
   return localStorage.getItem("tenantId") as string;
 };
+
+export const getFloors = (floorCount: number) => {
+  return Array.from({ length: floorCount }, (_, i) => {
+    return i + 1;
+  });
+};

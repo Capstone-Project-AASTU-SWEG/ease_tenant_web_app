@@ -15,7 +15,7 @@ type LogJSONProps = {
 export default function LogJSON({
   data,
   position = "bottom-right",
-  iconSize = 24,
+  iconSize = 15,
   className,
 }: LogJSONProps) {
   const [isOpen, setIsOpen] = useState(false);

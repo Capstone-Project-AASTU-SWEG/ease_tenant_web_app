@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
-  Calendar,
   ChevronLeft,
   ChevronRight,
-  Save,
+  CheckCircle2,
+  CircleDashed,
+  Upload,
+  Sparkles,
+  Building,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,9 +36,14 @@ import { DataListInput } from "@/components/custom/data-list-input";
 import { UNIT_STATUS, UNIT_TYPE } from "@/types";
 import { unitSchema, UnitSchema } from "./_validations";
 import PageHeader from "@/components/custom/page-header";
-import { useCreateUnitMutation } from "@/app/quries/useUnits";
-import LogJSON from "@/components/custom/log-json";
+import {
+  useCreateUnitMutation,
+  useUpdateUnitMutation,
+} from "@/app/quries/useUnits";
 import { useGetBuildingQuery } from "@/app/quries/useBuildings";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { motion } from "framer-motion";
 
 const TAB_TYPES = {
   BASIC: "Basic Info",
@@ -51,25 +59,37 @@ const Page = () => {
   const params = useParams();
   const buildingID = params["id"] as string;
   const createUnitMutation = useCreateUnitMutation();
-  const getBuildingQuery = useGetBuildingQuery(buildingID);
-  const building = getBuildingQuery.data;
+  const updateUnitMutation = useUpdateUnitMutation();
   const router = useRouter();
+
+  const searchParams = useSearchParams();
+
+  const unitId = searchParams.get("unitId") as string;
+  const buildingId = searchParams.get("buildingId") as string;
+
+  const getBuildingQuery = useGetBuildingQuery(buildingId);
+  const building = getBuildingQuery.data;
+
+  const unitToBeUpdated = building?.units.find((u) => u.id === unitId);
 
   const form = useForm<UnitSchema>({
     resolver: zodResolver(unitSchema),
     defaultValues: {
       buildingId: buildingID,
-      floorNumber: 1,
-      unitNumber: "001",
-      sizeSqFt: 100,
-      type: UNIT_TYPE.OFFICE,
-      status: UNIT_STATUS.AVAILABLE,
-      lastRenovationDate: new Date(),
+      floorNumber: unitToBeUpdated?.floorNumber || 1,
+      unitNumber: unitToBeUpdated?.unitNumber || "001",
+      sizeSqFt: unitToBeUpdated?.sizeSqFt || 100,
+      type: unitToBeUpdated?.type || UNIT_TYPE.OFFICE,
+      status: unitToBeUpdated?.status || UNIT_STATUS.AVAILABLE,
+      lastRenovationDate: unitToBeUpdated?.lastRenovationDate || new Date(),
       monthlyRent: 100,
-      amenities: [],
-      description: "",
+      amenities: unitToBeUpdated?.amenities || [],
+      description: unitToBeUpdated?.description || "",
     },
   });
+
+  // Drived states
+  const isEditting = !!unitToBeUpdated;
 
   const handleFiles = (files: File[]) => {
     const images: File[] = [];
@@ -92,17 +112,20 @@ const Page = () => {
     form.setValue("images", [...images]);
   };
 
-  const onSubmit = (data: UnitSchema) => {
-    console.log("Form submitted:", data);
-  };
-
   const handleSubmit = () => {
     const data: UnitSchema = form.getValues();
 
-    createUnitMutation.mutate({
-      buildingId: buildingID,
-      unit: data,
-    });
+    if (isEditting) {
+      updateUnitMutation.mutate({
+        buildingId: buildingID,
+        unit: { ...data, id: unitId },
+      });
+    } else {
+      createUnitMutation.mutate({
+        buildingId: buildingID,
+        unit: data,
+      });
+    }
   };
 
   const validateCurrentTab = async () => {
@@ -141,17 +164,6 @@ const Page = () => {
     }
   };
 
-  const handleTabClick = async (tabType: TabType) => {
-    const tabIndex = TAB_TYPES_LIST.indexOf(tabType);
-    const activeTabIndex = TAB_TYPES_LIST.indexOf(activeTab);
-
-    if (tabIndex > activeTabIndex) {
-      const isValid = await validateCurrentTab();
-      if (!isValid) return;
-    }
-    setActiveTab(tabType);
-  };
-
   useEffect(() => {
     if (createUnitMutation.isSuccess) {
       successToast("Unit created successfully");
@@ -175,243 +187,403 @@ const Page = () => {
 
   return (
     <PageWrapper className="py-0">
-      <LogJSON data={{ buildingID }} />
-      <PageHeader
-        title={`Add Unit to ${building?.name}`}
-        description="Add a new unit to your property management system"
-        withBackButton
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <PageHeader
+          title={isEditting ? "Updating a Unit" : `Create New Unit`}
+          description={
+            isEditting
+              ? "Updating a unit **********"
+              : "Add a new unit to your property management system"
+          }
+          withBackButton
+        />
+      </motion.div>
 
-      <main className="mt-4 grid grid-cols-1 gap-6 pb-6 lg:grid-cols-[minmax(12rem,1fr)_4fr]">
-        <Stack spacing="lg">
-          <LeftSection activeTab={activeTab} onTabClick={handleTabClick} />
-        </Stack>
+      <main className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(16rem,1fr)_4fr]">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Card className="sticky top-24 overflow-hidden border-none bg-gradient-to-br from-slate-50 to-white shadow-md dark:from-slate-900 dark:to-slate-950">
+            <CardContent className="p-6">
+              <h3 className="mb-6 text-lg font-semibold">Unit Setup</h3>
+              <ProgressIndicator activeTab={activeTab} />
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex min-h-[calc(100vh-12rem)] flex-col gap-6 px-1"
-          >
-            <Tabs
-              defaultValue="BASIC"
-              value={activeTab}
-              onValueChange={(tab) => setActiveTab(tab as TabType)}
-            >
-              <TabsContent value="BASIC" className="space-y-4">
-                <Group
-                  className="grid grid-cols-1 gap-4 md:grid-cols-2"
-                  align="start"
-                >
-                  <NumberFormField<UnitSchema>
-                    control={form.control}
-                    name="floorNumber"
-                    label="Floor Number"
-                    placeholder="1"
-                  />
-                  <TextFormField<UnitSchema>
-                    control={form.control}
-                    name="unitNumber"
-                    label="Unit Number"
-                    placeholder="e.g. 101"
-                  />
-                </Group>
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <section className="overflow-hidden">
+            <CardContent className="p-0">
+              <ScrollArea className="h-[calc(100vh-8rem)] max-h-[calc(100vh-8rem)] pr-4">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(handleSubmit)}
+                    className="flex min-h-[calc(100vh-10rem)] flex-col gap-6"
+                  >
+                    <Tabs
+                      defaultValue="BASIC"
+                      value={activeTab}
+                      onValueChange={(tab) => setActiveTab(tab as TabType)}
+                    >
+                      <TabsContent value="BASIC" className="space-y-6">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4 }}
+                        >
+                          <div className="mb-6 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <Building2 className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h2 className="text-xl font-semibold">
+                                Basic Information
+                              </h2>
+                              <p className="text-sm text-muted-foreground">
+                                Enter the basic details of your unit
+                              </p>
+                            </div>
+                          </div>
 
-                <Group
-                  className="grid grid-cols-1 gap-4 md:grid-cols-2"
-                  align="start"
-                >
-                  <SelectFormField<UnitSchema>
-                    control={form.control}
-                    name="type"
-                    label="Unit Type"
-                    options={[
-                      { label: "Office", value: UNIT_TYPE.OFFICE },
-                      { label: "Retail", value: UNIT_TYPE.RETAIL },
-                      { label: "Warehouse", value: UNIT_TYPE.WAREHOUSE },
-                      { label: "Restaurant", value: UNIT_TYPE.RESTAURANT },
-                      { label: "Café", value: UNIT_TYPE.CAFE },
-                      { label: "Medical", value: UNIT_TYPE.MEDICAL },
-                      { label: "Fitness/Gym", value: UNIT_TYPE.FITNESS },
-                      { label: "Salon/Spa", value: UNIT_TYPE.SALON },
-                      { label: "Bank/Financial", value: UNIT_TYPE.BANK },
-                      { label: "Pharmacy", value: UNIT_TYPE.PHARMACY },
-                      {
-                        label: "Convenience Store",
-                        value: UNIT_TYPE.CONVENIENCE,
-                      },
-                      { label: "Other Commercial", value: UNIT_TYPE.OTHER },
-                    ]}
-                  />
-                  <SelectFormField<UnitSchema>
-                    control={form.control}
-                    name="status"
-                    label="Unit Status"
-                    options={[
-                      { label: "Available", value: UNIT_STATUS.AVAILABLE },
-                      { label: "Reserved", value: UNIT_STATUS.RESERVED },
-                      {
-                        label: "Under Maintenance",
-                        value: UNIT_STATUS.UNDER_MAINTENANCE,
-                      },
-                    ]}
-                  />
-                </Group>
+                          <div className="rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
+                            <h3 className="mb-4 text-base font-medium">
+                              Unit Specifications
+                            </h3>
+                            <Stack>
+                              <Group
+                                className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                                align="start"
+                              >
+                                <NumberFormField<UnitSchema>
+                                  control={form.control}
+                                  name="floorNumber"
+                                  label="Floor Number"
+                                  placeholder="1"
+                                />
+                                <TextFormField<UnitSchema>
+                                  control={form.control}
+                                  name="unitNumber"
+                                  label="Unit Number"
+                                  placeholder="e.g. 101"
+                                />
+                              </Group>
 
-                <Group
-                  className="grid grid-cols-1 gap-4 md:grid-cols-2"
-                  align="start"
-                >
-                  <NumberFormField<UnitSchema>
-                    control={form.control}
-                    name="sizeSqFt"
-                    label="Size (sq ft)"
-                    placeholder="1000"
-                  />
-                  <NumberFormField<UnitSchema>
-                    control={form.control}
-                    name="monthlyRent"
-                    label="Monthly Rent ($)"
-                    placeholder="2500"
-                  />
-                </Group>
+                              <Group
+                                className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                                align="start"
+                              >
+                                <SelectFormField<UnitSchema>
+                                  control={form.control}
+                                  name="type"
+                                  label="Unit Type"
+                                  options={[
+                                    {
+                                      label: "Office",
+                                      value: UNIT_TYPE.OFFICE,
+                                    },
+                                    {
+                                      label: "Retail",
+                                      value: UNIT_TYPE.RETAIL,
+                                    },
+                                    {
+                                      label: "Warehouse",
+                                      value: UNIT_TYPE.WAREHOUSE,
+                                    },
+                                    {
+                                      label: "Restaurant",
+                                      value: UNIT_TYPE.RESTAURANT,
+                                    },
+                                    { label: "Café", value: UNIT_TYPE.CAFE },
+                                    {
+                                      label: "Medical",
+                                      value: UNIT_TYPE.MEDICAL,
+                                    },
+                                    {
+                                      label: "Fitness/Gym",
+                                      value: UNIT_TYPE.FITNESS,
+                                    },
+                                    {
+                                      label: "Salon/Spa",
+                                      value: UNIT_TYPE.SALON,
+                                    },
+                                    {
+                                      label: "Bank/Financial",
+                                      value: UNIT_TYPE.BANK,
+                                    },
+                                    {
+                                      label: "Pharmacy",
+                                      value: UNIT_TYPE.PHARMACY,
+                                    },
+                                    {
+                                      label: "Convenience Store",
+                                      value: UNIT_TYPE.CONVENIENCE,
+                                    },
+                                    {
+                                      label: "Other Commercial",
+                                      value: UNIT_TYPE.OTHER,
+                                    },
+                                  ]}
+                                />
+                                <SelectFormField<UnitSchema>
+                                  control={form.control}
+                                  name="status"
+                                  label="Unit Status"
+                                  options={[
+                                    {
+                                      label: "Available",
+                                      value: UNIT_STATUS.AVAILABLE,
+                                    },
+                                    {
+                                      label: "Reserved",
+                                      value: UNIT_STATUS.RESERVED,
+                                    },
+                                    {
+                                      label: "Under Maintenance",
+                                      value: UNIT_STATUS.UNDER_MAINTENANCE,
+                                    },
+                                  ]}
+                                />
+                              </Group>
 
-                <DateFormField<UnitSchema>
-                  control={form.control}
-                  name="lastRenovationDate"
-                  label="Last Renovation Date"
-                />
+                              <Group
+                                className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                                align="start"
+                              >
+                                <NumberFormField<UnitSchema>
+                                  control={form.control}
+                                  name="sizeSqFt"
+                                  label="Size (sq ft)"
+                                  placeholder="1000"
+                                />
+                                <NumberFormField<UnitSchema>
+                                  control={form.control}
+                                  name="monthlyRent"
+                                  label="Monthly Rent ($)"
+                                  placeholder="2500"
+                                />
+                              </Group>
 
-                <TextareaFormField<UnitSchema>
-                  control={form.control}
-                  name="description"
-                  label="Description"
-                  placeholder="Enter a description of the unit"
-                  rows={3}
-                />
-              </TabsContent>
+                              <DateFormField<UnitSchema>
+                                control={form.control}
+                                name="lastRenovationDate"
+                                label="Last Renovation Date"
+                              />
 
-              <TabsContent value="FEATURES" className="space-y-4">
-                <DataListInput
-                  label="Amenities"
-                  items={[
-                    { label: "Windows", value: "Windows" },
-                    { label: "Private Bathroom", value: "Private Bathroom" },
-                    { label: "Kitchenette", value: "Kitchenette" },
-                    { label: "Network Ready", value: "Network Ready" },
-                    { label: "HVAC", value: "HVAC" },
-                    { label: "Security System", value: "Security System" },
-                    { label: "Elevator Access", value: "Elevator Access" },
-                    { label: "Conference Room", value: "Conference Room" },
-                    { label: "Reception Area", value: "Reception Area" },
-                    { label: "Storage Space", value: "Storage Space" },
-                  ]}
-                  placeholder="Add amenities (e.g., Windows, Private Bathroom)"
-                  onChange={(tags) => {
-                    form.setValue(
-                      "amenities",
-                      tags.map((tag) => tag.value),
-                    );
-                  }}
-                  selectedItems={form.watch("amenities").map((f) => ({
-                    label: f,
-                    value: f,
-                  }))}
-                />
+                              <TextareaFormField<UnitSchema>
+                                control={form.control}
+                                name="description"
+                                label="Description"
+                                placeholder="Enter a description of the unit"
+                                rows={3}
+                              />
+                            </Stack>
+                          </div>
+                        </motion.div>
+                      </TabsContent>
 
-                <FileUploader
-                  onFilesChange={handleFiles}
-                  showPreview
-                  maxFiles={10}
-                  acceptedFormats={["image/png", "image/jpeg", "image/jpg"]}
-                />
-              </TabsContent>
-            </Tabs>
-            <Group justify="between" className="mt-auto">
-              {activeTab !== "BASIC" ? (
-                <Button type="button" variant="ghost" onClick={handlePrev}>
-                  <ChevronLeft className="mr-1" /> Previous
-                </Button>
-              ) : (
-                <span />
-              )}
+                      <TabsContent value="FEATURES" className="space-y-6">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4 }}
+                        >
+                          <div className="mb-6 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <Building className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h2 className="text-xl font-semibold">
+                                Features & Media
+                              </h2>
+                              <p className="text-sm text-muted-foreground">
+                                Add amenities and upload images of your unit
+                              </p>
+                            </div>
+                          </div>
 
-              {activeTab !== "FEATURES" ? (
-                <Button type="button" onClick={handleNext}>
-                  Next <ChevronRight className="ml-1" />
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={createUnitMutation.isPending}
-                >
-                  Submit <Save className="ml-2 h-4 w-4" />
-                </Button>
-              )}
-            </Group>
-          </form>
-        </Form>
+                          <div className="rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
+                            <h3 className="mb-4 text-base font-medium">
+                              Unit Amenities
+                            </h3>
+                            <Stack>
+                              <DataListInput
+                                label="Amenities"
+                                items={[
+                                  { label: "Windows", value: "Windows" },
+                                  {
+                                    label: "Private Bathroom",
+                                    value: "Private Bathroom",
+                                  },
+                                  {
+                                    label: "Kitchenette",
+                                    value: "Kitchenette",
+                                  },
+                                  {
+                                    label: "Network Ready",
+                                    value: "Network Ready",
+                                  },
+                                  { label: "HVAC", value: "HVAC" },
+                                  {
+                                    label: "Security System",
+                                    value: "Security System",
+                                  },
+                                  {
+                                    label: "Elevator Access",
+                                    value: "Elevator Access",
+                                  },
+                                  {
+                                    label: "Conference Room",
+                                    value: "Conference Room",
+                                  },
+                                  {
+                                    label: "Reception Area",
+                                    value: "Reception Area",
+                                  },
+                                  {
+                                    label: "Storage Space",
+                                    value: "Storage Space",
+                                  },
+                                ]}
+                                placeholder="Add amenities (e.g., Windows, Private Bathroom)"
+                                onChange={(tags) => {
+                                  form.setValue(
+                                    "amenities",
+                                    tags.map((tag) => tag.value),
+                                  );
+                                }}
+                                selectedItems={form
+                                  .watch("amenities")
+                                  .map((f) => ({
+                                    label: f,
+                                    value: f,
+                                  }))}
+                              />
+                            </Stack>
+                          </div>
+
+                          <div className="mt-6 rounded-lg border border-dashed border-primary/20 bg-primary/5 p-6">
+                            <div className="mb-4 flex items-center gap-3">
+                              <Upload className="h-5 w-5 text-primary" />
+                              <h3 className="text-base font-medium">
+                                Unit Images
+                              </h3>
+                            </div>
+                            <p className="mb-4 text-sm text-muted-foreground">
+                              Upload high-quality images of your unit. These
+                              will be displayed to potential tenants.
+                            </p>
+                            <FileUploader
+                              onFilesChange={handleFiles}
+                              showPreview
+                              maxFiles={10}
+                              acceptedFormats={[
+                                "image/png",
+                                "image/jpeg",
+                                "image/jpg",
+                              ]}
+                            />
+                          </div>
+                        </motion.div>
+                      </TabsContent>
+                    </Tabs>
+                    <Group justify="between" className="mt-auto border-t pt-6">
+                      {activeTab !== "BASIC" ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handlePrev}
+                          className="gap-2"
+                        >
+                          <ChevronLeft className="h-4 w-4" /> Previous
+                        </Button>
+                      ) : (
+                        <span />
+                      )}
+
+                      {activeTab !== "FEATURES" ? (
+                        <Button
+                          type="button"
+                          onClick={handleNext}
+                          className="gap-2"
+                        >
+                          Next <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={handleSubmit}
+                          disabled={createUnitMutation.isPending}
+                          className="gap-2 bg-gradient-to-r from-primary to-primary/80 transition-all hover:from-primary/90 hover:to-primary"
+                        >
+                          {createUnitMutation.isPending
+                            ? "Submitting..."
+                            : "Create Unit"}
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </Group>
+                  </form>
+                </Form>
+                <ScrollBar orientation="vertical" />
+              </ScrollArea>
+            </CardContent>
+          </section>
+        </motion.div>
       </main>
     </PageWrapper>
   );
 };
 
-const LeftSection = ({
-  activeTab,
-  onTabClick,
-}: {
-  activeTab: TabType;
-  onTabClick: (tabType: TabType) => void;
-}) => {
-  return (
-    <Stack className="grid grid-cols-4 gap-4 px-0 lg:grid-cols-1 lg:px-4">
-      <LeftSectionItem
-        icon={Building2}
-        tabType="BASIC"
-        activeTab={activeTab}
-        onClick={() => onTabClick("BASIC")}
-      />
-      <LeftSectionItem
-        icon={Calendar}
-        tabType="FEATURES"
-        activeTab={activeTab}
-        onClick={() => onTabClick("FEATURES")}
-      />
-    </Stack>
-  );
-};
+const ProgressIndicator = ({ activeTab }: { activeTab: TabType }) => {
+  const activeIndex = TAB_TYPES_LIST.indexOf(activeTab);
 
-const LeftSectionItem = ({
-  tabType,
-  icon: Icon,
-  activeTab,
-  onClick,
-}: {
-  tabType: TabType;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  activeTab: TabType;
-  onClick: () => void;
-}) => {
   return (
-    <div className="flex cursor-pointer items-center gap-3" onClick={onClick}>
-      <Icon
-        className={cn(
-          "mr-2 h-6 w-6 text-neutral-500 transition-all duration-300",
-          {
-            "scale-[1.2] text-primary": activeTab === tabType,
-          },
-        )}
-      />
-      <span
-        className={cn(
-          "text-sm font-light text-neutral-500 transition-all duration-300",
-          {
-            "scale-[1.2] text-primary": activeTab === tabType,
-          },
-        )}
-      >
-        {TAB_TYPES[tabType]}
-      </span>
+    <div className="relative flex flex-col gap-2">
+      {TAB_TYPES_LIST.map((tab, index) => {
+        const isActive = index <= activeIndex;
+        const isCurrentTab = tab === activeTab;
+
+        return (
+          <div key={tab} className="flex items-center gap-3">
+            <div
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full transition-all",
+                isActive
+                  ? "bg-primary text-white"
+                  : "bg-slate-100 text-slate-400 dark:bg-slate-800",
+              )}
+            >
+              {isActive ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <CircleDashed className="h-4 w-4" />
+              )}
+            </div>
+            <span
+              className={cn(
+                "text-sm font-medium transition-all",
+                isCurrentTab
+                  ? "text-primary"
+                  : isActive
+                    ? "text-slate-700 dark:text-slate-200"
+                    : "text-slate-400 dark:text-slate-500",
+              )}
+            >
+              {TAB_TYPES[tab]}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 };

@@ -35,13 +35,14 @@ import { useParams, useRouter } from "next/navigation";
 
 import { Group } from "@/components/custom/group";
 import EnhancedFloorPlan from "../_components/floor-plan";
-import { UnitSplitDialog } from "./_components/unit-split-dialog";
-import { UnitMergeDialog } from "./_components/unit-merge-dialog";
+import { UnitSplitSheet } from "./_components/unit-split-drawer";
+import { UnitMergeSheet } from "./_components/unit-merge-drawer";
 import { useGetBuildingQuery } from "@/app/quries/useBuildings";
 import LogJSON from "@/components/custom/log-json";
 import { getOccupancyColor, getOccupancyTextColor } from "@/utils";
 import { PageLoader } from "@/components/custom/page-loader";
 import { PageError } from "@/components/custom/page-error";
+import { useSplitUnitMutation } from "@/app/quries/useUnits";
 
 // Main Page Component
 const Page = () => {
@@ -49,6 +50,8 @@ const Page = () => {
   const params = useParams();
   const buildingID = params["id"] as string;
   const router = useRouter();
+
+  const splitUnitMutation = useSplitUnitMutation();
 
   // Dialog state management
   const [isEditBuildingOpen, setIsEditBuildingOpen] = useState(false);
@@ -363,23 +366,24 @@ const Page = () => {
 
       {/* Split Unit Dialog */}
 
-      <UnitSplitDialog
+      <UnitSplitSheet
         isOpen={isSplitUnitOpen}
         buildingId={buildingID}
         onOpenChange={(open) => {
           setIsSplitUnitOpen(open);
         }}
-        units={[
-          { id: "1", sizeSqFt: 100, unitNumber: "001" },
-          { id: "2", sizeSqFt: 100, unitNumber: "002" },
-          { id: "3", sizeSqFt: 100, unitNumber: "003" },
-        ]}
         onSplitUnit={(unitID, newUnits) => {
           console.log({ unitID, newUnits });
+          // TODO: DO THE SPLITING ROUTE
+          splitUnitMutation.mutate({
+            unitId: unitID,
+            buildingId: buildingID,
+            newUnits,
+          });
         }}
       />
 
-      <UnitMergeDialog
+      <UnitMergeSheet
         isOpen={isMergeUnitsOpen}
         buildingId={buildingID}
         onOpenChange={(open) => {

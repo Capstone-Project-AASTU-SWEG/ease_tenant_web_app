@@ -4,23 +4,25 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
+
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   MapPin,
   Building2,
   Calendar,
-  Home,
   ChevronRight,
   ChevronLeft,
-  BuildingIcon,
+  Building,
+  CheckCircle2,
+  CircleDashed,
+  Upload,
+  Sparkles,
 } from "lucide-react";
 import { BUILDING_STATUS, PAYMENT_FREQUENCY } from "@/types";
 import { errorToast, successToast } from "@/components/custom/toasts";
 import PageWrapper from "@/components/custom/page-wrapper";
 import { Stack } from "@/components/custom/stack";
 import { buildingSchema, BuildingSchema } from "./_validations";
-import { ClassValue } from "clsx";
 import { Group } from "@/components/custom/group";
 import {
   CheckboxFormField,
@@ -37,6 +39,9 @@ import { AccessibilityFeatures, CommercialAmenities } from "./_constants";
 import { DataListInput } from "@/components/custom/data-list-input";
 import { useEffect, useState } from "react";
 import { useCreateBuildingMutation } from "@/app/quries/useBuildings";
+import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { Form } from "@/components/ui/form";
 
 const TAB_TYPES = {
   BASIC: "Basic Info",
@@ -122,9 +127,6 @@ const Page = () => {
     // do appending for each fields
     formData.append("name", data.name);
     formData.append("description", data.description || "");
-    if (data.managerId) {
-      formData.append("managerId", data.managerId);
-    }
 
     formData.append("totalFloors", data.totalFloors.toString());
     formData.append("totalUnits", data.totalUnits.toString());
@@ -172,7 +174,7 @@ const Page = () => {
   const validateCurrentTab = async () => {
     switch (activeTab) {
       case "BASIC":
-        return await form.trigger(["name", "description", "managerId"]);
+        return await form.trigger(["name", "description"]);
       case "ADDRESS":
         return await form.trigger([
           "address.street",
@@ -214,17 +216,6 @@ const Page = () => {
     }
   };
 
-  const handleTabClick = async (tabType: TabType) => {
-    const tabIndex = TAB_TYPES_LIST.indexOf(tabType);
-    const activeTabIndex = TAB_TYPES_LIST.indexOf(activeTab);
-
-    if (tabIndex > activeTabIndex) {
-      const isValid = await validateCurrentTab();
-      if (!isValid) return;
-    }
-    setActiveTab(tabType);
-  };
-
   // Show error toast if error occured
   useEffect(() => {
     if (createBuildingMutation.isError) {
@@ -241,440 +232,683 @@ const Page = () => {
 
   return (
     <PageWrapper className="py-0">
-      <PageHeader
-        title="Create New Building"
-        description="Add a new building to your property management system"
-        withBackButton
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <PageHeader
+          title="Create New Building"
+          description="Add a new building to your property management system"
+          withBackButton
+        />
+      </motion.div>
 
-      <main className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(12rem,1fr)_4fr]">
-        <Stack spacing="lg" className="p-2">
-          <LeftSection activeTab={activeTab} onTabClick={handleTabClick} />
-        </Stack>
-        <ScrollArea>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleSubmit)}
-              className="flex min-h-[calc(100vh-12rem)] flex-col gap-6 p-2"
-            >
-              <Tabs
-                defaultValue="BASIC"
-                value={activeTab}
-                onValueChange={(tab) => setActiveTab(tab as TabType)}
-              >
-                <TabsContent value="BASIC" className="space-y-4">
-                  <Group
-                    className="grid grid-cols-1 gap-4 md:grid-cols-2"
-                    align="start"
+      <main className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(16rem,1fr)_4fr]">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Card className="sticky top-24 overflow-hidden border-none bg-gradient-to-br from-slate-50 to-white shadow-md dark:from-slate-900 dark:to-slate-950">
+            <CardContent className="p-6">
+              <h3 className="mb-6 text-lg font-semibold">Building Setup</h3>
+              <ProgressIndicator activeTab={activeTab} />
+              {/* <div className="mt-8">
+                <LeftSection
+                  activeTab={activeTab}
+                  onTabClick={handleTabClick}
+                />
+              </div> */}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <section className="overflow-hidden">
+            <CardContent className="p-0">
+              <ScrollArea className="h-[calc(100vh-8rem)] max-h-[calc(100vh-8rem)] pr-4">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(handleSubmit)}
+                    className="flex min-h-[calc(100vh-10rem)] flex-col gap-6"
                   >
-                    <TextFormField<BuildingSchema>
-                      control={form.control}
-                      name="name"
-                      label="Building Name"
-                      placeholder="Building #1"
-                    />
-                    <SelectFormField<BuildingSchema>
-                      control={form.control}
-                      name="managerId"
-                      label="Select manager"
-                      placeholder="e.g Nesredin Getahun"
-                      options={[
-                        { label: "Nesredin Getahun", value: "01" },
-                        { label: "Hassen Getahun", value: "02" },
-                      ]}
-                    />
-                  </Group>
+                    <Tabs
+                      defaultValue="BASIC"
+                      value={activeTab}
+                      onValueChange={(tab) => setActiveTab(tab as TabType)}
+                    >
+                      <TabsContent value="BASIC" className="space-y-6">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4 }}
+                        >
+                          <div className="mb-6 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <Building2 className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h2 className="text-xl font-semibold">
+                                Basic Information
+                              </h2>
+                              <p className="text-sm text-muted-foreground">
+                                Enter the basic details of your building
+                              </p>
+                            </div>
+                          </div>
+                          <Stack>
+                            <TextFormField<BuildingSchema>
+                              control={form.control}
+                              name="name"
+                              label="Building Name"
+                              placeholder="Enter building name"
+                            />
 
-                  <TextareaFormField<BuildingSchema>
-                    control={form.control}
-                    name="description"
-                    rows={5}
-                    label="Description"
-                    placeholder="Enter building description"
-                  />
+                            <TextareaFormField<BuildingSchema>
+                              control={form.control}
+                              name="description"
+                              rows={5}
+                              label="Description"
+                              placeholder="Enter building description"
+                            />
 
-                  <FileUploader
-                    acceptedFormats={["image/png", "image/jpg", "image/jpeg"]}
-                    onFilesChange={handleFiles}
-                    showPreview
-                  />
-                </TabsContent>
+                            <div className="mt-8 rounded-lg border border-dashed border-primary/20 bg-primary/5 p-6">
+                              <div className="mb-4 flex items-center gap-3">
+                                <Upload className="h-5 w-5 text-primary" />
+                                <h3 className="text-lg font-medium">
+                                  Building Images
+                                </h3>
+                              </div>
+                              <p className="mb-4 text-sm text-muted-foreground">
+                                Upload high-quality images of your building.
+                                These will be displayed to potential tenants.
+                              </p>
+                              <FileUploader
+                                acceptedFormats={[
+                                  "image/png",
+                                  "image/jpg",
+                                  "image/jpeg",
+                                ]}
+                                onFilesChange={handleFiles}
+                                showPreview
+                              />
+                            </div>
+                          </Stack>
+                        </motion.div>
+                      </TabsContent>
 
-                <TabsContent value="ADDRESS" className="space-y-4">
-                  <TextFormField<BuildingSchema>
-                    control={form.control}
-                    name="address.country"
-                    label="Country"
-                    placeholder="e.g. Ethiopia"
-                  />
-                  <Group
-                    className="grid grid-cols-1 gap-4 md:grid-cols-2"
-                    align="start"
-                  >
-                    <TextFormField<BuildingSchema>
-                      control={form.control}
-                      name="address.street"
-                      label="Street Address"
-                      placeholder="e.g. O Block"
-                    />
-                    <TextFormField<BuildingSchema>
-                      control={form.control}
-                      name="address.city"
-                      label="Enter City"
-                      placeholder="Addis Ababa"
-                    />
-                  </Group>
+                      <TabsContent value="ADDRESS" className="space-y-6">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4 }}
+                        >
+                          <div className="mb-6 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <MapPin className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h2 className="text-xl font-semibold">
+                                Location Details
+                              </h2>
+                              <p className="text-sm text-muted-foreground">
+                                Specify where your building is located
+                              </p>
+                            </div>
+                          </div>
 
-                  <Group
-                    className="grid grid-cols-1 gap-4 md:grid-cols-2"
-                    align="start"
-                  >
-                    <TextFormField<BuildingSchema>
-                      control={form.control}
-                      name="address.state"
-                      label="Enter state/province"
-                      placeholder="AASTU"
-                    />
-                    <TextFormField<BuildingSchema>
-                      control={form.control}
-                      name="address.postalCode"
-                      label="Postal Code"
-                      placeholder="e.g. 12345"
-                    />
-                  </Group>
+                          <Stack>
+                            <TextFormField<BuildingSchema>
+                              control={form.control}
+                              name="address.country"
+                              label="Country"
+                              placeholder="e.g. Ethiopia"
+                            />
+                            <Group
+                              className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                              align="start"
+                            >
+                              <TextFormField<BuildingSchema>
+                                control={form.control}
+                                name="address.street"
+                                label="Street Address"
+                                placeholder="e.g. O Block"
+                              />
+                              <TextFormField<BuildingSchema>
+                                control={form.control}
+                                name="address.city"
+                                label="Enter City"
+                                placeholder="Addis Ababa"
+                              />
+                            </Group>
 
-                  <Group>
-                    <NumberFormField
-                      control={form.control}
-                      name="address.latitude"
-                      label="Latitude"
-                    />
-                    <NumberFormField
-                      control={form.control}
-                      label="Longitude"
-                      name="address.longitude"
-                    />
-                  </Group>
+                            <Group
+                              className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                              align="start"
+                            >
+                              <TextFormField<BuildingSchema>
+                                control={form.control}
+                                name="address.state"
+                                label="Enter state/province"
+                                placeholder="AASTU"
+                              />
+                              <TextFormField<BuildingSchema>
+                                control={form.control}
+                                name="address.postalCode"
+                                label="Postal Code"
+                                placeholder="e.g. 12345"
+                              />
+                            </Group>
 
-                  <div className="mt-4 rounded-md border bg-muted/30 p-4">
-                    <h4 className="mb-2 text-sm font-medium">Map Preview</h4>
-                    <div className="flex h-[200px] items-center justify-center rounded-md bg-muted">
-                      <MapPin className="h-8 w-8 text-muted-foreground" />
-                      <p className="ml-2 text-sm text-muted-foreground">
-                        Address map preview will appear here
-                      </p>
-                    </div>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Map will update when you save the building information
-                    </p>
-                  </div>
-                </TabsContent>
+                            <Group>
+                              <NumberFormField
+                                control={form.control}
+                                name="address.latitude"
+                                label="Latitude"
+                              />
+                              <NumberFormField
+                                control={form.control}
+                                label="Longitude"
+                                name="address.longitude"
+                              />
+                            </Group>
 
-                <TabsContent value="DETAILS" className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <NumberFormField<BuildingSchema>
-                      control={form.control}
-                      name="totalFloors"
-                      label="Total Floors"
-                      placeholder="10"
-                    />
-                    <NumberFormField<BuildingSchema>
-                      control={form.control}
-                      name="totalUnits"
-                      label="Total Rooms"
-                      placeholder="30"
-                    />
-                  </div>
+                            <div className="mt-6 overflow-hidden rounded-lg border bg-slate-50 shadow-sm dark:bg-slate-900/50">
+                              <div className="border-b bg-white p-4 dark:bg-slate-900">
+                                <h4 className="font-medium">Map Preview</h4>
+                              </div>
+                              <div className="flex h-[250px] items-center justify-center bg-slate-100 dark:bg-slate-800/50">
+                                <div className="flex flex-col items-center text-center">
+                                  <MapPin className="h-10 w-10 text-primary/60" />
+                                  <p className="mt-2 text-sm text-muted-foreground">
+                                    Address map preview will appear here
+                                  </p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Map will update when you save the building
+                                    information
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </Stack>
+                        </motion.div>
+                      </TabsContent>
 
-                  <Group
-                    className="grid grid-cols-1 gap-4 md:grid-cols-2"
-                    align="start"
-                  >
-                    <NumberFormField<BuildingSchema>
-                      control={form.control}
-                      name="yearBuilt"
-                      label="Year Built"
-                      placeholder="e.g. 2010"
-                    />
-                    <SelectFormField<BuildingSchema>
-                      control={form.control}
-                      name="status"
-                      label="Building Status"
-                      options={[
-                        { value: BUILDING_STATUS.ACTIVE, label: "Active" },
-                        {
-                          value: BUILDING_STATUS.UNDER_RENOVATION,
-                          label: "Under Renovation",
-                        },
-                        {
-                          value: BUILDING_STATUS.DEMOLISHED,
-                          label: "Demolished",
-                        },
-                      ]}
-                    />
-                  </Group>
+                      <TabsContent value="DETAILS" className="space-y-6">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4 }}
+                        >
+                          <div className="mb-6 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <Building className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h2 className="text-xl font-semibold">
+                                Building Details
+                              </h2>
+                              <p className="text-sm text-muted-foreground">
+                                Provide specific information about your building
+                              </p>
+                            </div>
+                          </div>
 
-                  <Group className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <NumberFormField<BuildingSchema>
-                      control={form.control}
-                      name="elevators"
-                      label="Number of Elevators"
-                      placeholder="e.g. 2"
-                    />
-                    <NumberFormField<BuildingSchema>
-                      control={form.control}
-                      name="parkingSpaces"
-                      label="Parking Spaces"
-                      placeholder="e.g. 20"
-                    />
-                  </Group>
+                          <div className="rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
+                            <h3 className="mb-4 text-base font-medium">
+                              Building Specifications
+                            </h3>
 
-                  <Group className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <NumberFormField<BuildingSchema>
-                      control={form.control}
-                      name="emergencyExits"
-                      label="Emergency Exits"
-                      placeholder="e.g. 2"
-                    />
-                    <CheckboxFormField
-                      control={form.control}
-                      name="fireSafetyCertified"
-                      label="Fire Safety Certified"
-                    />
-                  </Group>
+                            <Stack>
+                              <Group
+                                className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                                align="start"
+                              >
+                                <NumberFormField<BuildingSchema>
+                                  control={form.control}
+                                  name="totalFloors"
+                                  label="Total Floors"
+                                  placeholder="10"
+                                />
+                                <NumberFormField<BuildingSchema>
+                                  control={form.control}
+                                  name="totalUnits"
+                                  label="Total Rooms"
+                                  placeholder="30"
+                                />
+                              </Group>
 
-                  <TextFormField<BuildingSchema>
-                    control={form.control}
-                    name="operatingHours"
-                    label="Operating Hours"
-                    placeholder="e.g. 9 AM - 5 PM"
-                  />
+                              <Group
+                                className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2"
+                                align="start"
+                              >
+                                <NumberFormField<BuildingSchema>
+                                  control={form.control}
+                                  name="yearBuilt"
+                                  label="Year Built"
+                                  placeholder="e.g. 2010"
+                                />
+                                <SelectFormField<BuildingSchema>
+                                  control={form.control}
+                                  name="status"
+                                  label="Building Status"
+                                  options={[
+                                    {
+                                      value: BUILDING_STATUS.ACTIVE,
+                                      label: "Active",
+                                    },
+                                    {
+                                      value: BUILDING_STATUS.UNDER_RENOVATION,
+                                      label: "Under Renovation",
+                                    },
+                                    {
+                                      value: BUILDING_STATUS.DEMOLISHED,
+                                      label: "Demolished",
+                                    },
+                                  ]}
+                                />
+                              </Group>
+                            </Stack>
+                          </div>
 
-                  <DataListInput
-                    label="Accessibility Features"
-                    items={AccessibilityFeatures.map((f) => ({
-                      label: f,
-                      value: f,
-                    }))}
-                    placeholder="e.g. Wheelchair Accessible"
-                    onChange={(tags) => {
-                      form.setValue(
-                        "accessibilityFeatures",
-                        tags.map((tag) => tag.value),
-                      );
-                    }}
-                    selectedItems={form
-                      .watch("accessibilityFeatures")
-                      .map((f) => ({
-                        label: f,
-                        value: f,
-                      }))}
-                  />
+                          <div className="mt-6 rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
+                            <h3 className="mb-4 text-base font-medium">
+                              Facilities & Safety
+                            </h3>
+                            <Stack>
+                              <Group className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <NumberFormField<BuildingSchema>
+                                  control={form.control}
+                                  name="elevators"
+                                  label="Number of Elevators"
+                                  placeholder="e.g. 2"
+                                />
+                                <NumberFormField<BuildingSchema>
+                                  control={form.control}
+                                  name="parkingSpaces"
+                                  label="Parking Spaces"
+                                  placeholder="e.g. 20"
+                                />
+                              </Group>
 
-                  <DataListInput
-                    label="Amenities"
-                    items={CommercialAmenities.map((f) => ({
-                      label: f,
-                      value: f,
-                    }))}
-                    placeholder="e.g. Swimming Pool"
-                    onChange={(tags) => {
-                      form.setValue(
-                        "amenities",
-                        tags.map((tag) => tag.value),
-                      );
-                    }}
-                    selectedItems={form.watch("amenities").map((f) => ({
-                      label: f,
-                      value: f,
-                    }))}
-                  />
-                </TabsContent>
+                              <Group className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <NumberFormField<BuildingSchema>
+                                  control={form.control}
+                                  name="emergencyExits"
+                                  label="Emergency Exits"
+                                  placeholder="e.g. 2"
+                                />
+                                <CheckboxFormField
+                                  control={form.control}
+                                  name="fireSafetyCertified"
+                                  title="Fire Safety Certified"
+                                  description="Is this building fire safety certified"
+                                />
+                              </Group>
 
-                <TabsContent value="LEASE_TERMS" className="space-y-4">
-                  <Group
-                    className="grid grid-cols-1 gap-4 md:grid-cols-2"
-                    align="start"
-                  >
-                    <NumberFormField
-                      control={form.control}
-                      name="leaseTerms.minLeasePeriodMonths"
-                      label="Minimum Lease Period (months)"
-                    />
-                    <NumberFormField
-                      control={form.control}
-                      name="leaseTerms.maxLeasePeriodMonths"
-                      label="Maximum Lease Period (months)"
-                    />
-                  </Group>
+                              <TextFormField<BuildingSchema>
+                                control={form.control}
+                                name="operatingHours"
+                                label="Operating Hours"
+                                placeholder="e.g. 9 AM - 5 PM"
+                              />
+                            </Stack>
+                          </div>
 
-                  <SelectFormField<BuildingSchema>
-                    control={form.control}
-                    name="leaseTerms.paymentFrequency"
-                    label="Payment Frequency*"
-                    options={[
-                      { value: PAYMENT_FREQUENCY.MONTHLY, label: "Monthly" },
-                      {
-                        value: PAYMENT_FREQUENCY.QUARTERLY,
-                        label: "Quarterly",
-                      },
-                      {
-                        value: PAYMENT_FREQUENCY.SEMI_ANNUALLY,
-                        label: "Semi-Annually",
-                      },
-                    ]}
-                  />
+                          <div className="mt-6 rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
+                            <h3 className="mb-4 text-base font-medium">
+                              Features & Amenities
+                            </h3>
+                            <Stack>
+                              <DataListInput
+                                label="Accessibility Features"
+                                items={AccessibilityFeatures.map((f) => ({
+                                  label: f,
+                                  value: f,
+                                }))}
+                                placeholder="e.g. Wheelchair Accessible"
+                                onChange={(tags) => {
+                                  form.setValue(
+                                    "accessibilityFeatures",
+                                    tags.map((tag) => tag.value),
+                                  );
+                                }}
+                                selectedItems={form
+                                  .watch("accessibilityFeatures")
+                                  .map((f) => ({
+                                    label: f,
+                                    value: f,
+                                  }))}
+                              />
 
-                  <Group className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <NumberFormField
-                      control={form.control}
-                      name="leaseTerms.latePaymentPenalty"
-                      label="Late Payment Penalty (%)"
-                      placeholder="e.g. 5"
-                    />
-                    <NumberFormField
-                      control={form.control}
-                      name="leaseTerms.securityDeposit"
-                      label="Security Deposit"
-                      placeholder="e.g. 5"
-                    />
-                  </Group>
+                              <DataListInput
+                                label="Amenities"
+                                items={CommercialAmenities.map((f) => ({
+                                  label: f,
+                                  value: f,
+                                }))}
+                                placeholder="e.g. Swimming Pool"
+                                onChange={(tags) => {
+                                  form.setValue(
+                                    "amenities",
+                                    tags.map((tag) => tag.value),
+                                  );
+                                }}
+                                selectedItems={form
+                                  .watch("amenities")
+                                  .map((f) => ({
+                                    label: f,
+                                    value: f,
+                                  }))}
+                                className="mt-4"
+                              />
+                            </Stack>
+                          </div>
+                        </motion.div>
+                      </TabsContent>
 
-                  <TextareaFormField<BuildingSchema>
-                    control={form.control}
-                    name="leaseTerms.leaseRenewalPolicy"
-                    label="Lease Renewal Policy"
-                    placeholder="Enter lease renewal policy details"
-                    rows={5}
-                  />
+                      <TabsContent value="LEASE_TERMS" className="space-y-6">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4 }}
+                        >
+                          <div className="mb-6 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <Calendar className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h2 className="text-xl font-semibold">
+                                Lease Terms
+                              </h2>
+                              <p className="text-sm text-muted-foreground">
+                                Define the rental terms and conditions
+                              </p>
+                            </div>
+                          </div>
 
-                  <TextareaFormField<BuildingSchema>
-                    control={form.control}
-                    name="leaseTerms.petPolicy"
-                    label="Pet Policy"
-                    placeholder="Enter pet policy details"
-                    rows={5}
-                  />
+                          <div className="rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
+                            <h3 className="mb-4 text-base font-medium">
+                              Lease Duration & Payments
+                            </h3>
+                            <Stack>
+                              <Group
+                                className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                                align="start"
+                              >
+                                <NumberFormField
+                                  control={form.control}
+                                  name="leaseTerms.minLeasePeriodMonths"
+                                  label="Minimum Lease Period (months)"
+                                />
+                                <NumberFormField
+                                  control={form.control}
+                                  name="leaseTerms.maxLeasePeriodMonths"
+                                  label="Maximum Lease Period (months)"
+                                />
+                              </Group>
 
-                  <FileUploader
-                    onFilesChange={(files) => {
-                      const regulationDocuments = Array.from(files).map(
-                        (file) => ({
-                          name: file.name,
-                          file,
-                        }),
-                      );
-                      form.setValue("regulationDocuments", [
-                        ...regulationDocuments,
-                      ]);
-                    }}
-                    showPreview
-                    label="Regulation Documents"
-                    acceptedFormats={["application/pdf"]}
-                  />
-                </TabsContent>
-              </Tabs>
-              <Group justify="between" className="mt-auto">
-                {activeTab !== "BASIC" ? (
-                  <Button type="button" variant="ghost" onClick={handlePrev}>
-                    <ChevronLeft /> Previous
-                  </Button>
-                ) : (
-                  <span />
-                )}
+                              <SelectFormField<BuildingSchema>
+                                control={form.control}
+                                name="leaseTerms.paymentFrequency"
+                                label="Payment Frequency*"
+                                options={[
+                                  {
+                                    value: PAYMENT_FREQUENCY.MONTHLY,
+                                    label: "Monthly",
+                                  },
+                                  {
+                                    value: PAYMENT_FREQUENCY.QUARTERLY,
+                                    label: "Quarterly",
+                                  },
+                                  {
+                                    value: PAYMENT_FREQUENCY.SEMI_ANNUALLY,
+                                    label: "Semi-Annually",
+                                  },
+                                ]}
+                              />
 
-                {activeTab !== "LEASE_TERMS" ? (
-                  <Button type="button" onClick={handleNext}>
-                    Next <ChevronRight />
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    disabled={createBuildingMutation.isPending}
-                    onClick={handleSubmit}
-                  >
-                    Submit <BuildingIcon />
-                  </Button>
-                )}
-              </Group>
-            </form>
-          </Form>
-          <ScrollBar orientation="vertical" />
-        </ScrollArea>
+                              <Group
+                                className="grid grid-cols-1 gap-4 md:grid-cols-2"
+                                align={"start"}
+                              >
+                                <NumberFormField
+                                  control={form.control}
+                                  name="leaseTerms.latePaymentPenalty"
+                                  label="Late Payment Penalty (%)"
+                                  placeholder="e.g. 5"
+                                />
+                                <NumberFormField
+                                  control={form.control}
+                                  name="leaseTerms.securityDeposit"
+                                  label="Security Deposit"
+                                  placeholder="e.g. 5"
+                                />
+                              </Group>
+                            </Stack>
+                          </div>
+
+                          <div className="mt-6 rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
+                            <h3 className="mb-4 text-base font-medium">
+                              Policies
+                            </h3>
+                            <Stack>
+                              <TextareaFormField<BuildingSchema>
+                                control={form.control}
+                                name="leaseTerms.leaseRenewalPolicy"
+                                label="Lease Renewal Policy"
+                                placeholder="Enter lease renewal policy details"
+                                rows={4}
+                              />
+
+                              <TextareaFormField<BuildingSchema>
+                                control={form.control}
+                                name="leaseTerms.petPolicy"
+                                label="Pet Policy"
+                                placeholder="Enter pet policy details"
+                                rows={4}
+                              />
+                            </Stack>
+                          </div>
+
+                          <div className="mt-6 rounded-lg border border-dashed border-primary/20 bg-primary/5 p-6">
+                            <div className="mb-4 flex items-center gap-3">
+                              <Upload className="h-5 w-5 text-primary" />
+                              <h3 className="text-base font-medium">
+                                Regulation Documents
+                              </h3>
+                            </div>
+                            <p className="mb-4 text-sm text-muted-foreground">
+                              Upload any legal documents or regulations related
+                              to leasing this building
+                            </p>
+                            <FileUploader
+                              onFilesChange={(files) => {
+                                const regulationDocuments = Array.from(
+                                  files,
+                                ).map((file) => ({
+                                  name: file.name,
+                                  file,
+                                }));
+                                form.setValue("regulationDocuments", [
+                                  ...regulationDocuments,
+                                ]);
+                              }}
+                              showPreview
+                              label="Regulation Documents"
+                              acceptedFormats={["application/pdf"]}
+                            />
+                          </div>
+                        </motion.div>
+                      </TabsContent>
+                    </Tabs>
+                    <Group justify="between" className="mt-auto border-t pt-6">
+                      {activeTab !== "BASIC" ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handlePrev}
+                          className="gap-2"
+                        >
+                          <ChevronLeft className="h-4 w-4" /> Previous
+                        </Button>
+                      ) : (
+                        <span />
+                      )}
+
+                      {activeTab !== "LEASE_TERMS" ? (
+                        <Button
+                          type="button"
+                          onClick={handleNext}
+                          className="gap-2"
+                        >
+                          Next <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          type="submit"
+                          disabled={createBuildingMutation.isPending}
+                          onClick={handleSubmit}
+                          className="gap-2 bg-gradient-to-r from-primary to-primary/80 transition-all hover:from-primary/90 hover:to-primary"
+                        >
+                          {createBuildingMutation.isPending
+                            ? "Submitting..."
+                            : "Create Building"}
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </Group>
+                  </form>
+                </Form>
+                <ScrollBar orientation="vertical" />
+              </ScrollArea>
+            </CardContent>
+          </section>
+        </motion.div>
       </main>
     </PageWrapper>
   );
 };
 
-const LeftSection = ({
-  activeTab,
-  onTabClick,
-}: {
-  activeTab: TabType;
-  onTabClick: (tabType: TabType) => void;
-}) => {
-  return (
-    <Stack className="grid grid-cols-4 gap-4 px-0 lg:grid-cols-1 lg:px-4">
-      <LeftSectionItem
-        icon={Building2}
-        tabType="BASIC"
-        activeTab={activeTab}
-        onClick={() => onTabClick("BASIC")}
-      />
-      <LeftSectionItem
-        icon={MapPin}
-        tabType="ADDRESS"
-        activeTab={activeTab}
-        onClick={() => onTabClick("ADDRESS")}
-      />
-      <LeftSectionItem
-        icon={Home}
-        tabType="DETAILS"
-        activeTab={activeTab}
-        onClick={() => onTabClick("DETAILS")}
-      />
-      <LeftSectionItem
-        icon={Calendar}
-        tabType="LEASE_TERMS"
-        activeTab={activeTab}
-        onClick={() => onTabClick("LEASE_TERMS")}
-      />
-    </Stack>
-  );
-};
-
-const LeftSectionItem = ({
-  tabType,
-  icon: Icon,
-  activeTab,
-  onClick,
-}: {
-  tabType: TabType;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  activeTab: TabType;
-  onClick: () => void;
-}) => {
-  const hintClassName: ClassValue =
-    "text-sm text-neutral-500 font-light transition-all duration-300";
-  const iconClassName: ClassValue =
-    "mr-2 h-6 w-6 text-neutral-500 transition-all duration-300";
+const ProgressIndicator = ({ activeTab }: { activeTab: TabType }) => {
+  const activeIndex = TAB_TYPES_LIST.indexOf(activeTab);
 
   return (
-    <div className="flex cursor-pointer items-center gap-3" onClick={onClick}>
-      <Icon
-        className={cn(iconClassName, {
-          "scale-[1.2] text-primary": activeTab === tabType,
-        })}
-      />
-      <span
-        className={cn(hintClassName, {
-          "scale-[1.2] text-primary": activeTab === tabType,
-        })}
-      >
-        {TAB_TYPES[tabType]}
-      </span>
+    <div className="relative flex flex-col gap-2">
+      {TAB_TYPES_LIST.map((tab, index) => {
+        const isActive = index <= activeIndex;
+        const isCurrentTab = tab === activeTab;
+
+        return (
+          <div key={tab} className="flex items-center gap-3">
+            <div
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full transition-all",
+                isActive
+                  ? "bg-primary text-white"
+                  : "bg-slate-100 text-slate-400 dark:bg-slate-800",
+              )}
+            >
+              {isActive ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <CircleDashed className="h-4 w-4" />
+              )}
+            </div>
+            <span
+              className={cn(
+                "text-sm font-medium transition-all",
+                isCurrentTab
+                  ? "text-primary"
+                  : isActive
+                    ? "text-slate-700 dark:text-slate-200"
+                    : "text-slate-400 dark:text-slate-500",
+              )}
+            >
+              {TAB_TYPES[tab]}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 };
+
+// const LeftSection = ({
+//   activeTab,
+//   onTabClick,
+// }: {
+//   activeTab: TabType;
+//   onTabClick: (tabType: TabType) => void;
+// }) => {
+//   return (
+//     <Stack className="mt-6 space-y-6">
+//       <LeftSectionItem
+//         icon={Building2}
+//         tabType="BASIC"
+//         activeTab={activeTab}
+//         onClick={() => onTabClick("BASIC")}
+//       />
+//       <LeftSectionItem
+//         icon={MapPin}
+//         tabType="ADDRESS"
+//         activeTab={activeTab}
+//         onClick={() => onTabClick("ADDRESS")}
+//       />
+//       <LeftSectionItem
+//         icon={Home}
+//         tabType="DETAILS"
+//         activeTab={activeTab}
+//         onClick={() => onTabClick("DETAILS")}
+//       />
+//       <LeftSectionItem
+//         icon={Calendar}
+//         tabType="LEASE_TERMS"
+//         activeTab={activeTab}
+//         onClick={() => onTabClick("LEASE_TERMS")}
+//       />
+//     </Stack>
+//   );
+// };
+
+// const LeftSectionItem = ({
+//   tabType,
+//   icon: Icon,
+//   activeTab,
+//   onClick,
+// }: {
+//   tabType: TabType;
+//   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+//   activeTab: TabType;
+//   onClick: () => void;
+// }) => {
+//   const isActive = activeTab === tabType;
+
+//   return (
+//     <button
+//       className={cn(
+//         "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-all",
+//         isActive
+//           ? "bg-primary/10 text-primary"
+//           : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/50",
+//       )}
+//       onClick={onClick}
+//     >
+//       <Icon
+//         className={cn(
+//           "h-5 w-5 transition-all",
+//           isActive ? "text-primary" : "text-slate-400",
+//         )}
+//         strokeWidth={isActive ? 2.5 : 2}
+//       />
+//       <span className="font-medium">{TAB_TYPES[tabType]}</span>
+//     </button>
+//   );
+// };
 
 export default Page;

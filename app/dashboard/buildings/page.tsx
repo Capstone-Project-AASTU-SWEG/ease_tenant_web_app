@@ -588,12 +588,12 @@ const BuildingCard = ({
     }
   }, [controls, isInView]);
 
-  const getOccupancyColor = (occupancy: number) => {
-    if (occupancy >= 90) return "from-emerald-500/80 to-emerald-600/80";
-    if (occupancy >= 70) return "from-blue-500/80 to-blue-600/80";
-    if (occupancy >= 50) return "from-amber-500/80 to-amber-600/80";
-    return "from-rose-500/80 to-rose-600/80";
-  };
+  // const getOccupancyColor = (occupancy: number) => {
+  //   if (occupancy >= 90) return "from-emerald-500/80 to-emerald-600/80";
+  //   if (occupancy >= 70) return "from-blue-500/80 to-blue-600/80";
+  //   if (occupancy >= 50) return "from-amber-500/80 to-amber-600/80";
+  //   return "from-rose-500/80 to-rose-600/80";
+  // };
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },

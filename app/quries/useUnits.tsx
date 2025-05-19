@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axios-client";
-import { APIResponse, Building, Unit } from "@/types";
+import { APIResponse, Building, Unit, UNIT_STATUS, UNIT_TYPE } from "@/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
@@ -110,6 +110,74 @@ export const useCreateUnitMutation = () => {
   });
 };
 
+export const useUpdateUnitMutation = () => {
+  return useMutation({
+    mutationKey: ["updateUnit"],
+    mutationFn: async ({
+      buildingId,
+      unit,
+    }: {
+      buildingId: string;
+      unit: Omit<Unit, "createdAt" | "updatedAt" | "images"> & {
+        images: File[];
+      };
+    }) => {
+      const formData = new FormData();
+      formData.append("unitId", unit.id);
+      formData.append("buildingId", buildingId);
+      formData.append("floorNumber", unit.floorNumber.toString());
+      formData.append("unitNumber", unit.unitNumber);
+      formData.append("sizeSqFt", unit.sizeSqFt.toString());
+      formData.append("type", unit.type);
+      formData.append("status", unit.status);
+      formData.append("monthlyRent", unit.monthlyRent.toString());
+      formData.append("description", unit.description || "");
+      formData.append(
+        "lastRenovationDate",
+        unit.lastRenovationDate?.toString() || "",
+      );
+      formData.append("amenities", JSON.stringify(unit.amenities));
+      unit.images?.forEach((image) => {
+        formData.append("images", image);
+      });
+
+      try {
+        const response = await axiosClient.patch<APIResponse<UnitWithId>>(
+          `/units/${buildingId}`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          },
+        );
+
+        const unit = response.data.data;
+
+        if (!unit) {
+          throw new Error("Unit not found");
+        }
+
+        const refinedUnit = {
+          ...unit,
+          id: unit._id,
+        };
+
+        return refinedUnit;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while updating a unit",
+          );
+        }
+        throw new Error("An unexpected error occurred while updating a unit");
+      }
+    },
+  });
+};
+
 export const useDeleteUnitMutation = () => {
   return useMutation({
     mutationKey: ["deleteUnit"],
@@ -134,6 +202,42 @@ export const useDeleteUnitMutation = () => {
           );
         }
         throw new Error("An unexpected error occurred while deleting a unit");
+      }
+    },
+  });
+};
+export const useSplitUnitMutation = () => {
+  return useMutation({
+    mutationKey: ["splitUnit"],
+    mutationFn: async ({
+      buildingId,
+      unitId,
+      newUnits,
+    }: {
+      buildingId: string;
+      unitId: string;
+      newUnits: {
+        unitNumber: string;
+        sizeSqFt: number;
+        type: UNIT_TYPE;
+        status: UNIT_STATUS;
+      }[];
+    }) => {
+      try {
+        await axiosClient.patch<APIResponse<null>>(
+          `/units/${buildingId}/${unitId}/split`,
+          newUnits,
+        );
+        return null;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while spliting a unit",
+          );
+        }
+        throw new Error("An unexpected error occurred while spliting a unit");
       }
     },
   });

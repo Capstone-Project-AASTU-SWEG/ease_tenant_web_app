@@ -238,6 +238,7 @@ const CustomTabsList = React.forwardRef<HTMLDivElement, CustomTabsListProps>(
           <button
             key={item.value}
             role="tab"
+            type="button"
             aria-selected={value === item.value}
             data-state={value === item.value ? "active" : "inactive"}
             disabled={item.disabled}
