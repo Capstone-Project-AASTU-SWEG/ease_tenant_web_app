@@ -32,16 +32,21 @@ import {
   TextFormField,
 } from "@/components/custom/form-field";
 import { FileUploader } from "@/components/custom/file-upload";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import PageHeader from "@/components/custom/page-header";
 import { AccessibilityFeatures, CommercialAmenities } from "./_constants";
 import { DataListInput } from "@/components/custom/data-list-input";
 import { useEffect, useState } from "react";
-import { useCreateBuildingMutation } from "@/app/quries/useBuildings";
+import {
+  useCreateBuildingMutation,
+  useGetBuildingQuery,
+  useUpdateBuildingMutation,
+} from "@/app/quries/useBuildings";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Form } from "@/components/ui/form";
+import LogJSON from "@/components/custom/log-json";
 
 const TAB_TYPES = {
   BASIC: "Basic Info",
@@ -58,48 +63,62 @@ const Page = () => {
   const router = useRouter();
 
   const createBuildingMutation = useCreateBuildingMutation();
+  const updateBuildingMutation = useUpdateBuildingMutation();
+
+  const searchParams = useSearchParams();
+  const buildingId = searchParams.get("buildingId") as string;
+
+  const getBuildingQuery = useGetBuildingQuery(buildingId);
+  const buildingToBeUpdated = getBuildingQuery.data;
 
   const form = useForm<BuildingSchema>({
     resolver: zodResolver(buildingSchema),
     defaultValues: {
-      name: "",
-      description: "",
+      name: buildingToBeUpdated?.name || "",
+      description: buildingToBeUpdated?.description || "",
       address: {
-        country: "",
-        street: "",
-        city: "",
-        state: "",
-        postalCode: "",
-        latitude: 0,
-        longitude: 0,
+        country: buildingToBeUpdated?.address.country || "",
+        street: buildingToBeUpdated?.address.street || "",
+        city: buildingToBeUpdated?.address.city || "",
+        state: buildingToBeUpdated?.address.state || "",
+        postalCode: buildingToBeUpdated?.address.postalCode || "",
+        latitude: buildingToBeUpdated?.address.latitude || 0,
+        longitude: buildingToBeUpdated?.address.longitude || 0,
       },
-      managerId: "",
-      totalFloors: 1,
-      totalUnits: 1,
-      amenities: [],
-      accessibilityFeatures: [],
-      elevators: 0,
-      emergencyExits: 0,
-      fireSafetyCertified: false,
-      status: BUILDING_STATUS.ACTIVE,
-      yearBuilt: 2010,
-      operatingHours: "",
-      parkingSpaces: 0,
+      managerId: buildingToBeUpdated?.managerId || "",
+      totalFloors: buildingToBeUpdated?.totalFloors || 1,
+      totalUnits: buildingToBeUpdated?.totalUnits || 1,
+      amenities: buildingToBeUpdated?.amenities || [],
+      accessibilityFeatures: buildingToBeUpdated?.accessibilityFeatures || [],
+      elevators: buildingToBeUpdated?.elevators || 0,
+      emergencyExits: buildingToBeUpdated?.emergencyExits || 0,
+      fireSafetyCertified: buildingToBeUpdated?.fireSafetyCertified || false,
+      status: buildingToBeUpdated?.status || BUILDING_STATUS.ACTIVE,
+      yearBuilt: buildingToBeUpdated?.yearBuilt || 2010,
+      operatingHours: buildingToBeUpdated?.operatingHours || "",
+      parkingSpaces: buildingToBeUpdated?.parkingSpaces || 0,
       leaseTerms: {
-        minLeasePeriodMonths: 1,
-        maxLeasePeriodMonths: 1,
-        latePaymentPenalty: 0,
+        minLeasePeriodMonths:
+          buildingToBeUpdated?.leaseTerms.minLeasePeriodMonths || 1,
+        maxLeasePeriodMonths:
+          buildingToBeUpdated?.leaseTerms.maxLeasePeriodMonths || 1,
+        latePaymentPenalty:
+          buildingToBeUpdated?.leaseTerms.latePaymentPenalty || 0,
         leaseRenewalPolicy: "",
-        paymentFrequency: PAYMENT_FREQUENCY.MONTHLY,
-        securityDeposit: 0,
-        petPolicy: "",
+        paymentFrequency:
+          buildingToBeUpdated?.leaseTerms.paymentFrequency ||
+          PAYMENT_FREQUENCY.MONTHLY,
+        securityDeposit: buildingToBeUpdated?.leaseTerms.securityDeposit || 0,
+        petPolicy: buildingToBeUpdated?.leaseTerms.petPolicy || "",
       },
     },
   });
 
+  // Drived states
+  const isEditting = !!buildingToBeUpdated;
+
   const handleFiles = (files: File[]) => {
     const images: File[] = [];
-    const videos: File[] = [];
 
     const getFileType = (file: File): "image" | "video" | "document" => {
       if (file.type.startsWith("image/")) return "image";
@@ -110,18 +129,15 @@ const Page = () => {
     Array.from(files).forEach((file) => {
       if (getFileType(file) === "image") {
         images.push(file);
-      } else if (getFileType(file) === "video") {
-        videos.push(file);
       }
     });
 
     form.setValue("images", [...images]);
-    form.setValue("videos", [...videos]);
+    // form.setValue("videos", [...videos]);
   };
 
-  const handleSubmit = async () => {
+  const handleAddingBuilding = () => {
     const data: BuildingSchema = form.getValues();
-    console.log("Form data before appending:", data);
     const formData = new FormData();
 
     // do appending for each fields
@@ -166,9 +182,65 @@ const Page = () => {
 
     formData.append("buildingType", "commercial");
 
-    console.log("Form data:", formData);
-
     createBuildingMutation.mutate(formData);
+  };
+  const handleBuildingUpdate = () => {
+    const data: BuildingSchema = form.getValues();
+    const formData = new FormData();
+
+    // do appending for each fields
+    formData.append("name", data.name);
+    formData.append("description", data.description || "");
+
+    formData.append("totalFloors", data.totalFloors.toString());
+    formData.append("totalUnits", data.totalUnits.toString());
+    formData.append("status", data.status);
+    formData.append("operatingHours", data.operatingHours || "");
+    formData.append("elevators", data.elevators.toString());
+    formData.append("parkingSpaces", data.parkingSpaces.toString());
+    formData.append("emergencyExits", data.emergencyExits.toString());
+    formData.append(
+      "fireSafetyCertified",
+      data.fireSafetyCertified ? "true" : "false",
+    );
+
+    formData.append(
+      "address",
+      JSON.stringify({
+        ...data.address,
+        latitude: data.address.latitude || 0,
+        longitude: data.address.longitude || 0,
+      }),
+    );
+    formData.append("leaseTerms", JSON.stringify(data.leaseTerms));
+
+    data.images?.forEach((file) => {
+      formData.append(`images`, file);
+    });
+
+    formData.append(
+      "accessibilityFeatures",
+      JSON.stringify(data.accessibilityFeatures),
+    );
+    formData.append("amenities", JSON.stringify(data.amenities));
+
+    data.regulationDocuments?.forEach((file) => {
+      formData.append("regulationDocuments", file.file);
+    });
+
+    formData.append("buildingType", "commercial");
+    formData.append("buildingId", buildingId);
+
+    updateBuildingMutation.mutate(formData);
+  };
+
+  const handleSubmit = async () => {
+    if (isEditting) {
+      handleBuildingUpdate();
+    } else {
+      handleAddingBuilding();
+      return;
+    }
   };
 
   const validateCurrentTab = async () => {
@@ -230,19 +302,37 @@ const Page = () => {
     }
   }, [createBuildingMutation.isSuccess, router]);
 
+  // Show error toast if error occured
+  useEffect(() => {
+    if (updateBuildingMutation.isError) {
+      errorToast(updateBuildingMutation.error.message);
+    }
+  }, [updateBuildingMutation.error?.message, updateBuildingMutation.isError]);
+
+  useEffect(() => {
+    if (updateBuildingMutation.isSuccess) {
+      successToast("Building updated successfully");
+      router.push("/dashboard/buildings");
+    }
+  }, [updateBuildingMutation.isSuccess, router]);
+
   return (
     <PageWrapper className="py-0">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <PageHeader
-          title="Create New Building"
-          description="Add a new building to your property management system"
-          withBackButton
-        />
-      </motion.div>
+      <PageHeader
+        title={isEditting ? "Update Building" : "Create New Building"}
+        description={
+          isEditting
+            ? "Update building **********"
+            : "Add a new building to your property management system"
+        }
+        withBackButton
+      />
+
+      <LogJSON
+        data={{
+          buildingToBeUpdated,
+        }}
+      />
 
       <main className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(16rem,1fr)_4fr]">
         <motion.div
@@ -250,16 +340,10 @@ const Page = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Card className="sticky top-24 overflow-hidden border-none bg-gradient-to-br from-slate-50 to-white shadow-md dark:from-slate-900 dark:to-slate-950">
+          <Card className="sticky top-24 overflow-hidden border-none bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
             <CardContent className="p-6">
               <h3 className="mb-6 text-lg font-semibold">Building Setup</h3>
               <ProgressIndicator activeTab={activeTab} />
-              {/* <div className="mt-8">
-                <LeftSection
-                  activeTab={activeTab}
-                  onTabClick={handleTabClick}
-                />
-              </div> */}
             </CardContent>
           </Card>
         </motion.div>
@@ -301,7 +385,7 @@ const Page = () => {
                               </p>
                             </div>
                           </div>
-                          <Stack>
+                          <Stack spacing={"lg"}>
                             <TextFormField<BuildingSchema>
                               control={form.control}
                               name="name"
@@ -317,7 +401,7 @@ const Page = () => {
                               placeholder="Enter building description"
                             />
 
-                            <div className="mt-8 rounded-lg border border-dashed border-primary/20 bg-primary/5 p-6">
+                            <div className="rounded-lg border border-dashed border-primary/20 bg-primary/5 p-6">
                               <div className="mb-4 flex items-center gap-3">
                                 <Upload className="h-5 w-5 text-primary" />
                                 <h3 className="text-lg font-medium">
@@ -362,7 +446,7 @@ const Page = () => {
                             </div>
                           </div>
 
-                          <Stack>
+                          <Stack spacing={"lg"}>
                             <TextFormField<BuildingSchema>
                               control={form.control}
                               name="address.country"
@@ -418,7 +502,7 @@ const Page = () => {
                               />
                             </Group>
 
-                            <div className="mt-6 overflow-hidden rounded-lg border bg-slate-50 shadow-sm dark:bg-slate-900/50">
+                            <div className="overflow-hidden rounded-lg border bg-slate-50 shadow-sm dark:bg-slate-900/50">
                               <div className="border-b bg-white p-4 dark:bg-slate-900">
                                 <h4 className="font-medium">Map Preview</h4>
                               </div>
@@ -464,7 +548,7 @@ const Page = () => {
                               Building Specifications
                             </h3>
 
-                            <Stack>
+                            <Stack spacing={"lg"}>
                               <Group
                                 className="grid grid-cols-1 gap-4 md:grid-cols-2"
                                 align="start"
@@ -484,7 +568,7 @@ const Page = () => {
                               </Group>
 
                               <Group
-                                className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2"
+                                className="grid grid-cols-1 gap-4 md:grid-cols-2"
                                 align="start"
                               >
                                 <NumberFormField<BuildingSchema>
@@ -520,7 +604,7 @@ const Page = () => {
                             <h3 className="mb-4 text-base font-medium">
                               Facilities & Safety
                             </h3>
-                            <Stack>
+                            <Stack spacing={"lg"}>
                               <Group className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <NumberFormField<BuildingSchema>
                                   control={form.control}
@@ -536,7 +620,7 @@ const Page = () => {
                                 />
                               </Group>
 
-                              <Group className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                              <Group className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <NumberFormField<BuildingSchema>
                                   control={form.control}
                                   name="emergencyExits"
@@ -564,7 +648,7 @@ const Page = () => {
                             <h3 className="mb-4 text-base font-medium">
                               Features & Amenities
                             </h3>
-                            <Stack>
+                            <Stack spacing={"lg"}>
                               <DataListInput
                                 label="Accessibility Features"
                                 items={AccessibilityFeatures.map((f) => ({
@@ -605,7 +689,6 @@ const Page = () => {
                                     label: f,
                                     value: f,
                                   }))}
-                                className="mt-4"
                               />
                             </Stack>
                           </div>
@@ -751,7 +834,7 @@ const Page = () => {
                       {activeTab !== "BASIC" ? (
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="ghost"
                           onClick={handlePrev}
                           className="gap-2"
                         >
@@ -778,7 +861,9 @@ const Page = () => {
                         >
                           {createBuildingMutation.isPending
                             ? "Submitting..."
-                            : "Create Building"}
+                            : isEditting
+                              ? "Edit Building"
+                              : "Create Building"}
                           <Sparkles className="h-4 w-4" />
                         </Button>
                       )}

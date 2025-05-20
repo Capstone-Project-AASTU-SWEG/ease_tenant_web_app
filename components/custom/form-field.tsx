@@ -447,7 +447,14 @@ export const CheckboxFormField = <T extends FieldValues>({
               classNames?.formControl,
             )}
           >
-            <Checkbox className={cn("", classNames?.input)} {...field} />
+            <Checkbox
+              className={cn("", classNames?.input)}
+              // {...field}
+              checked={field.value}
+              onCheckedChange={(checked) => {
+                field.onChange(checked ? true : false);
+              }}
+            />
             {label && (
               <span className={cn("font-normal", classNames?.formLabel)}>
                 {label}

@@ -57,7 +57,7 @@ import {
   UnitDetailsSheet,
   type UnitAction,
 } from "@/components/custom/unit-details-sheet";
-import LogJSON from "@/components/custom/log-json";
+// import LogJSON from "@/components/custom/log-json";
 import { errorToast, warningToast } from "@/components/custom/toasts";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -215,7 +215,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
-      <LogJSON data={filterUnits} position="top-right" />
+      {/* <LogJSON data={filterUnits} position="top-right" /> */}
 
       {/* Filters and controls */}
       <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -236,7 +236,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
             onValueChange={(v) => setViewMode(v as "grid" | "list")}
             className="mr-1"
           >
-            <TabsList className="h-9 bg-slate-100 p-1 dark:bg-slate-800">
+            <TabsList className="h-9 p-1.5 bg-transparent border border-primary/60">
               <TabsTrigger
                 value="grid"
                 className="h-7 px-3 data-[state=active]:bg-primary dark:data-[state=active]:bg-slate-950"
@@ -256,7 +256,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
             value={statusFilter}
             onValueChange={(val) => setStatusFilter(val as UNIT_STATUS | "ALL")}
           >
-            <SelectTrigger className="h-9 w-[160px] gap-1 border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+            <SelectTrigger className="h-9 w-[160px] gap-1 ">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
@@ -275,7 +275,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
             value={selectedFloor}
             onValueChange={(val) => setSelectedFloor(val)}
           >
-            <SelectTrigger className="h-9 w-[180px] border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+            <SelectTrigger className="h-9 w-[180px] ">
               <Layers className="mr-2 h-4 w-4 text-muted-foreground" />
               <SelectValue placeholder="Select floor" />
             </SelectTrigger>
@@ -292,8 +292,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
             <Button
               asChild
               size="sm"
-              variant="outline"
-              className="h-9 gap-1 border-dashed"
+              className="h-9 gap-1"
             >
               <Link href={`/dashboard/buildings/${buildingID}/units/new`}>
                 <Plus className="h-4 w-4" />
@@ -466,7 +465,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 router.push(
-                                  `/dashboard/rent?buildingID=${buildingID}&unitID=${unit.id}`,
+                                  `/dashboard/rent?buildingId=${buildingID}&unitId=${unit.id}`,
                                 );
                               }}
                             >
@@ -592,7 +591,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 router.push(
-                                  `/dashboard/rent?buildingID=${buildingID}&unitID=${unit.id}`,
+                                  `/dashboard/rent?buildingId=${buildingID}&unitId=${unit.id}`,
                                 );
                               }}
                             >
@@ -658,7 +657,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   router.push(
-                                    `/dashboard/rent?buildingID=${buildingID}&unitID=${unit.id}`,
+                                    `/dashboard/rent?buildingId=${buildingID}&unitId=${unit.id}`,
                                   );
                                 }}
                               >

@@ -263,7 +263,7 @@ const Page = () => {
                             <h3 className="mb-4 text-base font-medium">
                               Unit Specifications
                             </h3>
-                            <Stack>
+                            <Stack spacing={"lg"}>
                               <Group
                                 className="grid grid-cols-1 gap-4 md:grid-cols-2"
                                 align="start"
@@ -419,7 +419,7 @@ const Page = () => {
                             <h3 className="mb-4 text-base font-medium">
                               Unit Amenities
                             </h3>
-                            <Stack>
+                            <Stack spacing={"lg"}>
                               <DataListInput
                                 label="Amenities"
                                 items={[

@@ -16,10 +16,15 @@ export type ApplicationWithId = Application & {
   id: string;
 };
 
-export const useGetApplicationsOfBuildingQuery = (buildingId: string) => {
+export const useGetApplicationsOfBuildingQuery = (buildingId?: string) => {
   const query = useQuery({
     queryKey: ["getApplicationsOfBuilding"],
     queryFn: async () => {
+      if (!buildingId) {
+        // Don't make request if buildingId is not provided
+        return [];
+      }
+
       try {
         const response = await axiosClient.get<
           APIResponse<

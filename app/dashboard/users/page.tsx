@@ -60,10 +60,12 @@ import {
   AlertCircle,
   User2,
   MoreVertical,
+  User2Icon,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { User, USER_TYPE } from "@/types";
 import SearchInput from "@/components/custom/search-input";
+import Stat from "@/components/custom/stat";
 // import LogJSON from "@/components/custom/log-json";
 
 // ===== Main Page Component =====
@@ -81,6 +83,41 @@ export default function Page() {
         title="Building Clients"
         description="Manage all clients of your commercial building"
       />
+
+      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Stat
+          icon={User2Icon}
+          iconColor="text-blue-600"
+          iconBg="bg-blue-100"
+          title="Total Tenants"
+          value={tenants.data?.length.toString() || 0}
+          // moreInfo={`${stats.total ? (stats.approved / stats.total) * 100 : 0} Pending Review`}
+        />
+        <Stat
+          icon={User2Icon}
+          iconColor="text-blue-600"
+          iconBg="bg-blue-100"
+          title="Total Managers"
+          value={managers.data?.length.toString() || 0}
+          // moreInfo={`${stats.total ? (stats.approved / stats.total) * 100 : 0} Pending Review`}
+        />
+        <Stat
+          icon={User2Icon}
+          iconColor="text-blue-600"
+          iconBg="bg-blue-100"
+          title="Total Service Providers"
+          value={serviceProviders.data?.length.toString() || 0}
+          // moreInfo={`${stats.total ? (stats.approved / stats.total) * 100 : 0} Pending Review`}
+        />
+        <Stat
+          icon={User2Icon}
+          iconColor="text-blue-600"
+          iconBg="bg-blue-100"
+          title="Total Maintenance Workers"
+          value={maintenanceWorkers.data?.length.toString() || 0}
+          // moreInfo={`${stats.total ? (stats.approved / stats.total) * 100 : 0} Pending Review`}
+        />
+      </section>
 
       <SearchInput
         classNames={{

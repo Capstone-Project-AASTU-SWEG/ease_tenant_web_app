@@ -21,7 +21,7 @@ const tabsContainerVariants = cva("w-full transition-all", {
   variants: {
     variant: {
       default: "bg-muted/30 rounded-lg p-1",
-      outline: "border rounded-lg p-1",
+      outline: "border bg-transparent rounded-lg p-1",
       pills: "space-x-1",
       underline: "border-b",
       minimal: "",

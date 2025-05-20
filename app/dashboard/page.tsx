@@ -43,8 +43,8 @@ export default function Page() {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <div className="flex items-center justify-between px-6 pb-3 pt-6 dark:border-slate-800">
-            <TabsList className="">
+          <div className="flex items-center justify-between pb-3 pt-6 dark:border-slate-800">
+            <TabsList className="flex gap-2">
               <TabsTrigger
                 value="overview"
                 className="relative rounded-full px-4 py-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"

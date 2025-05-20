@@ -9,7 +9,6 @@ import {
   FileText,
   LogOut,
   MessageCircle,
-  Settings,
   ShoppingBasket,
   UserPlus,
   UsersIcon,
@@ -30,11 +29,12 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useState } from "react";
-import { authUser, authUserType } from "@/app/auth/_hooks/useAuth";
 import { USER_TYPE } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { useVerifyUserQuery } from "@/app/quries/useAuth";
+import LogJSON from "@/components/custom/log-json";
 
 interface NavigationItem {
   href: string;
@@ -47,8 +47,9 @@ interface MobileNavigationProps {
   user: {
     firstName?: string;
     lastName?: string;
+    role: USER_TYPE;
   } | null;
-  userType: string;
+  userType: USER_TYPE;
   pathname: string;
   router: ReturnType<typeof useRouter>;
 }
@@ -67,7 +68,7 @@ const adminNavigationItems: NavigationItem[] = [
   { href: "/dashboard/maintenance", icon: Wrench, label: "Maintenance" },
   { href: "/dashboard/messages", icon: MessageCircle, label: "Chat" },
   // { href: "#", icon: Bell, label: "Notifications" },
-  { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+  // { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
 const tenantNavigationItems: NavigationItem[] = [
@@ -81,7 +82,7 @@ const tenantNavigationItems: NavigationItem[] = [
   { href: "/dashboard/maintenance", icon: Wrench, label: "Maintenance" },
   { href: "/dashboard/messages", icon: MessageCircle, label: "Chat" },
   // { href: "#", icon: Bell, label: "Notifications" },
-  { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+  // { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
 function MobileNavigation({
@@ -98,8 +99,8 @@ function MobileNavigation({
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 z-50 w-full border-t border-gray-200 bg-white shadow-lg">
-        <div className="grid h-16 grid-cols-6">
+      <div className="fixed bottom-0 left-0 z-50 w-full border-t border-gray-200 bg-white shadow-lg rounded-xl">
+        <div className="grid h-16 grid-cols-5">
           {primaryNavItems.map((item) => (
             <button
               key={item.label}
@@ -116,24 +117,7 @@ function MobileNavigation({
             </button>
           ))}
 
-          {/* Profile Button */}
-          <button
-            onClick={() => router.push("/profile")}
-            className={cn(
-              "flex flex-col items-center justify-center gap-1 transition-colors",
-              pathname === "/profile"
-                ? "text-primary"
-                : "text-gray-500 hover:text-primary",
-            )}
-          >
-            <Avatar className="h-6 w-6 border border-primary/10">
-              <AvatarFallback className="bg-primary/5 text-xs font-medium text-primary">
-                {`${user?.firstName?.at(0) ?? ""}${user?.lastName?.at(0) ?? ""}`.toUpperCase() ||
-                  "U"}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-xs font-medium">Profile</span>
-          </button>
+          
 
           {/* Menu Button */}
           <button
@@ -182,7 +166,7 @@ function MobileNavigation({
                     size="sm"
                     className="mt-2 h-8 text-xs"
                     onClick={() => {
-                      router.push("/profile");
+                      router.push("/dashboard/profile");
                       setDrawerOpen(false);
                     }}
                   >
@@ -269,10 +253,18 @@ export default function AppSidebar() {
   const pathname = usePathname();
   const [isOpened, setIsOpened] = useState(false);
   const isMobile = useIsMobile();
-  const user = authUser();
-  const userType = authUserType() || "UNKNOWN ROLE";
+
+  const verifyUserQuery = useVerifyUserQuery();
+
+  const user = verifyUserQuery.data?.user;
+  const userType = user?.role;
+
+  const isManager = userType === USER_TYPE.MANAGER;
+  // const isOwner = userType === USER_TYPE.OWNER;
 
   let navigationItems: NavigationItem[] = [];
+
+  // successToast("Thy there")
 
   switch (userType) {
     case USER_TYPE.TENANT:
@@ -286,17 +278,31 @@ export default function AppSidebar() {
       navigationItems = [];
   }
 
+  if (isManager) {
+    navigationItems = navigationItems.map((item) => {
+      return {
+        ...item,
+        href: item.href + `?buildingId=${verifyUserQuery.data?.building?.id}`,
+      };
+    });
+  }
+
   return (
     <SidebarProvider
       onOpenChange={setIsOpened}
       open={isOpened}
       className="max-w-fit"
     >
+      <LogJSON
+        data={{
+          userData: verifyUserQuery.data,
+        }}
+      />
       {isMobile ? (
         <MobileNavigation
           navigationItems={navigationItems}
-          user={user}
-          userType={userType}
+          user={user || null}
+          userType={userType || USER_TYPE.UNKNOWN}
           pathname={pathname}
           router={router}
         />
@@ -313,17 +319,17 @@ export default function AppSidebar() {
 
           <SidebarHeader className="mb-6 flex flex-col items-center justify-center pt-6">
             <Avatar
-              onClick={() => router.push("/profile")}
-              className="h-16 w-16 cursor-pointer border-2 border-white/20 shadow-md transition-transform duration-200 hover:scale-105"
+              onClick={() => router.push("/dashboard/profile")}
+              className="h-12 w-12 cursor-pointer rounded-lg border-2 border-white/20 shadow-md transition-transform duration-200 hover:scale-105"
             >
               <AvatarImage alt={user?.firstName || "User"} />
-              <AvatarFallback className="bg-primary-foreground text-lg font-medium text-primary">
+              <AvatarFallback className="rounded-lg bg-primary-foreground text-lg font-medium text-primary">
                 {`${user?.firstName?.at(0) ?? ""}${user?.lastName?.at(0) ?? ""}`.toUpperCase() ||
-                  "404"}
+                  "***"}
               </AvatarFallback>
             </Avatar>
             <div className="mt-3 text-center text-white">
-              <p className="font-medium">{`${user?.firstName ?? ""} ${user?.lastName ?? ""}`}</p>
+              <p className="line-clamp-1 font-medium">{`${user?.firstName ?? ""} ${user?.lastName ?? ""}`}</p>
               <p className="text-xs opacity-70">{userType}</p>
             </div>
           </SidebarHeader>

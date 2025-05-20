@@ -44,7 +44,6 @@ import { PageLoader } from "@/components/custom/page-loader";
 import { PageError } from "@/components/custom/page-error";
 import Link from "next/link";
 
-
 type PriorityLevel = "high" | "medium" | "low";
 type PaymentStatus = "paid" | "pending" | "overdue";
 type MaintenanceStatus = "in-progress" | "completed" | "pending";
@@ -469,60 +468,6 @@ const NoApplicationStatus = ({ userData }: { userData: UserDetail }) => {
                   </Link>
                 </Button>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <h4 className="mb-3 font-medium">Complete Your Profile</h4>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span className="text-sm">Basic Information</span>
-              </div>
-              <Badge
-                variant="outline"
-                className="bg-green-500/10 text-green-500"
-              >
-                Completed
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span className="text-sm">Business Details</span>
-              </div>
-              <Badge
-                variant="outline"
-                className="bg-green-500/10 text-green-500"
-              >
-                Completed
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-500" />
-                <span className="text-sm">Financial Information</span>
-              </div>
-              <Badge
-                variant="outline"
-                className="bg-amber-500/10 text-amber-500"
-              >
-                Incomplete
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-500" />
-                <span className="text-sm">Required Documents</span>
-              </div>
-              <Badge
-                variant="outline"
-                className="bg-amber-500/10 text-amber-500"
-              >
-                Incomplete
-              </Badge>
             </div>
           </div>
         </div>

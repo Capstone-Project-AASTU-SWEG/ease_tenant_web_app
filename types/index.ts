@@ -10,6 +10,7 @@ export type CommonUserData = {
 export type Tenant = {
   // Personal Information
   id: string;
+  userId?: CommonUserData;
   firstName: string;
   lastName: string;
   fullName?: string;
@@ -344,6 +345,7 @@ export interface BaseApplication {
   submittedBy: User;
   priority: PRIORITY_LEVEL;
   notes?: string;
+  building: Building;
   assignedTo: User;
   submittedAt: string;
   lastUpdated: string;
@@ -368,7 +370,7 @@ export interface RentalApplication extends BaseApplication {
     name: string;
   }[];
 
-  submittedBy: User & Tenant;
+  submittedBy: Tenant;
 }
 
 /**
@@ -378,12 +380,12 @@ export type Application = RentalApplication;
 
 // Lease status enum
 export enum LEASE_STATUS {
-  DRAFT = "draft",
-  SENT = "sent",
-  SIGNED = "signed",
-  ACTIVE = "active",
-  EXPIRED = "expired",
-  TERMINATED = "terminated",
+  DRAFT = "Draft",
+  SENT = "Sent",
+  SIGNED = "Signed",
+  ACTIVE = "Active",
+  EXPIRED = "Expired",
+  TERMINATED = "Terminated",
 }
 
 // Template type

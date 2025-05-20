@@ -1,3 +1,5 @@
+import { Address } from "@/types";
+
 // Helper functions for occupancy indicators
 export const getOccupancyColor = (occupancy: number) => {
   if (occupancy >= 90) return "bg-green-500";
@@ -19,6 +21,19 @@ export function formatCurrency(amount: number) {
     currency: "USD",
     minimumFractionDigits: 0,
   }).format(amount);
+}
+
+export function getFullName(fName?: string, lName?: string) {
+  return `${fName} ${lName}`;
+}
+export function getFullNameFromObj(
+  obj: unknown & { firstName?: string; lastName?: string },
+) {
+  return `${obj.firstName} ${obj.lastName}`;
+}
+
+export function getFormatedAddress(address?: Address) {
+  return `${address?.street}, ${address?.city}, ${address?.state}`;
 }
 
 export const storeBuildingId = (buildingId: string) => {

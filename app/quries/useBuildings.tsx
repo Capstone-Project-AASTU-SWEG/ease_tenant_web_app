@@ -121,6 +121,36 @@ export const useCreateBuildingMutation = () => {
   });
 };
 
+export const useUpdateBuildingMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ["updateBuilding"],
+    mutationFn: async (data: FormData) => {
+      const buildingId = data.get("buildingId") as string;
+      console.log({ buildingId });
+      try {
+        const response = await axiosClient.patch<
+          APIResponse<Building & { _id: string }>
+        >(`/buildings/${buildingId}`, data, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        const building = response.data.data;
+        await queryClient.invalidateQueries({ queryKey: ["getAllBuildings"] });
+        return building;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(errorMessage || "An error occurred");
+        }
+        throw new Error("An unexpected error occurred");
+      }
+    },
+  });
+};
+
 export const useDeleteBuildingMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({

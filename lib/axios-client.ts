@@ -12,6 +12,9 @@ axiosClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    const payload = config.data;
+    console.log("/n/nPAYLOAD:", payload, "\n\n");
+
     return config;
   },
   (error) => {
