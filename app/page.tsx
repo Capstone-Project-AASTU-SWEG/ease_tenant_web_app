@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  // CheckCircle,
   Building,
   Users,
   BarChartIcon as ChartBar,
@@ -44,12 +43,7 @@ export default function Home() {
             >
               Testimonials
             </Link>
-            <Link
-              href="#pricing"
-              className="text-sm font-medium transition-colors hover:text-primary"
-            >
-              Pricing
-            </Link>
+            
             <Link
               href="#contact"
               className="text-sm font-medium transition-colors hover:text-primary"

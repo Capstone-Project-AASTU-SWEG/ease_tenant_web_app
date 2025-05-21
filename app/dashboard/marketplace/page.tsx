@@ -16,7 +16,6 @@ import {
   Search,
   Star,
   Filter,
-  // ShoppingCart,
   Clock,
   Calendar,
   CheckCircle,
@@ -62,11 +61,11 @@ export default function MarketplacePage() {
     setIsServiceDetailsOpen(true);
   };
 
-  const handleBookService = (service: ServiceProps) => {
-    setSelectedService(service);
-    setIsServiceDetailsOpen(false);
-    setIsBookingOpen(true);
-  };
+  // const handleBookService = (service: ServiceProps) => {
+  //   setSelectedService(service);
+  //   setIsServiceDetailsOpen(false);
+  //   setIsBookingOpen(true);
+  // };
 
   const filteredServices = services.filter((service) => {
     // Filter by category
@@ -180,7 +179,7 @@ export default function MarketplacePage() {
                     {...service}
                     index={index}
                     onClick={() => handleServiceClick(service)}
-                    onBook={() => handleBookService(service)}
+                    
                   />
                 ))
               ) : (
@@ -444,12 +443,10 @@ function ServiceCard({
   isPromotion = false,
   index = 0,
   onClick,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onBook,
 }: ServiceProps & {
   index?: number;
   onClick?: () => void;
-  onBook?: () => void;
+ 
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
