@@ -33,7 +33,6 @@ import { Badge } from "@/components/ui/badge";
 import PageWrapper from "@/components/custom/page-wrapper";
 import SearchInput from "@/components/custom/search-input";
 
-import { getBuildings, setBuildings } from "./_hooks/useBuildings";
 import ASSETS from "@/app/auth/_assets";
 import { USER_TYPE } from "@/types";
 import {
@@ -58,11 +57,13 @@ type ExtendedBuilding = BuildingWithStat & {
 };
 
 export default function BuildingsPage() {
-  const buildings = getBuildings();
+  // const buildings = getBuildings();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
   const getAllBuildings = useGetAllBuildingsQuery();
+
+  const buildings = getAllBuildings.data || [];
 
   const userRole = authUserType();
 
@@ -118,18 +119,17 @@ export default function BuildingsPage() {
     });
   };
 
-  useEffect(() => {
-    if (getAllBuildings.isSuccess) {
-      setBuildings(getAllBuildings.data || []);
-    }
-  }, [getAllBuildings.data, getAllBuildings.isSuccess]);
+  // useEffect(() => {
+  //   if (getAllBuildings.isSuccess) {
+  //     setBuildings(getAllBuildings.data || []);
+  //   }
+  // }, [getAllBuildings.data, getAllBuildings.isSuccess]);
 
   useEffect(() => {
     if (getAllBuildings.isError) {
       errorToast(getAllBuildings.error.message);
     }
   }, [getAllBuildings.error?.message, getAllBuildings.isError]);
-
 
   return (
     <PageWrapper className="">
@@ -680,7 +680,14 @@ const BuildingCard = ({
                 </DropdownMenuItem>
 
                 {isAdmin && (
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => {
+                      router.push(
+                        `/dashboard/buildings/new?buildingId=${building.id}`,
+                      );
+                    }}
+                  >
                     <Edit className="mr-2 h-4 w-4" />
                     Edit building
                   </DropdownMenuItem>

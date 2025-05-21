@@ -17,12 +17,18 @@ import { Building, LayoutGrid, List, ArrowUpRight, Filter } from "lucide-react";
 import Stack from "@/components/custom/stack";
 import { Group } from "@/components/custom/group";
 import SearchInput from "@/components/custom/search-input";
-import { getBuildings } from "../_hooks/useBuildings";
+import { useGetAllBuildingsQuery } from "@/app/quries/useBuildings";
 
 export function BuildingSummary() {
-  const buildings = getBuildings();
+  const getAllBuildingsQuery = useGetAllBuildingsQuery();
+  const buildings = getAllBuildingsQuery.data;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
+
+  if (!buildings) {
+    return;
+  }
 
   // Calculate occupancy rate for each building
   const buildingsWithOccupancy = buildings.map((building) => {
@@ -233,17 +239,13 @@ export function BuildingSummary() {
                       </div>
                     </div>
 
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      asChild
-                    >
+                    <Button size="sm" variant="ghost" asChild>
                       <Link
                         href={`/dashboard/buildings/${building.id}`}
                         className="flex items-center justify-center"
                       >
                         Manage
-                        <ArrowUpRight className="ml-1 h-3 w-3 " />
+                        <ArrowUpRight className="ml-1 h-3 w-3" />
                       </Link>
                     </Button>
                   </div>

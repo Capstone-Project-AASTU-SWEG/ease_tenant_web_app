@@ -8,7 +8,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -33,18 +32,19 @@ import {
   PenToolIcon as Tool,
   Wrench,
   Search,
-  AlertCircle,
 } from "lucide-react";
 
 import Stack from "@/components/custom/stack";
 import { Group } from "@/components/custom/group";
 import PageHeader from "@/components/custom/page-header";
-import { UserDetail, useVerifyUserQuery } from "@/app/quries/useAuth";
+import { useAuth, UserDetail, useVerifyUserQuery } from "@/app/quries/useAuth";
 import { PageLoader } from "@/components/custom/page-loader";
 import { PageError } from "@/components/custom/page-error";
 import Link from "next/link";
+import { ApplicationSummary } from "@/components/custom/application-summery";
+import { useRouter } from "next/navigation";
 
-type PriorityLevel = "high" | "medium" | "low";
+type PRIORITY_LEVEL = "high" | "medium" | "low";
 type PaymentStatus = "paid" | "pending" | "overdue";
 type MaintenanceStatus = "in-progress" | "completed" | "pending";
 
@@ -60,7 +60,7 @@ type Announcement = {
   title: string;
   date: string;
   description: string;
-  priority: PriorityLevel;
+  priority: PRIORITY_LEVEL;
 };
 
 type MaintenanceRequest = {
@@ -69,13 +69,21 @@ type MaintenanceRequest = {
   location: string;
   date: string;
   status: MaintenanceStatus;
-  priority: PriorityLevel;
+  priority: PRIORITY_LEVEL;
 };
 
 // ===== MAIN PAGE COMPONENT =====
 const Page = () => {
   const [activeTab, setActiveTab] = useState<string>("overview");
   const verifyUserQuery = useVerifyUserQuery();
+  const router = useRouter();
+  const { data, isManager } = useAuth();
+
+  const application = data?.application;
+
+  if (isManager) {
+    router.push("/dashboard/buildings");
+  }
 
   if (verifyUserQuery.isLoading) {
     return (
@@ -271,6 +279,8 @@ const Page = () => {
             </Card>
           </motion.div>
 
+          {application && <ApplicationSummary application={application} />}
+
           {/* Main Content Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -290,12 +300,12 @@ const Page = () => {
                 >
                   Overview
                 </TabsTrigger>
-                <TabsTrigger
+                {/* <TabsTrigger
                   value="payments"
                   className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
                 >
                   Payments
-                </TabsTrigger>
+                </TabsTrigger> */}
                 <TabsTrigger
                   value="maintenance"
                   className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
@@ -321,10 +331,10 @@ const Page = () => {
                     </div>
                   </TabsContent>
 
-                  {/* Payments Tab Content */}
+                  {/* Payments Tab Content
                   <TabsContent value="payments" className="mt-4">
                     <PaymentHistory />
-                  </TabsContent>
+                  </TabsContent> */}
 
                   {/* Maintenance Tab Content */}
                   <TabsContent value="maintenance" className="mt-4">
@@ -657,7 +667,7 @@ const RecentAnnouncements = () => {
   ];
 
   // Function to get priority badge styling
-  const getPriorityBadge = (priority: PriorityLevel) => {
+  const getPriorityBadge = (priority: PRIORITY_LEVEL) => {
     switch (priority) {
       case "high":
         return <Badge variant="destructive">High</Badge>;
@@ -826,104 +836,104 @@ const LeaseInformation = () => {
   );
 };
 
-// ===== COMPONENT: Payment History =====
-const PaymentHistory = () => {
-  // Sample payment history data
-  const payments: Payment[] = [
-    {
-      id: "INV-2025-004",
-      description: "Monthly Rent",
-      date: "Apr 1, 2025",
-      amount: "$3,500.00",
-      status: "paid",
-    },
-    {
-      id: "INV-2025-003",
-      description: "Utilities",
-      date: "Apr 5, 2025",
-      amount: "$425.75",
-      status: "paid",
-    },
-    {
-      id: "INV-2025-002",
-      description: "Monthly Rent",
-      date: "Mar 1, 2025",
-      amount: "$3,500.00",
-      status: "paid",
-    },
-    {
-      id: "INV-2025-001",
-      description: "Utilities",
-      date: "Mar 5, 2025",
-      amount: "$410.25",
-      status: "paid",
-    },
-  ];
+// // ===== COMPONENT: Payment History =====
+// const PaymentHistory = () => {
+//   // Sample payment history data
+//   const payments: Payment[] = [
+//     {
+//       id: "INV-2025-004",
+//       description: "Monthly Rent",
+//       date: "Apr 1, 2025",
+//       amount: "$3,500.00",
+//       status: "paid",
+//     },
+//     {
+//       id: "INV-2025-003",
+//       description: "Utilities",
+//       date: "Apr 5, 2025",
+//       amount: "$425.75",
+//       status: "paid",
+//     },
+//     {
+//       id: "INV-2025-002",
+//       description: "Monthly Rent",
+//       date: "Mar 1, 2025",
+//       amount: "$3,500.00",
+//       status: "paid",
+//     },
+//     {
+//       id: "INV-2025-001",
+//       description: "Utilities",
+//       date: "Mar 5, 2025",
+//       amount: "$410.25",
+//       status: "paid",
+//     },
+//   ];
 
-  return (
-    <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md">
-      <CardHeader>
-        <Group justify="between">
-          <div>
-            <CardTitle>Payment History</CardTitle>
-            <CardDescription>
-              View your recent payment transactions
-            </CardDescription>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-full border-neutral-200/50 bg-background/60 backdrop-blur-sm hover:bg-background/80"
-          >
-            Download
-          </Button>
-        </Group>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-5 border-b bg-muted/50 p-3 text-sm font-medium">
-            <div>Invoice</div>
-            <div>Description</div>
-            <div>Date</div>
-            <div className="text-right">Amount</div>
-            <div className="text-right">Status</div>
-          </div>
-          {payments.map((payment, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
-              className="grid grid-cols-5 items-center p-3 text-sm transition-colors hover:bg-muted/30"
-            >
-              <div className="font-medium">{payment.id}</div>
-              <div>{payment.description}</div>
-              <div>{payment.date}</div>
-              <div className="text-right">{payment.amount}</div>
-              <div className="text-right">
-                <Badge
-                  variant="outline"
-                  className="bg-green-500/10 text-green-500"
-                >
-                  <CheckCircle2 className="mr-1 h-3 w-3" /> Paid
-                </Badge>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-between border-t p-4">
-        <Button
-          variant="outline"
-          className="rounded-full border-neutral-200/50 bg-background/60 backdrop-blur-sm hover:bg-background/80"
-        >
-          View All Transactions
-        </Button>
-        <Button className="rounded-full">Make a Payment</Button>
-      </CardFooter>
-    </Card>
-  );
-};
+//   return (
+//     <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md">
+//       <CardHeader>
+//         <Group justify="between">
+//           <div>
+//             <CardTitle>Payment History</CardTitle>
+//             <CardDescription>
+//               View your recent payment transactions
+//             </CardDescription>
+//           </div>
+//           <Button
+//             variant="outline"
+//             size="sm"
+//             className="rounded-full border-neutral-200/50 bg-background/60 backdrop-blur-sm hover:bg-background/80"
+//           >
+//             Download
+//           </Button>
+//         </Group>
+//       </CardHeader>
+//       <CardContent>
+//         <div className="rounded-md border">
+//           <div className="grid grid-cols-5 border-b bg-muted/50 p-3 text-sm font-medium">
+//             <div>Invoice</div>
+//             <div>Description</div>
+//             <div>Date</div>
+//             <div className="text-right">Amount</div>
+//             <div className="text-right">Status</div>
+//           </div>
+//           {payments.map((payment, index) => (
+//             <motion.div
+//               key={index}
+//               initial={{ opacity: 0, y: 5 }}
+//               animate={{ opacity: 1, y: 0 }}
+//               transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
+//               className="grid grid-cols-5 items-center p-3 text-sm transition-colors hover:bg-muted/30"
+//             >
+//               <div className="font-medium">{payment.id}</div>
+//               <div>{payment.description}</div>
+//               <div>{payment.date}</div>
+//               <div className="text-right">{payment.amount}</div>
+//               <div className="text-right">
+//                 <Badge
+//                   variant="outline"
+//                   className="bg-green-500/10 text-green-500"
+//                 >
+//                   <CheckCircle2 className="mr-1 h-3 w-3" /> Paid
+//                 </Badge>
+//               </div>
+//             </motion.div>
+//           ))}
+//         </div>
+//       </CardContent>
+//       <CardFooter className="flex justify-between border-t p-4">
+//         <Button
+//           variant="outline"
+//           className="rounded-full border-neutral-200/50 bg-background/60 backdrop-blur-sm hover:bg-background/80"
+//         >
+//           View All Transactions
+//         </Button>
+//         <Button className="rounded-full">Make a Payment</Button>
+//       </CardFooter>
+//     </Card>
+//   );
+// };
 
 // ===== COMPONENT: Maintenance Requests =====
 const MaintenanceRequests = () => {

@@ -48,11 +48,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { getBuildings } from "../_hooks/useBuildings";
+import { useGetBuildingQuery } from "@/app/quries/useBuildings";
 
 export function TenantsTable({ buildingID }: { buildingID: string }) {
-  const buildings = getBuildings();
-  const building = buildings.find((build) => build.id === buildingID);
+  const getBuildingQuery = useGetBuildingQuery(buildingID);
+
+  const building = getBuildingQuery.data;
+  const tenantsData = building?.tenants || [];
+
+  const tenants =
+    tenantsData.map((tenant) => ({
+      ...tenant,
+      id: tenant.userId?.id,
+      name: `${tenant.userId?.firstName} ${tenant.userId?.lastName}`,
+      email: tenant.userId?.email,
+      avatar: "/placeholder.svg?height=32&width=32",
+      room:
+        building?.units && building.units.length > 0
+          ? building.units[0].unitNumber
+          : "N/A",
+      status: tenant?.status === "active" ? "Current" : "Past",
+      phone: tenant.userId?.phone,
+    })) || [];
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isAddTenantOpen, setIsAddTenantOpen] = useState(false);
@@ -67,8 +85,8 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
     // Filter by search query
     const matchesSearch =
       tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tenant.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tenant.room.includes(searchQuery);
+      tenant.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (tenant.room && tenant.room.includes(searchQuery));
 
     // Filter by status
     const matchesStatus =
@@ -154,7 +172,10 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8 border-2 border-background shadow-sm">
-                        <AvatarImage src={tenant.avatar} alt={tenant.name} />
+                        <AvatarImage
+                          src={tenant.avatar || "/placeholder.svg"}
+                          alt={tenant.name}
+                        />
                         <AvatarFallback className="bg-primary/20 text-primary">
                           {tenant.name.charAt(0)}
                         </AvatarFallback>
@@ -169,13 +190,17 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
                   </TableCell>
                   <TableCell>{tenant.room}</TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {tenant.leaseStart}
+                    {/* {tenant.leaseStart}
+                     */}
+                    ---
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {tenant.leaseEnd}
+                    {/* {tenant.leaseEnd} */}
+                    ---
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    ${tenant.rent.toLocaleString()}/mo
+                    {/* ${tenant.rent.toLocaleString()}/mo */}
+                    ---
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -357,7 +382,7 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
       {/* View Tenant Dialog */}
       {selectedTenant && (
         <Dialog open={isViewTenantOpen} onOpenChange={setIsViewTenantOpen}>
-          <DialogContent className="border-none bg-background/80 backdrop-blur-xl sm:max-w-[600px]">
+          <DialogContent className="border-none sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Tenant Details</DialogTitle>
               <DialogDescription>
@@ -368,7 +393,7 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16 border-2 border-background shadow-md">
                   <AvatarImage
-                    src={selectedTenant.avatar}
+                    src={selectedTenant.avatar || "/placeholder.svg"}
                     alt={selectedTenant.name}
                   />
                   <AvatarFallback className="bg-primary/20 text-xl text-primary">
@@ -390,7 +415,7 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>(555) 123-4567</span>
+                  <span>{selectedTenant.phone || "(Not provided)"}</span>
                 </div>
               </div>
 
@@ -406,16 +431,23 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
                       Monthly Rent
                     </p>
                     <p className="font-medium">
-                      ${selectedTenant.rent.toLocaleString()}
+                      {/* ${selectedTenant.rent.toLocaleString()} */}
+                      ---
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Lease Start</p>
-                    <p className="font-medium">{selectedTenant.leaseStart}</p>
+                    <p className="font-medium">
+                      {/* {selectedTenant.leaseStart} */}
+                      ---
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Lease End</p>
-                    <p className="font-medium">{selectedTenant.leaseEnd}</p>
+                    <p className="font-medium">
+                      {/* {selectedTenant.leaseEnd} */}
+                      ---
+                    </p>
                   </div>
                 </div>
               </div>
@@ -423,55 +455,48 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
               <div>
                 <h4 className="mb-2 font-medium">Payment History</h4>
                 <div className="space-y-2">
-                  {[...Array(3)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between rounded-lg bg-background/60 p-3"
-                    >
+                  {selectedTenant ? (
+                    <div className="flex items-center justify-between rounded-lg bg-background/60 p-3">
                       <div>
-                        <p className="font-medium">April 2023 Rent</p>
+                        <p className="font-medium">No payment records found</p>
                         <p className="text-sm text-muted-foreground">
-                          Paid on Apr 2, 2023
+                          Payment history is not available
                         </p>
                       </div>
                       <Badge
                         variant="outline"
-                        className="bg-green-100 text-green-800"
+                        className="bg-yellow-100 text-yellow-800"
                       >
-                        Paid
+                        N/A
                       </Badge>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="mb-2 font-medium">Documents</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between rounded-lg bg-background/60 p-3">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      <span>Lease Agreement.pdf</span>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      View
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-background/60 p-3">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      <span>Background Check.pdf</span>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      View
-                    </Button>
-                  </div>
+                  ) : (
+                    [...Array(3)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between rounded-lg bg-background/60 p-3"
+                      >
+                        <div>
+                          <p className="font-medium">April 2023 Rent</p>
+                          <p className="text-sm text-muted-foreground">
+                            Paid on Apr 2, 2023
+                          </p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="bg-green-100 text-green-800"
+                        >
+                          Paid
+                        </Badge>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
             <DialogFooter>
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={() => setIsViewTenantOpen(false)}
               >
                 Close
@@ -507,7 +532,7 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage
-                    src={selectedTenant.avatar}
+                    src={selectedTenant.avatar || "/placeholder.svg"}
                     alt={selectedTenant.name}
                   />
                   <AvatarFallback className="bg-primary/20 text-primary">
@@ -595,16 +620,19 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Start Date</p>
-                    <p className="font-medium">{selectedTenant.leaseStart}</p>
+                    <p className="font-medium">
+                      {/* {selectedTenant.leaseStart} */}---
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">End Date</p>
-                    <p className="font-medium">{selectedTenant.leaseEnd}</p>
+                    {/* <p className="font-medium">{selectedTenant.leaseEnd}</p> */}
+                    ---
                   </div>
                   <div>
                     <p className="text-muted-foreground">Current Rent</p>
                     <p className="font-medium">
-                      ${selectedTenant.rent.toLocaleString()}/month
+                      {/* ${selectedTenant.rent.toLocaleString()}/month */}---
                     </p>
                   </div>
                   <div>
@@ -648,15 +676,15 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
                 </div>
               </div>
 
-              <div className="grid gap-2">
+              {/* <div className="grid gap-2">
                 <Label htmlFor="new-rent">New Monthly Rent ($)</Label>
                 <Input
                   id="new-rent"
                   type="number"
-                  defaultValue={selectedTenant.rent}
+                  defaultValue={selectedTenant?.unit?.monthlyRent || 0}
                   className="bg-background/60"
                 />
-              </div>
+              </div> */}
 
               <div className="grid gap-2">
                 <Label htmlFor="renewal-notes">Notes</Label>
@@ -682,72 +710,3 @@ export function TenantsTable({ buildingID }: { buildingID: string }) {
     </motion.div>
   );
 }
-
-const tenants = [
-  {
-    id: "1",
-    name: "John Smith",
-    email: "john.smith@example.com",
-    avatar: "/placeholder.svg?height=32&width=32",
-    room: "101",
-    leaseStart: "Jan 1, 2023",
-    leaseEnd: "Dec 31, 2023",
-    rent: 1200,
-    status: "Current",
-  },
-  {
-    id: "2",
-    name: "Sarah Johnson",
-    email: "sarah.j@example.com",
-    avatar: "/placeholder.svg?height=32&width=32",
-    room: "102",
-    leaseStart: "Mar 15, 2023",
-    leaseEnd: "Mar 14, 2024",
-    rent: 1500,
-    status: "Current",
-  },
-  {
-    id: "3",
-    name: "Michael Chen",
-    email: "michael.c@example.com",
-    avatar: "/placeholder.svg?height=32&width=32",
-    room: "201",
-    leaseStart: "Feb 1, 2023",
-    leaseEnd: "Jan 31, 2024",
-    rent: 1250,
-    status: "Current",
-  },
-  {
-    id: "4",
-    name: "Emma Rodriguez",
-    email: "emma.r@example.com",
-    avatar: "/placeholder.svg?height=32&width=32",
-    room: "203",
-    leaseStart: "Apr 1, 2023",
-    leaseEnd: "Mar 31, 2024",
-    rent: 1850,
-    status: "Current",
-  },
-  {
-    id: "5",
-    name: "David Kim",
-    email: "david.k@example.com",
-    avatar: "/placeholder.svg?height=32&width=32",
-    room: "301",
-    leaseStart: "May 15, 2023",
-    leaseEnd: "May 14, 2024",
-    rent: 1300,
-    status: "Current",
-  },
-  {
-    id: "6",
-    name: "Lisa Wong",
-    email: "lisa.w@example.com",
-    avatar: "/placeholder.svg?height=32&width=32",
-    room: "302",
-    leaseStart: "Jun 1, 2023",
-    leaseEnd: "May 31, 2024",
-    rent: 1600,
-    status: "Current",
-  },
-];

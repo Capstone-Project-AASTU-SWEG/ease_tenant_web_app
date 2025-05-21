@@ -103,6 +103,7 @@ export const useGetLeaseQuery = (leaseId: string) => {
               tenant: Tenant;
               unit: Unit;
               application: RentalApplication;
+              leaseTemplate: LeaseTemplate;
             }
           >
         >(`/leases/${leaseId}`);

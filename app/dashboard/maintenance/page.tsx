@@ -50,6 +50,7 @@ import Link from "next/link";
 import PageWrapper from "@/components/custom/page-wrapper";
 import Stat from "@/components/custom/stat";
 import SearchInput from "@/components/custom/search-input";
+import Image from "next/image";
 
 // Types
 type Priority = "high" | "medium" | "low";
@@ -717,7 +718,7 @@ function RequestDetailPanel({
                   key={index}
                   className="relative aspect-square overflow-hidden rounded-md border bg-muted/20"
                 >
-                  <img
+                  <Image
                     src={image || "/placeholder.svg"}
                     alt={`Request image ${index + 1}`}
                     className="h-full w-full object-cover"

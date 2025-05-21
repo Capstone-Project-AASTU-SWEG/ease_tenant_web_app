@@ -1,37 +1,47 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Image from "next/image"
-import { motion, AnimatePresence, useAnimation } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { ChevronLeft, ChevronRight, Clock, Download, Maximize2, Pause, Play, Share2 } from 'lucide-react'
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Download,
+  Maximize2,
+  Pause,
+  Play,
+  Share2,
+} from "lucide-react";
+import ENV from "@/config/env";
 
 // Fallback assets
 const ASSETS = {
   IMAGES: {
     BUILDING_IMAGE: "/placeholder.svg?height=600&width=800",
   },
-}
+};
 
 type ExtendedBuilding = {
-  id: string
-  name: string
-  formattedAddress: string
-  imageUrls?: string[]
+  id: string;
+  name: string;
+  formattedAddress: string;
+  imageUrls?: string[];
   // Add other properties as needed
-}
+};
 
 type ImageGalleryProps = {
-  building: ExtendedBuilding
-  currentMediaIndex: number
-  setCurrentMediaIndex: (index: number) => void
-  handleNextMedia: () => void
-  handlePrevMedia: () => void
-  autoplayEnabled: boolean
-  setAutoplayEnabled: (enabled: boolean) => void
-}
+  building: ExtendedBuilding;
+  currentMediaIndex: number;
+  setCurrentMediaIndex: (index: number) => void;
+  handleNextMedia: () => void;
+  handlePrevMedia: () => void;
+  autoplayEnabled: boolean;
+  setAutoplayEnabled: (enabled: boolean) => void;
+};
 
 export const ImageGallery = ({
   building,
@@ -42,28 +52,30 @@ export const ImageGallery = ({
   autoplayEnabled,
   setAutoplayEnabled,
 }: ImageGalleryProps) => {
-  const mediaControls = useAnimation()
-  const [loadingProgress, setLoadingProgress] = useState(0)
-  const [showControls, setShowControls] = useState(true)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const mediaControls = useAnimation();
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [showControls, setShowControls] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  console.log({isFullscreen})
 
   // Simulate loading progress
   useEffect(() => {
-    setLoadingProgress(0)
+    setLoadingProgress(0);
     const interval = setInterval(() => {
       setLoadingProgress((prev) => {
-        const newProgress = prev + Math.random() * 15
+        const newProgress = prev + Math.random() * 15;
         if (newProgress >= 100) {
-          clearInterval(interval)
-          return 100
+          clearInterval(interval);
+          return 100;
         }
-        return newProgress
-      })
-    }, 100)
+        return newProgress;
+      });
+    }, 100);
 
-    return () => clearInterval(interval)
-  }, [currentMediaIndex])
+    return () => clearInterval(interval);
+  }, [currentMediaIndex]);
 
   // Reset animation when media changes
   useEffect(() => {
@@ -71,60 +83,62 @@ export const ImageGallery = ({
       opacity: 1,
       scale: 1,
       transition: { duration: 0.5, ease: "easeOut" },
-    })
-  }, [currentMediaIndex, mediaControls])
+    });
+  }, [currentMediaIndex, mediaControls]);
 
   // Auto-hide controls
   useEffect(() => {
     if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current)
+      clearTimeout(controlsTimeoutRef.current);
     }
 
     if (showControls) {
       controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false)
-      }, 3000)
+        setShowControls(false);
+      }, 3000);
     }
 
     return () => {
       if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current)
+        clearTimeout(controlsTimeoutRef.current);
       }
-    }
-  }, [showControls])
+    };
+  }, [showControls]);
 
   const handleMouseMove = () => {
-    setShowControls(true)
-  }
+    setShowControls(true);
+  };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement
         .requestFullscreen()
         .then(() => {
-          setIsFullscreen(true)
+          setIsFullscreen(true);
         })
         .catch((err) => {
-          console.error(`Error attempting to enable fullscreen: ${err.message}`)
-        })
+          console.error(
+            `Error attempting to enable fullscreen: ${err.message}`,
+          );
+        });
     } else {
       document
         .exitFullscreen()
         .then(() => {
-          setIsFullscreen(false)
+          setIsFullscreen(false);
         })
         .catch((err) => {
-          console.error(`Error attempting to exit fullscreen: ${err.message}`)
-        })
+          console.error(`Error attempting to exit fullscreen: ${err.message}`);
+        });
     }
-  }
+  };
 
   // Animation variants
   const fadeVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.5 } },
     exit: { opacity: 0, transition: { duration: 0.3 } },
-  }
+  };
 
   return (
     <div className="flex h-full flex-col" onMouseMove={handleMouseMove}>
@@ -145,7 +159,11 @@ export const ImageGallery = ({
           className="relative h-full w-full"
         >
           <Image
-            src={building.imageUrls?.[currentMediaIndex] || ASSETS.IMAGES.BUILDING_IMAGE || "/placeholder.svg"}
+            src={
+              `${ENV.NEXT_PUBLIC_BACKEND_BASE_URL_WITHOUT_PREFIX}/${building.imageUrls?.[currentMediaIndex]}` ||
+              ASSETS.IMAGES.BUILDING_IMAGE ||
+              "/placeholder.svg"
+            }
             alt={`${building.name} - Image ${currentMediaIndex + 1}`}
             className="h-full w-full object-contain"
             fill
@@ -183,7 +201,10 @@ export const ImageGallery = ({
 
               {/* Navigation Controls */}
               <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-between px-4">
-                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
                   <Button
                     variant="outline"
                     size="icon"
@@ -194,7 +215,10 @@ export const ImageGallery = ({
                   </Button>
                 </motion.div>
 
-                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
                   <Button
                     variant="outline"
                     size="icon"
@@ -282,18 +306,23 @@ export const ImageGallery = ({
                 onClick={() => setCurrentMediaIndex(idx)}
               >
                 <Image
-                  src={url || "/placeholder.svg"}
+                  src={
+                    `${ENV.NEXT_PUBLIC_BACKEND_BASE_URL_WITHOUT_PREFIX}/${url}` ||
+                    "/placeholder.svg"
+                  }
                   alt={`Thumbnail ${idx + 1}`}
                   className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
                   fill
                   sizes="96px"
                 />
-                {idx === currentMediaIndex && <div className="absolute inset-0 bg-primary/10 backdrop-blur-[1px]" />}
+                {idx === currentMediaIndex && (
+                  <div className="absolute inset-0 bg-primary/10 backdrop-blur-[1px]" />
+                )}
               </motion.div>
             ))}
           </div>
         </ScrollArea>
       </div>
     </div>
-  )
-}
+  );
+};

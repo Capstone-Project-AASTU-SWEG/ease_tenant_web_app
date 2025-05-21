@@ -242,3 +242,41 @@ export const useSplitUnitMutation = () => {
     },
   });
 };
+
+export const useMergeUnitsMutation = () => {
+  return useMutation({
+    mutationKey: ["mergeUnit"],
+    mutationFn: async ({
+      buildingId,
+      unitIds,
+      mergedUnit,
+    }: {
+      buildingId: string;
+      unitIds: string[];
+      mergedUnit: {
+        sizeSqFt: number;
+        unitNumber: string;
+        type: UNIT_TYPE;
+        status: UNIT_STATUS;
+        monthlyRent: number;
+      };
+    }) => {
+      try {
+        await axiosClient.post<APIResponse<null>>(
+          `/units/${buildingId}/merge`,
+          { unitIds, mergedUnit },
+        );
+        return null;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while merging units",
+          );
+        }
+        throw new Error("An unexpected error occurred while merging units");
+      }
+    },
+  });
+};

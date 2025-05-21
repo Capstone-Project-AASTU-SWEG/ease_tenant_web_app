@@ -34,13 +34,16 @@ import { Group } from "@/components/custom/group";
 import { RentalApplication, Tenant, WithTimestampsStr } from "@/types";
 // import LogJSON from "@/components/custom/log-json";
 import Stack from "@/components/custom/stack";
-import { DataListInput } from "@/components/custom/data-list-input";
+// import { DataListInput } from "@/components/custom/data-list-input";
 import { useGetAllTenants } from "@/app/quries/useUsers";
-import { getFullName } from "@/utils";
+import { getFullName, getFullNameFromObj } from "@/utils";
 import { CreateLease, createLeaseSchema, LeaseTemplate } from "../_schema";
 import LeasePreviewMinimal from "@/components/custom/lease-preview";
 import { generateLeaseDataValues } from "@/utils/lease-data-mapper";
 import { Label } from "@/components/ui/label";
+import LogJSON from "@/components/custom/log-json";
+import { useAuth } from "@/app/quries/useAuth";
+import { useRouter } from "next/navigation";
 
 interface CreateLeaseDrawerProps {
   isOpen: boolean;
@@ -68,14 +71,22 @@ export function CreateLeaseDrawer({
     useState<LeaseTemplate | null>(null);
   const getAllTenantsQuery = useGetAllTenants();
 
+  const router = useRouter();
+
+  const { data, isManager } = useAuth();
+
   const tenants = getAllTenantsQuery.data || [];
+
+  if (data && !isManager) {
+    router.replace("/dashboard/tenant");
+  }
 
   // Form for the lease
   const form = useForm<CreateLease>({
     resolver: zodResolver(createLeaseSchema),
     defaultValues: {
       templateId: templates.find((t) => t.isDefault)?.id || "",
-      buildingName: application?.building.name || "",
+      buildingName: application?.building.name || data?.building?.name || "",
       unitNumber: application?.unit.unitNumber || "",
       tenantId: application?.submittedBy.id || "",
       monthlyRent: application?.unit.monthlyRent || 0,
@@ -87,21 +98,21 @@ export function CreateLeaseDrawer({
   const { reset } = form;
 
   useEffect(() => {
-    if (templates.length && application) {
+    if (templates.length ) {
       reset({
         templateId: templates.find((t) => t.isDefault)?.id || "",
-        tenantId: application.submittedBy.id,
-        buildingName: application?.building.name,
+        tenantId: application?.submittedBy.id,
+        buildingName: application?.building.name || data?.building?.name,
         unitNumber: application?.unit.unitNumber,
         startDate: new Date(),
         endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-        monthlyRent: application.unit.monthlyRent,
+        monthlyRent: application?.unit.monthlyRent,
         securityDeposit: 0,
         notes: "",
         sendImmediately: true,
       });
     }
-  }, [templates, application, reset]);
+  }, [templates, application, reset, data?.building?.name]);
 
   // Update selected template when template ID changes
   const watchTemplateId = form.watch("templateId");
@@ -134,15 +145,17 @@ export function CreateLeaseDrawer({
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent className="w-full max-w-[500px] overflow-hidden p-0 sm:max-w-[600px] md:max-w-[800px]">
-        {/* <LogJSON
+        <LogJSON
           data={{
             // formData: form.getValues(),
-            application,
-            tenants,
+            // application,
+            building: data?.building,
+            defaultValues: form.getValues()
+            // tenants,
 
             // abc: getBuildingTenantsQuery.data,
           }}
-        /> */}
+        />
         <div className="flex h-full flex-col">
           <div className="flex h-full flex-col px-6">
             <CustomSheetHeader
@@ -244,7 +257,17 @@ export function CreateLeaseDrawer({
                                     label="Unit"
                                   />
 
-                                  <DataListInput
+                                  <SelectFormField
+                                    control={form.control}
+                                    name="tenantId"
+                                    label="Tenant"
+                                    options={tenants.map((t) => ({
+                                      label: getFullNameFromObj(t),
+                                      value: t.id,
+                                    }))}
+                                  />
+
+                                  {/* <DataListInput
                                     maxItems={1}
                                     label="Tenant"
                                     onChange={(values) => {
@@ -268,7 +291,7 @@ export function CreateLeaseDrawer({
                                         label: `${application?.submittedBy.userId?.firstName} ${application?.submittedBy.userId?.lastName}`,
                                       },
                                     ]}
-                                  />
+                                  /> */}
                                 </Group>
                               </Stack>
                             </CardContent>

@@ -27,6 +27,7 @@ export type Tenant = {
   businessWebsite: string;
   taxId?: string;
   businessRegistrationNumber: string;
+  status: string;
 };
 
 export type ServiceProvider = {
@@ -75,7 +76,9 @@ export type Manager = {
   email: string;
   phone: string;
   assignedBuildingId?: string;
+  assignedBuilding?: Building;
   employmentDate?: Date;
+  signature?: string;
   salary?: number;
 };
 
@@ -393,6 +396,10 @@ export type LeaseTemplate = {
   id: string;
   name: string;
   description: string;
+  sections: {
+    title: string;
+    content: string;
+  }[];
   createdAt: Date;
   updatedAt: Date;
   isDefault: boolean;

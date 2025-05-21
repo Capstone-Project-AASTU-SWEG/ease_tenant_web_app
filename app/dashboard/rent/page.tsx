@@ -69,6 +69,7 @@ import { PageError } from "@/components/custom/page-error";
 import { PageLoader } from "@/components/custom/page-loader";
 import { useVerifyUserQuery } from "@/app/quries/useAuth";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ENV from "@/config/env";
 
 // Define the rental application schema (simplified since user identity is already in the system)
 const rentalApplicationSchema = z.object({
@@ -219,7 +220,7 @@ const RentUnitPage = () => {
     if (createRentalApplicationMutation.isSuccess) {
       // Show success message and redirect
       successToast("Rental application submitted successfully.");
-      router.push("/dashboard/applications");
+      router.push("/dashboard/tenant");
     }
   }, [createRentalApplicationMutation.isSuccess, router]);
 
@@ -299,9 +300,9 @@ const RentUnitPage = () => {
                       <>
                         <Image
                           src={
-                            unit.images[activeImageIndex] ||
-                            "/placeholder.svg?height=224&width=384" ||
-                            "/placeholder.svg"
+                            unit.images[activeImageIndex]
+                              ? `${ENV.NEXT_PUBLIC_BACKEND_BASE_URL_WITHOUT_PREFIX}/${unit.images[activeImageIndex]}`
+                              : "/placeholder.svg?height=224&width=384"
                           }
                           alt={`${building.name} - Unit ${unit.unitNumber}`}
                           className="h-full w-full object-cover"
@@ -534,9 +535,9 @@ const RentUnitPage = () => {
                                     >
                                       <Image
                                         src={
-                                          url ||
-                                          "/placeholder.svg?height=100&width=100" ||
-                                          "/placeholder.svg"
+                                          url
+                                            ? `${ENV.NEXT_PUBLIC_BACKEND_BASE_URL_WITHOUT_PREFIX}/${url}`
+                                            : "/placeholder.svg?height=100&width=100"
                                         }
                                         alt={`Unit ${unit.unitNumber} - Image ${index + 1}`}
                                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"

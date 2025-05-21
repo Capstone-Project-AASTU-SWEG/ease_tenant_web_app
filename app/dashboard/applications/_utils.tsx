@@ -1,17 +1,10 @@
-// ======================================================
-// Utility Functions
-// ======================================================
-
 import { APPLICATION_STATUS, APPLICATION_TYPE, PRIORITY_LEVEL } from "@/types";
 import {
-  AlertCircle,
-  Briefcase,
   Building2,
   CheckCircle,
   Clock,
   FileText,
   PenTool,
-  UserCog,
   XCircle,
 } from "lucide-react";
 

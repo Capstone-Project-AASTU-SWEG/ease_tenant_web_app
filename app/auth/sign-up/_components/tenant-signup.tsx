@@ -90,6 +90,7 @@ export default function TenantSignup() {
       emergencyContact: values.emergencyContact,
       workPhoneNumber: values.workPhoneNumber,
       taxId: values.taxId,
+      status: "Pending",
     });
   }
 

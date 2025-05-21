@@ -60,9 +60,13 @@ import {
 // import LogJSON from "@/components/custom/log-json";
 import { errorToast, warningToast } from "@/components/custom/toasts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/app/quries/useAuth";
+import ENV from "@/config/env";
 
 const FloorPlan = ({ buildingID }: { buildingID: string }) => {
-  const isAdmin = true;
+  const { isManager, isOwner } = useAuth();
+
+  const isAdmin = isManager || isOwner;
 
   const getBuildingQuery = useGetBuildingQuery(buildingID);
 
@@ -236,7 +240,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
             onValueChange={(v) => setViewMode(v as "grid" | "list")}
             className="mr-1"
           >
-            <TabsList className="h-9 p-1.5 bg-transparent border border-primary/60">
+            <TabsList className="h-9 border border-primary/60 bg-transparent p-1.5">
               <TabsTrigger
                 value="grid"
                 className="h-7 px-3 data-[state=active]:bg-primary dark:data-[state=active]:bg-slate-950"
@@ -256,7 +260,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
             value={statusFilter}
             onValueChange={(val) => setStatusFilter(val as UNIT_STATUS | "ALL")}
           >
-            <SelectTrigger className="h-9 w-[160px] gap-1 ">
+            <SelectTrigger className="h-9 w-[160px] gap-1">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
@@ -275,7 +279,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
             value={selectedFloor}
             onValueChange={(val) => setSelectedFloor(val)}
           >
-            <SelectTrigger className="h-9 w-[180px] ">
+            <SelectTrigger className="h-9 w-[180px]">
               <Layers className="mr-2 h-4 w-4 text-muted-foreground" />
               <SelectValue placeholder="Select floor" />
             </SelectTrigger>
@@ -289,11 +293,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
           </Select>
 
           {isAdmin && (
-            <Button
-              asChild
-              size="sm"
-              className="h-9 gap-1"
-            >
+            <Button asChild size="sm" className="h-9 gap-1">
               <Link href={`/dashboard/buildings/${buildingID}/units/new`}>
                 <Plus className="h-4 w-4" />
                 <span>Add Unit</span>
@@ -379,10 +379,14 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
                         className="group cursor-pointer overflow-hidden rounded-lg bg-white shadow-md transition-all hover:-translate-y-1 hover:shadow-lg dark:bg-slate-900"
                       >
                         {/* Unit image preview */}
+
                         <div className="relative h-48 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                           {hasImages ? (
                             <Image
-                              src={unitImages[0] || "/placeholder.svg"}
+                              src={
+                                `${ENV.NEXT_PUBLIC_BACKEND_BASE_URL_WITHOUT_PREFIX}/${unitImages[0]}` ||
+                                "/placeholder.svg"
+                              }
                               alt={unitImages[0]}
                               fill
                               className="object-cover transition-transform duration-500 group-hover:scale-105"

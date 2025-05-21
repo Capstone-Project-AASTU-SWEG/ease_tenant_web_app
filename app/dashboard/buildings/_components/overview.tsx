@@ -118,6 +118,7 @@ type CustomTooltipProps = {
     value: number;
     name: string;
     color: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     payload: any;
   }[];
   label?: string;
@@ -235,6 +236,7 @@ export function Overview() {
             <Select
               defaultValue={chartType}
               onValueChange={(value) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 setChartType(value as any);
               }}
             >

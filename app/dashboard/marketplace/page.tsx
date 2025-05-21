@@ -43,7 +43,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import ASSETS from "@/app/auth/_assets";
 import { IMAGES } from "@/constants/assets";
 
 export default function MarketplacePage() {

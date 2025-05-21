@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Check,
   X,
-  ChevronRight,
   Clock,
   Calendar,
   BuildingIcon,
@@ -63,6 +62,8 @@ export function RecentApplications() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
+
+  console.log({hoveredItem})
 
   // Filter applications based on status and search query
   const filteredApplications = applications.filter((application) => {

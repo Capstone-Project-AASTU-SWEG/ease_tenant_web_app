@@ -1,6 +1,7 @@
 import axiosClient from "@/lib/axios-client";
 import {
   APIResponse,
+  Application,
   Building,
   Manager,
   Tenant,
@@ -18,6 +19,7 @@ export type UserDetail = {
   tenant: Tenant | null;
   building: Building | null;
   manager: Manager | null;
+  application: Application | null;
 };
 
 export const useVerifyUserQuery = () => {

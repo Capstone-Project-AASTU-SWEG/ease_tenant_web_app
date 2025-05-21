@@ -10,7 +10,6 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
-import { FormField } from "@/components/custom/form-field";
 import { Text } from "@/components/custom/text";
 // import { ArrowRight } from "lucide-react";
 // import Link from "next/link";
@@ -18,6 +17,7 @@ import { CustomButton } from "@/components/custom/button";
 // import { Button } from "@/components/ui/button";
 // import { errorToast, successToast } from "@/components/custom/toasts";
 import { useRouter } from "next/navigation";
+import { EmailFormField } from "@/components/custom/form-field";
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -57,8 +57,8 @@ const SignIn = () => {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)}>
               <Stack>
-                <FormField<SignInSchema>
-                  type="email"
+                <EmailFormField<SignInSchema>
+                  
                   control={form.control}
                   name="email"
                   label="Email"

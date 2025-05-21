@@ -52,6 +52,8 @@ export const VideoPlayer = ({
   const [loadingProgress, setLoadingProgress] = useState(0);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  console.log({isFullscreen})
+
   // Simulate loading progress
   useEffect(() => {
     setLoadingProgress(0);

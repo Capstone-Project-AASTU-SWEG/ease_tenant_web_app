@@ -215,7 +215,7 @@ export function UnitMergeSheet({
                   >
                     <Card className="overflow-hidden border-none shadow-sm">
                       <CardContent className="p-0">
-                        <div className="mx-5 mb-4 mt-4 rounded-lg bg-slate-50 p-4 dark:bg-slate-900/50">
+                        <div className="mx-5 mb-4 mt-4 rounded-lg bg-slate-50 dark:bg-slate-900/50">
                           <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
                               <Building className="h-4 w-4 text-primary" />

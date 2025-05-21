@@ -42,6 +42,7 @@ import type { BuildingWithStat } from "@/app/quries/useBuildings";
 import { Center } from "./center";
 import Stack from "./stack";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ENV from "@/config/env";
 
 export interface UnitAction {
   icon: React.ReactNode;
@@ -439,6 +440,7 @@ const ImageGallery = ({
     <div>
       <div className="relative overflow-hidden">
         <AspectRatio ratio={16 / 9} className="bg-slate-100 dark:bg-slate-800">
+          {`${ENV.NEXT_PUBLIC_BACKEND_BASE_URL_WITHOUT_PREFIX}/${images[activeIndex]} `}
           <AnimatePresence mode="wait">
             <motion.div
               key={activeIndex}
@@ -449,7 +451,11 @@ const ImageGallery = ({
               className="h-full w-full"
             >
               <Image
-                src={images[activeIndex] || "/placeholder.svg"}
+                src={
+                  images[activeIndex]
+                    ? `${ENV.NEXT_PUBLIC_BACKEND_BASE_URL_WITHOUT_PREFIX}/${images[activeIndex]}`
+                    : "/placeholder.svg"
+                }
                 alt={"Unit image"}
                 fill
                 className="object-cover"
@@ -509,7 +515,11 @@ const ImageGallery = ({
               whileTap={{ scale: 0.95 }}
             >
               <Image
-                src={url || "/placeholder.svg"}
+                src={
+                  url
+                    ? `${ENV.NEXT_PUBLIC_BACKEND_BASE_URL_WITHOUT_PREFIX}/${url}`
+                    : "/placeholder.svg"
+                }
                 alt={`Thumbnail ${index + 1}`}
                 width={80}
                 height={64}

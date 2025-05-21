@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryClientProvider } from "@/contexts/query-client-provider";
 import NextTopLoader from "nextjs-toploader";
+import AuthController from "@/components/custom/auth-controller";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,7 +49,7 @@ export default function RootLayout({
             color="#195559"
             zIndex={99999}
           />
-          {children}
+          <AuthController>{children}</AuthController>
         </QueryClientProvider>
       </body>
     </html>

@@ -133,7 +133,7 @@ const variantActions: Record<string, ErrorAction[]> = {
       label: "Go Back",
       onClick: () => window.history.back(),
       icon: <ArrowLeft className="mr-2 h-4 w-4" />,
-      variant: "outline",
+      variant: "ghost",
     },
   ],
   "500": [
@@ -349,7 +349,7 @@ export const PageError = React.forwardRef<HTMLDivElement, PageErrorProps>(
         </motion.div>
 
         {/* Content */}
-        <motion.div className="space-y-2" {...contentAnimation}>
+        <motion.div className="flex flex-col gap-2" {...contentAnimation}>
           {/* Title */}
           <h1
             className={cn("text-2xl font-bold tracking-tight", titleClassName)}
@@ -388,7 +388,7 @@ export const PageError = React.forwardRef<HTMLDivElement, PageErrorProps>(
               {displayActions.map((action, index) =>
                 action.href ? (
                   <Link key={index} href={action.href}>
-                    <Button variant={action.variant || "default"} size="sm">
+                    <Button variant={action.variant || "default"} size="sm" className="rounded-full">
                       {action.icon}
                       {action.label}
                     </Button>

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import type React from "react";
@@ -122,6 +123,8 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentColor, setCurrentColor] = useState(penColor);
   const [currentWidth, setCurrentWidth] = useState(penWidth);
+
+  console.log({ scale, setCurrentColor, setCurrentWidth });
   const [lines, setLines] = useState<SignatureLine[]>([]);
   const [currentLine, setCurrentLine] = useState<SignatureLine | null>(null);
   const [isEmpty, setIsEmpty] = useState(true);

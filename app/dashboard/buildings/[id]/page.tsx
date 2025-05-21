@@ -43,6 +43,10 @@ import { getOccupancyColor, getOccupancyTextColor } from "@/utils";
 import { PageLoader } from "@/components/custom/page-loader";
 import { PageError } from "@/components/custom/page-error";
 import { useSplitUnitMutation } from "@/app/quries/useUnits";
+import { useAuth } from "@/app/quries/useAuth";
+// import PageBanner from "@/components/custom/page-banner";
+// import Stack from "@/components/custom/stack";
+// import { Badge } from "@/components/ui/badge";
 
 // Main Page Component
 const Page = () => {
@@ -52,6 +56,9 @@ const Page = () => {
   const router = useRouter();
 
   const splitUnitMutation = useSplitUnitMutation();
+  const { isManager, isOwner } = useAuth();
+
+  const isAdmin = isManager || isOwner;
 
   // Dialog state management
   const [isEditBuildingOpen, setIsEditBuildingOpen] = useState(false);
@@ -139,161 +146,183 @@ const Page = () => {
         </p>
       </motion.div>
 
-      {/* Building overview and quick actions cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="mt-6 grid gap-6 md:grid-cols-3"
-      >
-        {/* Building Overview Card */}
-        <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Building Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              {/* Occupancy indicator */}
-              <div className="flex items-center justify-between text-sm">
-                <span>Occupancy</span>
+      {/* <section className="my-4">
+        <PageBanner title={building.name} description={building.description}>
+          <Stack>
+            <Badge className="self-start">Amenities</Badge>
+            <section className="flex flex-wrap gap-4 rounded-lg p-2">
+              {building.amenities.slice(0, 7).map((a, ind) => (
                 <span
-                  className={`font-medium ${getOccupancyTextColor(occupancyRate)}`}
+                  className="rounded-full border p-2 text-xs capitalize"
+                  key={ind}
                 >
-                  {occupancyRate}%
+                  {a}
                 </span>
+              ))}
+            </section>
+          </Stack>
+        </PageBanner>
+      </section> */}
+
+      {/* Building overview and quick actions cards */}
+      {isAdmin && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mt-6 grid gap-6 md:grid-cols-3"
+        >
+          {/* Building Overview Card */}
+          <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Building Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2">
+                {/* Occupancy indicator */}
+                <div className="flex items-center justify-between text-sm">
+                  <span>Occupancy</span>
+                  <span
+                    className={`font-medium ${getOccupancyTextColor(occupancyRate)}`}
+                  >
+                    {occupancyRate}%
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${occupancyRate}%` }}
+                    transition={{ duration: 1, delay: 0.3 }}
+                    className={`h-full ${getOccupancyColor(occupancyRate)}`}
+                  />
+                </div>
+
+                {/* Building statistics */}
+                <div className="mt-4 grid gap-4">
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="rounded-full bg-primary/10 p-1.5">
+                      <Home className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">{building.totalUnits}</span>{" "}
+                      Total Units
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="rounded-full bg-blue-500/10 p-1.5">
+                      <Layers className="h-4 w-4 text-blue-500" />
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">
+                        {building.totalFloors}
+                      </span>{" "}
+                      Floors
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="rounded-full bg-green-500/10 p-1.5">
+                      <Users className="h-4 w-4 text-green-500" />
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">
+                        {building.availableUnits}
+                      </span>{" "}
+                      Occupied Units
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.7 }}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="rounded-full bg-amber-500/10 p-1.5">
+                      <Tool className="h-4 w-4 text-amber-500" />
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">{building.status}</span>{" "}
+                      Building Status
+                    </div>
+                  </motion.div>
+                </div>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${occupancyRate}%` }}
-                  transition={{ duration: 1, delay: 0.3 }}
-                  className={`h-full ${getOccupancyColor(occupancyRate)}`}
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions Card */}
+          <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md md:col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                <QuickActionButton
+                  icon={<Plus className="h-5 w-5" />}
+                  label="Add Unit"
+                  variant="default"
+                  onClick={() => {
+                    // TODO: NESRU_DEBUG
+                    router.push(`/dashboard/buildings/${buildingID}/units/new`);
+                  }}
+                  index={0}
                 />
-              </div>
-
-              {/* Building statistics */}
-              <div className="mt-4 grid gap-4">
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="flex items-center gap-2"
-                >
-                  <div className="rounded-full bg-primary/10 p-1.5">
-                    <Home className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">{building.totalUnits}</span>{" "}
-                    Total Units
-                  </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex items-center gap-2"
-                >
-                  <div className="rounded-full bg-blue-500/10 p-1.5">
-                    <Layers className="h-4 w-4 text-blue-500" />
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">{building.totalFloors}</span>{" "}
-                    Floors
-                  </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="flex items-center gap-2"
-                >
-                  <div className="rounded-full bg-green-500/10 p-1.5">
-                    <Users className="h-4 w-4 text-green-500" />
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">
-                      {building.availableUnits}
-                    </span>{" "}
-                    Occupied Units
-                  </div>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.7 }}
-                  className="flex items-center gap-2"
-                >
-                  <div className="rounded-full bg-amber-500/10 p-1.5">
-                    <Tool className="h-4 w-4 text-amber-500" />
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">{building.status}</span>{" "}
-                    Building Status
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions Card */}
-        <Card className="overflow-hidden rounded-md border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-md md:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-              <QuickActionButton
-                icon={<Plus className="h-5 w-5" />}
-                label="Add Unit"
-                variant="default"
-                onClick={() => {
-                  // TODO: NESRU_DEBUG
-                  router.push(`/dashboard/buildings/${buildingID}/units/new`);
-                }}
-                index={0}
-              />
-              <QuickActionButton
-                icon={<Scissors className="h-5 w-5" />}
-                label="Split Unit"
-                variant="outline"
-                onClick={() => setIsSplitUnitOpen(true)}
-                index={1}
-              />
-              <QuickActionButton
-                icon={<Merge className="h-5 w-5" />}
-                label="Merge Units"
-                variant="outline"
-                onClick={() => setIsMergeUnitsOpen(true)}
-                index={2}
-              />
-              <QuickActionButton
-                icon={<Users className="h-5 w-5" />}
-                label="View Tenants"
-                variant="outline"
-                onClick={() => setActiveTab("tenants")}
-                index={3}
-              />
-              <QuickActionButton
-                icon={<FileSignature className="h-5 w-5" />}
-                label="Lease Mngt."
-                variant="outline"
-                onClick={() => {
-                  // Redirect to lease mngt page for specific building
-                }}
-                index={4}
-              />
-              {/* <QuickActionButton
+                <QuickActionButton
+                  icon={<Scissors className="h-5 w-5" />}
+                  label="Split Unit"
+                  variant="outline"
+                  onClick={() => setIsSplitUnitOpen(true)}
+                  index={1}
+                />
+                <QuickActionButton
+                  icon={<Merge className="h-5 w-5" />}
+                  label="Merge Units"
+                  variant="outline"
+                  onClick={() => setIsMergeUnitsOpen(true)}
+                  index={2}
+                />
+                <QuickActionButton
+                  icon={<Users className="h-5 w-5" />}
+                  label="View Tenants"
+                  variant="outline"
+                  onClick={() => setActiveTab("tenants")}
+                  index={3}
+                />
+                <QuickActionButton
+                  icon={<FileSignature className="h-5 w-5" />}
+                  label="Lease Mngt."
+                  variant="outline"
+                  onClick={() => {
+                    // Redirect to lease mngt page for specific building
+                  }}
+                  index={4}
+                />
+                {/* <QuickActionButton
                 icon={<Receipt className="h-5 w-5" />}
                 label="Finacial Reports"
                 variant="outline"
                 onClick={() => setIsFinancialReportsOpen(true)}
                 index={5}
               /> */}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Tabs for Floor Plans and Tenants */}
       <motion.div

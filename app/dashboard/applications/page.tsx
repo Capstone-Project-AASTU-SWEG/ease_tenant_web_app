@@ -70,8 +70,6 @@ import {
   timeElapsed,
 } from "./_utils";
 
-import { getBuildingByID } from "../buildings/_hooks/useBuildings";
-
 import { RentalApplicationDetail } from "./_components/rental-application-detail";
 import PageHeader from "@/components/custom/page-header";
 import {
@@ -90,6 +88,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { successToast } from "@/components/custom/toasts";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/quries/useAuth";
+// import { getBuildingByID } from "../buildings/ks/useBuildings";
 
 const tabs: TabItem[] = [
   {
@@ -200,7 +199,10 @@ const ApplicationsPage = () => {
           // Type-specific searching
           if (app.type === "rental") {
             const rentalApp = app as RentalApplication;
-            const building = getBuildingByID(rentalApp.unit.buildingId);
+            const building = applications.find(
+              (app) => app.id === rentalApp.unit.buildingId,
+            )?.building;
+
             return (
               building?.name?.toLowerCase().includes(query) ||
               rentalApp.unit.unitNumber?.toLowerCase().includes(query) ||
@@ -580,7 +582,7 @@ const RenderApplicationCard = ({
       className="group"
     >
       <Card
-        className="mb-4 cursor-pointer overflow-hidden transition-all duration-200 hover:shadow-md bg-primary"
+        className="mb-4 cursor-pointer overflow-hidden bg-primary transition-all duration-200 hover:shadow-md"
         onClick={() => onSelectApplication(application)}
       >
         <CardContent className="p-4 text-white">
@@ -623,12 +625,8 @@ const RenderApplicationCard = ({
                     }
                   </p>
                   <p className="text-sm text-white/70">
-                    Unit {(application as RentalApplication).unit.unitNumber} at{" "}
-                    {
-                      getBuildingByID(
-                        (application as RentalApplication).unit.buildingId,
-                      )?.name
-                    }
+                    Unit {(application as RentalApplication).unit?.unitNumber}{" "}
+                    at {application.building.name}
                   </p>
                   <p className="text-sm text-white/60">
                     {(application as RentalApplication).unit.type} •{" "}

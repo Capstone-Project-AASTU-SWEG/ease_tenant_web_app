@@ -60,6 +60,7 @@ import {
 import { EmailFormField, TextFormField } from "@/components/custom/form-field";
 import { Group } from "@/components/custom/group";
 import Stack from "@/components/custom/stack";
+import LogJSON from "@/components/custom/log-json";
 
 // Form schema for profile information
 const profileFormSchema = z.object({
@@ -218,14 +219,24 @@ const ProfilePage = () => {
 
     setIsSaving(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (isManager) {
+      const managerData = user?.manager;
+      if (!managerData) {
+        warningToast("Manager data not found.");
+        return;
+      }
 
-    console.log("Signature saved:", signatureData);
-    warningToast("", {
-      title: "Signature saved",
-      description: "Your signature has been saved successfully.",
-    });
+      if (!signatureData) {
+        warningToast("Signature not provided.");
+        return;
+      }
+
+      const payload = { ...managerData };
+
+      managerProfileUpdateMutation.mutate({
+        manager: { ...payload, signature: signatureData.svg },
+      });
+    }
 
     setIsSaving(false);
     setIsSignatureSaved(true);
@@ -260,6 +271,9 @@ const ProfilePage = () => {
     return <Badge>User</Badge>;
   };
 
+  // Drived states
+  const isSignatureFound = user?.manager?.signature !== "";
+
   return (
     <PageWrapper className="py-0">
       <motion.div
@@ -273,6 +287,8 @@ const ProfilePage = () => {
           withBackButton
         />
       </motion.div>
+
+      <LogJSON data={{ user }} />
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_3fr]">
         {/* Profile sidebar */}
@@ -433,22 +449,24 @@ const ProfilePage = () => {
                       </Stack>
 
                       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name="occupation"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Job Title</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter your job title"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        {isTenant && (
+                          <FormField
+                            control={form.control}
+                            name="occupation"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Occupation</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter your job title"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                       </div>
 
                       <div className="flex justify-end">
@@ -478,10 +496,27 @@ const ProfilePage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {user?.manager?.signature && (
+                    <section className="mb-6 rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
+                      <h3 className="mb-3 text-base font-medium">
+                        Your Signature
+                      </h3>
+                      <section className="rounded-lg border bg-white p-4">
+                        <div
+                          // className="scale-[75%]"
+                          dangerouslySetInnerHTML={{
+                            __html: user?.manager?.signature,
+                          }}
+                        />
+                      </section>
+                    </section>
+                  )}
                   <div className="space-y-6">
                     <div className="rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
                       <h3 className="mb-2 text-base font-medium">
-                        Your Signature
+                        {isSignatureFound
+                          ? "Add your Signature"
+                          : "Update your signature"}
                       </h3>
                       <p className="mb-4 text-sm text-muted-foreground">
                         Draw your signature below. This will be used for

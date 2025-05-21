@@ -105,6 +105,11 @@ export default function LeasesPage() {
   const getAllLeaseQuery = useGetAllLeaseQuery();
   const leases = getAllLeaseQuery.data || [];
 
+  const appFound = !!leases.find((l) => {
+    return l.application.id === appId;
+  });
+
+
   // Filter leases based on search query
   const filteredLeases = leases.filter(
     (lease) =>
@@ -255,9 +260,13 @@ export default function LeasesPage() {
   useEffect(() => {
     if (appId && getApplicationByIdQuery.isSuccess) {
       // open drawer for creating lease info
-      setCreateLeaseDialogOpen(true);
+      if (appFound) {
+        setCreateLeaseDialogOpen(false);
+      } else {
+        setCreateLeaseDialogOpen(true);
+      }
     }
-  }, [appId, getApplicationByIdQuery.isSuccess]);
+  }, [appFound, appId, getApplicationByIdQuery.isSuccess]);
 
   useEffect(() => {
     if (isPDFBlobSet && pdfBlob) {
@@ -287,7 +296,7 @@ export default function LeasesPage() {
 
   return (
     <PageWrapper className="py-0">
-      <LogJSON data={{ ac: getAllLeaseQuery.data }} />
+      <LogJSON data={{ leases: getAllLeaseQuery.data }} />
       <PageHeader
         title="Lease Management"
         description="Create, manage, and track lease agreements for your properties."
