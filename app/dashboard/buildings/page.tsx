@@ -34,14 +34,12 @@ import PageWrapper from "@/components/custom/page-wrapper";
 import SearchInput from "@/components/custom/search-input";
 
 import ASSETS from "@/app/auth/_assets";
-import { USER_TYPE } from "@/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { authUserType } from "@/app/auth/_hooks/useAuth";
 import {
   type BuildingWithStat,
   useDeleteBuildingMutation,
@@ -50,6 +48,7 @@ import {
 import { errorToast } from "@/components/custom/toasts";
 import { useRouter } from "next/navigation";
 import { storeBuildingId } from "@/utils";
+import { useAuth } from "@/app/quries/useAuth";
 
 // Extended building type with calculated fields
 type ExtendedBuilding = BuildingWithStat & {
@@ -65,11 +64,9 @@ export default function BuildingsPage() {
 
   const buildings = getAllBuildings.data || [];
 
-  const userRole = authUserType();
+  const { isManager, isOwner } = useAuth();
 
-  const isAdmin =
-    !!userRole && [USER_TYPE.MANAGER, USER_TYPE.OWNER].includes(userRole);
-  // const isAdmin = false;
+  const isAdmin = isManager || isOwner;
 
   const [favoriteBuildings, setFavoriteBuildings] = useState<string[]>([]);
 
