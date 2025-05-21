@@ -58,7 +58,7 @@ import {
   useLeaseTemplatePutMutation,
 } from "@/app/quries/useLeases";
 import LogJSON from "@/components/custom/log-json";
-import { formatDate } from "../applications/_utils";
+import { formatDate, formatDateTime } from "../applications/_utils";
 import { useGetApplicationByIdQuery } from "@/app/quries/useApplications";
 import { warningToast } from "@/components/custom/toasts";
 import LeasePDFGenerator from "@/components/custom/lease-pdf-generator";
@@ -71,7 +71,7 @@ import {
 import { CreateLease, LeaseTemplate } from "./_schema";
 
 import { generateLeaseDataValues } from "@/utils/lease-data-mapper";
-import { getFullNameFromObj } from "@/utils";
+import { getFullNameFromObj, getLastDateAfterMonth } from "@/utils";
 
 export default function LeasesPage() {
   const router = useRouter();
@@ -81,8 +81,9 @@ export default function LeasesPage() {
     useState(false);
   const [isLeasePreviewOpen, setIsLeasePreviewOpen] = useState(false);
   // const [leaseInfo, setLeaseInfo] = useState<CreateLease | null>(null);
-  const [selectedTemplate, setSelectedTemplate] =
-    useState<LeaseTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<
+    (LeaseTemplate & { id: string }) | null
+  >(null);
   const [createLeaseDialogOpen, setCreateLeaseDialogOpen] = useState(false);
 
   const getLeaseTemplatesQuery = useGetLeaseTemplatesQuery();
@@ -110,10 +111,7 @@ export default function LeasesPage() {
       lease.tenant.firstName
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
-      lease.unit.unitNumber
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      lease.templateName?.toLowerCase().includes(searchQuery.toLowerCase()),
+      lease.unit.unitNumber?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Filter templates based on search query
@@ -268,6 +266,10 @@ export default function LeasesPage() {
         warningToast("Application info not found.");
         return;
       }
+      if (!selectedTemplate) {
+        warningToast("Template info not found.");
+        return;
+      }
 
       console.log({ pdfBlob });
 
@@ -277,6 +279,7 @@ export default function LeasesPage() {
         status: LEASE_STATUS.ACTIVE,
         tenantId: application?.submittedBy.id,
         unitId: application?.unit.id,
+        templateId: selectedTemplate.id,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -498,19 +501,24 @@ export default function LeasesPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="max-w-[200px] truncate">
-                              {lease.templateName}
+                              {lease.leaseTemplate?.name || "Not Defined"}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1 text-sm">
                                 <span>
-                                  {lease?.application?.leaseDetails.requestedStartDate?.toString()}
+                                  {formatDateTime(
+                                    lease?.application?.leaseDetails.requestedStartDate?.toString(),
+                                  )}
                                 </span>
                                 <span className="text-muted-foreground">→</span>
                                 <span>
-                                  {
-                                    lease?.application.leaseDetails
-                                      .requestedDuration
-                                  }
+                                  {formatDateTime(
+                                    getLastDateAfterMonth(
+                                      lease?.application?.leaseDetails.requestedStartDate.toString(),
+                                      lease?.application.leaseDetails
+                                        .requestedDuration,
+                                    ).toString(),
+                                  )}
                                 </span>
                               </div>
                             </TableCell>

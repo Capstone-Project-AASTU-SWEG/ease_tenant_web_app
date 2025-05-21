@@ -402,16 +402,10 @@ export type LeaseTemplate = {
 export type Lease = {
   id: string;
   templateId: string;
-  templateName: string;
   unitId: string;
-  unitNumber: string;
   tenantId: string;
-  tenantName: string;
   status: LEASE_STATUS;
-  startDate: Date;
-  endDate: Date;
-  monthlyRent: number;
-  securityDeposit: number;
+  contractFile: string;
   createdAt: Date;
   updatedAt: Date;
   sentAt?: Date;

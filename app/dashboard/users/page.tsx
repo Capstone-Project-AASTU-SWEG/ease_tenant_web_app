@@ -61,6 +61,8 @@ import {
   User2,
   MoreVertical,
   User2Icon,
+  UserCog2Icon,
+  UserPen,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { User, USER_TYPE } from "@/types";
@@ -87,35 +89,35 @@ export default function Page() {
       <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Stat
           icon={User2Icon}
-          iconColor="text-blue-600"
-          iconBg="bg-blue-100"
+          iconColor="text-green-600"
+          iconBg="bg-green-100"
           title="Total Tenants"
           value={tenants.data?.length.toString() || 0}
-          // moreInfo={`${stats.total ? (stats.approved / stats.total) * 100 : 0} Pending Review`}
+          moreInfo={`${10} Suspended tenants`}
         />
         <Stat
-          icon={User2Icon}
+          icon={UserPen}
           iconColor="text-blue-600"
           iconBg="bg-blue-100"
           title="Total Managers"
           value={managers.data?.length.toString() || 0}
-          // moreInfo={`${stats.total ? (stats.approved / stats.total) * 100 : 0} Pending Review`}
+          moreInfo={`${10} Suspended managers`}
         />
         <Stat
-          icon={User2Icon}
-          iconColor="text-blue-600"
-          iconBg="bg-blue-100"
+          icon={UserCog2Icon}
+          iconColor="text-yellow-600"
+          iconBg="bg-yellow-100"
           title="Total Service Providers"
           value={serviceProviders.data?.length.toString() || 0}
-          // moreInfo={`${stats.total ? (stats.approved / stats.total) * 100 : 0} Pending Review`}
+          moreInfo={`${10} Suspended service providers`}
         />
         <Stat
           icon={User2Icon}
-          iconColor="text-blue-600"
-          iconBg="bg-blue-100"
+          iconColor="text-purple-600"
+          iconBg="bg-purple-100"
           title="Total Maintenance Workers"
           value={maintenanceWorkers.data?.length.toString() || 0}
-          // moreInfo={`${stats.total ? (stats.approved / stats.total) * 100 : 0} Pending Review`}
+          moreInfo={`${10} Suspended maintenance workers`}
         />
       </section>
 

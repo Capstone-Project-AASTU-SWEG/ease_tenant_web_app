@@ -9,6 +9,7 @@ import {
 } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { useEffect } from "react";
 
 export type LeaseTemplate = {
   id: string;
@@ -66,6 +67,7 @@ export const useGetAllLeaseQuery = () => {
               tenant: Tenant;
               unit: Unit;
               application: RentalApplication;
+              leaseTemplate: LeaseTemplate;
             })[]
           >
         >("/leases");
@@ -87,6 +89,47 @@ export const useGetAllLeaseQuery = () => {
     },
   });
 };
+export const useGetLeaseQuery = (leaseId: string) => {
+  const query = useQuery({
+    queryKey: ["getLeaseQuery"],
+    queryFn: async () => {
+      if (!leaseId) {
+        throw new Error("Lease ID is required.");
+      }
+      try {
+        const response = await axiosClient.get<
+          APIResponse<
+            Lease & {
+              tenant: Tenant;
+              unit: Unit;
+              application: RentalApplication;
+            }
+          >
+        >(`/leases/${leaseId}`);
+        const data = response.data.data || [];
+
+        return data;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while getting lease",
+          );
+        }
+        throw new Error("An unexpected error occurred while getting lease");
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (leaseId) {
+      query.refetch();
+    }
+  }, [leaseId, query]);
+
+  return query;
+};
 export const useCreateLeaseMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -95,12 +138,14 @@ export const useCreateLeaseMutation = () => {
       payload: Pick<Lease, "unitId" | "tenantId" | "status"> & {
         applicationId: string;
         contractFile: Blob;
+        templateId: string;
       },
     ) => {
       const formData = new FormData();
       formData.append("applicationId", payload.applicationId);
       formData.append("unitId", payload.unitId);
       formData.append("tenantId", payload.tenantId);
+      formData.append("templateId", payload.templateId);
       formData.append("status", payload.status);
       formData.append("contractFile", payload.contractFile);
 
@@ -118,7 +163,7 @@ export const useCreateLeaseMutation = () => {
         const data = response.data.data;
 
         queryClient.invalidateQueries({
-          queryKey: ["getLeaseQuery"],
+          queryKey: ["getLeaseQuery", "getAllLeaseQuery"],
         });
 
         return data;

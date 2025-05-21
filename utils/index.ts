@@ -18,9 +18,16 @@ export const getOccupancyTextColor = (occupancy: number) => {
 export function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "ETB",
     minimumFractionDigits: 0,
   }).format(amount);
+}
+
+export function getLastDateAfterMonth(startDate: string, lafterMonth: number) {
+  const endDate = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + lafterMonth);
+
+  return endDate;
 }
 
 export function getFullName(fName?: string, lName?: string) {
