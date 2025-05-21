@@ -43,6 +43,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import ASSETS from "@/app/auth/_assets";
+import { IMAGES } from "@/constants/assets";
 
 export default function MarketplacePage() {
   const [activeTab, setActiveTab] = useState("all");
@@ -453,6 +455,8 @@ function ServiceCard({
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
+  console.log({ image });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -472,7 +476,7 @@ function ServiceCard({
       >
         <div className="relative aspect-video w-full overflow-hidden">
           <Image
-            src={image || "/placeholder.svg"}
+            src={IMAGES.SERVICE_PLACEHOLDER}
             alt={title}
             className="h-full w-full object-cover transition-transform duration-500"
             style={{ transform: isHovered ? "scale(1.05)" : "scale(1)" }}
