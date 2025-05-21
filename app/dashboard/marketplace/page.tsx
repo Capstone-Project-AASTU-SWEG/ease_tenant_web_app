@@ -16,7 +16,6 @@ import {
   Search,
   Star,
   Filter,
-  ShoppingCart,
   Clock,
   Calendar,
   CheckCircle,
@@ -180,7 +179,7 @@ export default function MarketplacePage() {
                     {...service}
                     index={index}
                     onClick={() => handleServiceClick(service)}
-                    onBook={() => handleBookService(service)}
+                    
                   />
                 ))
               ) : (
@@ -444,11 +443,11 @@ function ServiceCard({
   isPromotion = false,
   index = 0,
   onClick,
-  onBook,
+ 
 }: ServiceProps & {
   index?: number;
   onClick?: () => void;
-  onBook?: () => void;
+ 
 }) {
   const [isHovered, setIsHovered] = useState(false);
 

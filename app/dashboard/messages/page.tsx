@@ -53,49 +53,49 @@ const contacts: Contact[] = [
     unread: true,
     isOnline: true,
   },
-  {
-    id: "2",
-    name: "Maintenance Team",
-    role: "Building Services",
-    avatar: "/placeholder.svg?height=40&width=40",
-    lastMessage:
-      "We've completed the repair of your AC unit. Please let us know if you're facing any issues.",
-    time: "Yesterday",
-    unread: false,
-    isOnline: true,
-  },
-  {
-    id: "3",
-    name: "John Smith",
-    role: "Tenant (Eastside Plaza)",
-    avatar: "/placeholder.svg?height=40&width=40",
-    lastMessage:
-      "Hi, wanted to invite you to our company's open house event next Friday.",
-    time: "Yesterday",
-    unread: true,
-    isOnline: false,
-  },
-  {
-    id: "4",
-    name: "Billing Department",
-    role: "Administration",
-    avatar: "/placeholder.svg?height=40&width=40",
-    lastMessage:
-      "Your latest invoice is now available. The due date is May 15th.",
-    time: "2 days ago",
-    unread: false,
-    isOnline: false,
-  },
-  {
-    id: "5",
-    name: "Sarah Johnson",
-    role: "Tenant (Tech Tower)",
-    avatar: "/placeholder.svg?height=40&width=40",
-    lastMessage: "Do you know if there's a courier service in the building?",
-    time: "3 days ago",
-    unread: false,
-    isOnline: true,
-  },
+  // {
+  //   id: "2",
+  //   name: "Maintenance Team",
+  //   role: "Building Services",
+  //   avatar: "/placeholder.svg?height=40&width=40",
+  //   lastMessage:
+  //     "We've completed the repair of your AC unit. Please let us know if you're facing any issues.",
+  //   time: "Yesterday",
+  //   unread: false,
+  //   isOnline: true,
+  // },
+  // {
+  //   id: "3",
+  //   name: "John Smith",
+  //   role: "Tenant (Eastside Plaza)",
+  //   avatar: "/placeholder.svg?height=40&width=40",
+  //   lastMessage:
+  //     "Hi, wanted to invite you to our company's open house event next Friday.",
+  //   time: "Yesterday",
+  //   unread: true,
+  //   isOnline: false,
+  // },
+  // {
+  //   id: "4",
+  //   name: "Billing Department",
+  //   role: "Administration",
+  //   avatar: "/placeholder.svg?height=40&width=40",
+  //   lastMessage:
+  //     "Your latest invoice is now available. The due date is May 15th.",
+  //   time: "2 days ago",
+  //   unread: false,
+  //   isOnline: false,
+  // },
+  // {
+  //   id: "5",
+  //   name: "Sarah Johnson",
+  //   role: "Tenant (Tech Tower)",
+  //   avatar: "/placeholder.svg?height=40&width=40",
+  //   lastMessage: "Do you know if there's a courier service in the building?",
+  //   time: "3 days ago",
+  //   unread: false,
+  //   isOnline: true,
+  // },
 ];
 
 const messages: Record<string, Message[]> = {
