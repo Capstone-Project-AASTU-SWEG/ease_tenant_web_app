@@ -464,7 +464,7 @@ export default function SignupSelector() {
               }}
             >
               <a
-                href="/login"
+                href="/auth/sign-in"
                 className="relative font-medium text-primary/90 hover:text-primary"
               >
                 <span className="relative z-10">Sign in</span>

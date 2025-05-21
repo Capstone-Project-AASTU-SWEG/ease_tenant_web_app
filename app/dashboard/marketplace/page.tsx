@@ -20,6 +20,8 @@ import {
   Clock,
   Calendar,
   CheckCircle,
+  ArrowBigRight,
+  PhoneCall,
 } from "lucide-react";
 import Image from "next/image";
 import { Label } from "@/components/ui/label";
@@ -331,14 +333,10 @@ export default function MarketplacePage() {
 
               <SheetFooter className="pt-4">
                 <Button
-                  onClick={() => {
-                    setIsServiceDetailsOpen(false);
-                    setIsBookingOpen(true);
-                  }}
                   className="w-full"
                 >
-                  <ShoppingCart className="mr-2 h-4 w-4" />
-                  Book Service
+                  <PhoneCall className="mr-2 h-4 w-4" />
+                  +251-957-736889
                 </Button>
               </SheetFooter>
             </SheetContent>
@@ -537,13 +535,10 @@ function ServiceCard({
             className={`rounded-full ${
               isPromotion ? "bg-primary shadow-sm" : "bg-primary/90"
             } transition-all hover:bg-primary/90`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onBook?.();
-            }}
+            onClick={onClick}
           >
-            <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
-            Book
+            Detail
+            <ArrowBigRight className="mr-1.5 h-3.5 w-3.5" />
           </Button>
         </CardFooter>
       </Card>
@@ -559,7 +554,7 @@ const services: ServiceProps[] = [
     image: "/placeholder.svg?height=200&width=300",
     rating: 4.8,
     reviews: 124,
-    price: "$25/hr",
+    price: "25/hr Birr",
     description:
       "Professional cleaning service tailored for commercial spaces. Regular and deep cleaning options available.",
     badges: ["Eco-Friendly", "Insured", "Background Checked"],
@@ -571,7 +566,7 @@ const services: ServiceProps[] = [
     image: "/placeholder.svg?height=200&width=300",
     rating: 4.6,
     reviews: 87,
-    price: "$75/hr",
+    price: "75/hr Birr",
     description:
       "On-demand IT support, networking setup, and technology management for businesses.",
     badges: ["24/7 Support", "Certified Technicians"],
@@ -582,7 +577,7 @@ const services: ServiceProps[] = [
     image: "/placeholder.svg?height=200&width=300",
     rating: 4.9,
     reviews: 156,
-    price: "$30/hr",
+    price: "30/hr Birr",
     description:
       "Licensed security personnel for building security, event management, and access control.",
     badges: ["Armed/Unarmed", "Uniformed", "Licensed"],
@@ -594,7 +589,7 @@ const services: ServiceProps[] = [
     image: "/placeholder.svg?height=200&width=300",
     rating: 4.7,
     reviews: 92,
-    price: "$85/hr",
+    price: "85/hr Birr",
     description:
       "Preventative maintenance and emergency repair services for HVAC systems.",
     badges: ["Emergency Service", "Certified Technicians"],
@@ -605,7 +600,7 @@ const services: ServiceProps[] = [
     image: "/placeholder.svg?height=200&width=300",
     rating: 4.5,
     reviews: 68,
-    price: "$150/mo",
+    price: "150/mo Birr",
     description:
       "Interior plant design, installation, and ongoing maintenance for your workspace.",
     badges: ["Sustainable", "Design Services"],
@@ -639,7 +634,7 @@ const services: ServiceProps[] = [
     image: "/placeholder.svg?height=200&width=300",
     rating: 4.6,
     reviews: 112,
-    price: "$200/mo",
+    price: "200/mo Birr",
     description:
       "Preventative and responsive pest control services specifically for commercial spaces.",
     badges: ["Eco-Friendly Options", "Regular Inspection"],
