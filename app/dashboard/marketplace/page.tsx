@@ -16,7 +16,7 @@ import {
   Search,
   Star,
   Filter,
-  ShoppingCart,
+  // ShoppingCart,
   Clock,
   Calendar,
   CheckCircle,
@@ -444,6 +444,7 @@ function ServiceCard({
   isPromotion = false,
   index = 0,
   onClick,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onBook,
 }: ServiceProps & {
   index?: number;

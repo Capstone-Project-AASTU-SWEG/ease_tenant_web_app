@@ -42,15 +42,18 @@ const SignIn = () => {
 
   const userSignInMutation = useUserSignInMutation();
 
+
   const handleSubmit = (values: SignInSchema) => {
     userSignInMutation.mutate(values);
   };
 
   useEffect(() => {
     if (userSignInMutation.isSuccess) {
-      const token = userSignInMutation.data.token;
+      const userData = userSignInMutation.data;
+      const token = userData.token;
+
       localStorage.setItem("token", token);
-      successToast("You signed in successfully." + token);
+      successToast("You signed in successfully.");
       router.push("/dashboard");
     }
   }, [router, userSignInMutation.data, userSignInMutation.isSuccess]);
