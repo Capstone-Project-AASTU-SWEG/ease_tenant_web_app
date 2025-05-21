@@ -12,14 +12,11 @@ import {
 import {
   Plus,
   Building2,
-  Layers,
   Edit,
   Heart,
   MapPin,
   MoreVertical,
-  Home,
   Calendar,
-  Star,
   Trash,
   CheckCircle2,
   Shield,
@@ -133,7 +130,6 @@ export default function BuildingsPage() {
     }
   }, [getAllBuildings.error?.message, getAllBuildings.isError]);
 
-  const router = useRouter();
 
   return (
     <PageWrapper className="">
@@ -244,101 +240,6 @@ export default function BuildingsPage() {
           </div>
         </motion.div>
 
-        {/* Featured Property (if available) */}
-        {filteredBuildings.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mb-12"
-          >
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Featured Property</h2>
-              <Badge variant="outline" className="bg-primary/10 text-primary">
-                Premium
-              </Badge>
-            </div>
-
-            <Card className="overflow-hidden border-none shadow-lg">
-              <div className="relative aspect-[21/9] w-full">
-                <Image
-                  src={
-                    filteredBuildings[0].imageUrls?.[0] ||
-                    ASSETS.IMAGES.BUILDING_IMAGE
-                  }
-                  alt={filteredBuildings[0].name}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-6 text-white">
-                  <Badge className="mb-3 bg-primary/80 text-white">
-                    {filteredBuildings[0].occupancy}% Occupied
-                  </Badge>
-                  <h3 className="mb-2 text-3xl font-bold">
-                    {filteredBuildings[0].name}
-                  </h3>
-                  <p className="mb-4 flex items-center text-white/80">
-                    <MapPin className="mr-2 h-4 w-4" />
-                    {filteredBuildings[0].formattedAddress}
-                  </p>
-                  <Button
-                    className="bg-white text-primary hover:bg-white/90"
-                    onClick={() => {
-                      storeBuildingId(filteredBuildings[0].id);
-                      router.push(
-                        `/dashboard/buildings/${filteredBuildings[0].id}`,
-                      );
-                    }}
-                  >
-                    View Details <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <CardContent className="grid grid-cols-1 gap-6 p-6 md:grid-cols-3">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
-                    <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Units</p>
-                    <p className="text-xl font-semibold">
-                      {filteredBuildings[0].totalUnits}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-green-100 p-2 dark:bg-green-900/30">
-                    <Layers className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Total Floors
-                    </p>
-                    <p className="text-xl font-semibold">
-                      {filteredBuildings[0].totalFloors}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-900/30">
-                    <Home className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Available Units
-                    </p>
-                    <p className="text-xl font-semibold">
-                      {filteredBuildings[0].availableUnits}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
         {/* Main Buildings Section */}
         <div id="buildings-list">
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -407,7 +308,7 @@ export default function BuildingsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+                  className="grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-3"
                 >
                   {filteredBuildings.length > 0 ? (
                     filteredBuildings.map((building, index) => (
@@ -440,7 +341,7 @@ export default function BuildingsPage() {
         </div>
 
         {/* Testimonials Section */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
@@ -522,7 +423,7 @@ export default function BuildingsPage() {
               </CardContent>
             </Card>
           </div>
-        </motion.div>
+        </motion.div> */}
 
         {/* Call to Action */}
         <motion.div
@@ -626,9 +527,9 @@ const BuildingCard = ({
       initial="hidden"
       animate={controls}
       whileHover={{ y: -5 }}
-      className="h-full"
+      // className="h-full"
     >
-      <Card className="group relative h-full overflow-hidden rounded-xl border-none bg-white shadow-md transition-all duration-300 hover:shadow-xl dark:bg-slate-900">
+      <Card className="group relative h-full overflow-hidden rounded-lg border-none bg-white shadow-md transition-all duration-300 hover:shadow-lg dark:bg-slate-900">
         {/* Ribbon for special properties */}
         {building.availableUnits > 0 && building.occupancy < 90 && (
           <div className="absolute right-0 top-0 z-20 bg-gradient-to-r from-green-500 to-emerald-600 px-3 py-1 text-xs font-medium text-white shadow-md">

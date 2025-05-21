@@ -120,12 +120,16 @@ const Page = () => {
         buildingId: buildingID,
         unit: { ...data, id: unitId },
       });
-    } else {
-      createUnitMutation.mutate({
-        buildingId: buildingID,
-        unit: data,
-      });
+
+      successToast("Unit updated successfully");
+      router.push(`/dashboard/buildings/${buildingID}/units`);
+
+      return;
     }
+    createUnitMutation.mutate({
+      buildingId: buildingID,
+      unit: data,
+    });
   };
 
   const validateCurrentTab = async () => {
@@ -209,7 +213,7 @@ const Page = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Card className="sticky top-24 overflow-hidden border-none bg-gradient-to-br from-slate-50 to-white shadow-md dark:from-slate-900 dark:to-slate-950">
+          <Card className="sticky top-24 overflow-hidden rounded-lg border bg-gradient-to-br from-slate-50 to-white shadow-none dark:from-slate-900 dark:to-slate-950">
             <CardContent className="p-6">
               <h3 className="mb-6 text-lg font-semibold">Unit Setup</h3>
               <ProgressIndicator activeTab={activeTab} />
@@ -259,7 +263,7 @@ const Page = () => {
                             <h3 className="mb-4 text-base font-medium">
                               Unit Specifications
                             </h3>
-                            <Stack>
+                            <Stack spacing={"lg"}>
                               <Group
                                 className="grid grid-cols-1 gap-4 md:grid-cols-2"
                                 align="start"
@@ -415,7 +419,7 @@ const Page = () => {
                             <h3 className="mb-4 text-base font-medium">
                               Unit Amenities
                             </h3>
-                            <Stack>
+                            <Stack spacing={"lg"}>
                               <DataListInput
                                 label="Amenities"
                                 items={[
@@ -527,7 +531,9 @@ const Page = () => {
                         >
                           {createUnitMutation.isPending
                             ? "Submitting..."
-                            : "Create Unit"}
+                            : isEditting
+                              ? "Edit Unit"
+                              : "Create Unit"}
                           <Sparkles className="h-4 w-4" />
                         </Button>
                       )}

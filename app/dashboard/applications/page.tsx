@@ -89,50 +89,60 @@ import {
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { successToast } from "@/components/custom/toasts";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/quries/useAuth";
 
 const tabs: TabItem[] = [
   {
     value: "all",
     label: "All",
     icon: Home,
-    // badge: showBadges ? 42 : undefined,
   },
   {
     value: "rental",
     label: "Rental",
     icon: Building,
-    // badge: showBadges ? 16 : undefined,
   },
   {
     value: "maintenance",
     label: "Maintenance",
     icon: Wrench,
-    // badge: showBadges ? 8 : undefined,
   },
   {
     value: "provider",
     label: "Provider",
     icon: Users,
-    // badge: showBadges ? 12 : undefined,
   },
   {
     value: "service",
     label: "Service",
     icon: Briefcase,
-    // badge: showBadges ? 5 : undefined,
   },
   {
     value: "other",
     label: "Other",
     icon: MoreHorizontal,
-    // badge: showBadges ? 1 : undefined,
   },
 ];
 
 const ApplicationsPage = () => {
   // State for applications data
-  const { data: applications = [], isLoading } =
-    useGetApplicationsOfBuildingQuery("6817cf0d67320596899e2d34");
+
+  const { isTenant, isManager, data } = useAuth();
+  const router = useRouter();
+
+  const [applications, setApplications] = useState<
+    (Application & WithTimestampsStr)[]
+  >([]);
+
+  const getApplicationsOfBuildingQuery = useGetApplicationsOfBuildingQuery(
+    data?.building?.id,
+  );
+
+  useEffect(() => {
+    if (isManager) {
+      setApplications(getApplicationsOfBuildingQuery.data || []);
+    }
+  }, [getApplicationsOfBuildingQuery.data, isManager]);
 
   // State for filters and search
   const [activeTab, setActiveTab] = useState<APPLICATION_TYPE | "all">("all");
@@ -151,6 +161,10 @@ const ApplicationsPage = () => {
     (Application & WithTimestampsStr) | null
   >(null);
   const [showDetailView, setShowDetailView] = useState(false);
+
+  if (isTenant) {
+    router.replace("/dashboard/tenant");
+  }
 
   // Filter and sort applications based on current filters
   const filteredApplications = useMemo(() => {
@@ -288,7 +302,7 @@ const ApplicationsPage = () => {
             iconBg="bg-blue-100"
             title="Total Applications"
             value={stats.total.toString()}
-            moreInfo={`${stats.pending + stats.inReview} Pending Review`}
+            moreInfo={`${stats.total ? (stats.approved / stats.total) * 100 : 0} Pending Review`}
           />
 
           {/* Approved */}
@@ -298,12 +312,7 @@ const ApplicationsPage = () => {
             iconBg="bg-green-100"
             title="Approved"
             value={stats.approved.toString()}
-            progressValue={
-              stats.total ? (stats.approved / stats.total) * 100 : 0
-            }
-            progressLabel="Approval Rate"
-            progressSuffix="%"
-            showProgress
+            moreInfo={`${stats.total ? (stats.urgent / stats.total) * 100 : 0}% Approval Rate`}
           />
 
           {/* Urgent */}
@@ -313,10 +322,7 @@ const ApplicationsPage = () => {
             iconBg="bg-red-100"
             title="Urgent"
             value={stats.urgent.toString()}
-            progressValue={stats.total ? (stats.urgent / stats.total) * 100 : 0}
-            progressLabel="Of Total"
-            progressSuffix="%"
-            showProgress
+            moreInfo={`${stats.pending + stats.inReview}% Of Total`}
           />
 
           {/* Unassigned */}
@@ -326,12 +332,7 @@ const ApplicationsPage = () => {
             iconBg="bg-amber-100"
             title="Unassigned"
             value={stats.unassigned.toString()}
-            progressValue={
-              stats.total ? (stats.unassigned / stats.total) * 100 : 0
-            }
-            progressLabel="Needs Assignment"
-            progressSuffix="%"
-            showProgress
+            moreInfo={`${stats.total ? (stats.unassigned / stats.total) * 100 : 0}% Needs Assignment`}
           />
         </div>
 
@@ -489,7 +490,7 @@ const ApplicationsPage = () => {
 
         {/* Applications List */}
         <div>
-          {isLoading ? (
+          {getApplicationsOfBuildingQuery.isPending ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"></div>
               <p className="mt-4 text-slate-500">Loading applications...</p>
@@ -508,7 +509,7 @@ const ApplicationsPage = () => {
             </div>
           ) : applications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-slate-100 p-4">
+              <div className="rounded-full bg-primary/5 p-4">
                 <FileText className="h-8 w-8 text-slate-400" />
               </div>
               <h3 className="mt-4 text-lg font-medium">
@@ -518,7 +519,7 @@ const ApplicationsPage = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-slate-100 p-4">
+              <div className="rounded-full bg-primary/5 p-4">
                 <FileText className="h-8 w-8 text-slate-400" />
               </div>
               <h3 className="mt-4 text-lg font-medium">
@@ -579,31 +580,21 @@ const RenderApplicationCard = ({
       className="group"
     >
       <Card
-        className="mb-4 cursor-pointer overflow-hidden border-l-4 transition-all duration-200 hover:shadow-md"
-        style={{
-          borderLeftColor:
-            application.priority === "urgent"
-              ? "rgb(239, 68, 68)"
-              : application.priority === "high"
-                ? "rgb(249, 115, 22)"
-                : application.priority === "medium"
-                  ? "rgb(59, 130, 246)"
-                  : "rgb(34, 197, 94)",
-        }}
+        className="mb-4 cursor-pointer overflow-hidden transition-all duration-200 hover:shadow-md bg-primary"
         onClick={() => onSelectApplication(application)}
       >
-        <CardContent className="p-4">
+        <CardContent className="p-4 text-white">
           <div className="flex flex-col space-y-4">
             {/* Header with ID, Type and Status */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className="rounded-full bg-slate-100 p-1.5">
+                <div className="rounded-full bg-primary/5 p-1.5">
                   {getApplicationTypeIcon(application.type)}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-500">
+                  {/* <p className="text-sm font-medium text-slate-500">
                     {application.id}
-                  </p>
+                  </p> */}
                   <h3 className="font-medium">
                     {getApplicationTypeLabel(application.type)}
                   </h3>
@@ -631,7 +622,7 @@ const RenderApplicationCard = ({
                       ]
                     }
                   </p>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-white/70">
                     Unit {(application as RentalApplication).unit.unitNumber} at{" "}
                     {
                       getBuildingByID(
@@ -639,7 +630,7 @@ const RenderApplicationCard = ({
                       )?.name
                     }
                   </p>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-white/60">
                     {(application as RentalApplication).unit.type} •{" "}
                     {
                       (application as RentalApplication).leaseDetails
@@ -659,7 +650,7 @@ const RenderApplicationCard = ({
                     src={application.submittedBy?.firstName.slice(0, 2)}
                     alt={application.submittedBy?.firstName}
                   />
-                  <AvatarFallback className="text-xs">
+                  <AvatarFallback className="text-xs text-primary">
                     {(
                       application.submittedBy?.firstName +
                       application.submittedBy?.lastName
@@ -669,7 +660,7 @@ const RenderApplicationCard = ({
                       .join("")}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-slate-600">
+                <span className="text-white/70">
                   {application.submittedBy?.firstName}{" "}
                   {application.submittedBy?.lastName}
                 </span>
@@ -682,7 +673,7 @@ const RenderApplicationCard = ({
                   {application.priority.charAt(0).toUpperCase() +
                     application.priority.slice(1)}
                 </Badge>
-                <span className="text-slate-500">
+                <span className="text-white/50">
                   {timeElapsed(application.createdAt)}
                 </span>
               </div>
@@ -790,7 +781,7 @@ const RenderApplicationDetail = ({
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/5">
                     {getApplicationTypeIcon(application.type)}
                   </div>
                   <div className="flex-1">
@@ -819,7 +810,7 @@ const RenderApplicationDetail = ({
                   onValueChange={setActiveTab}
                   className="mt-6"
                 >
-                  <CustomTabs variant={"pills"}>
+                  <CustomTabs variant={"pills"} className="mb-2">
                     <CustomTabsList
                       items={[
                         { label: "Details", value: "details", icon: Info },
@@ -840,7 +831,7 @@ const RenderApplicationDetail = ({
                     />
                   </CustomTabs>
                   {/* Content */}
-                  <ScrollArea className="h-[35rem] flex-1">
+                  <ScrollArea className="h-[35rem] flex-1 pr-4">
                     <div className="py-4">
                       <TabsContent value="details" className="m-0">
                         {/* Application specific content */}
@@ -880,7 +871,7 @@ const RenderApplicationDetail = ({
                         <Card className="border-none shadow-sm">
                           <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
                             <CardTitle className="flex items-center text-base font-medium">
-                              <User className="mr-2 h-4 w-4 text-blue-500" />
+                              <User className="mr-2 h-4 w-4 text-primary" />
                               Applicant Information
                             </CardTitle>
                           </CardHeader>
@@ -927,7 +918,7 @@ const RenderApplicationDetail = ({
                         <Card className="border-none shadow-sm">
                           <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
                             <CardTitle className="flex items-center text-base font-medium">
-                              <Calendar className="mr-2 h-4 w-4 text-blue-500" />
+                              <Calendar className="mr-2 h-4 w-4 text-primary" />
                               Submission Timeline
                             </CardTitle>
                           </CardHeader>
@@ -960,7 +951,7 @@ const RenderApplicationDetail = ({
                               </div>
 
                               <div className="flex items-start gap-3">
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/5 text-slate-600">
                                   <Clock className="h-3 w-3" />
                                 </div>
                                 <div className="flex-1">
@@ -991,23 +982,11 @@ const RenderApplicationDetail = ({
                         <Card className="border-none shadow-sm">
                           <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
                             <CardTitle className="flex items-center text-base font-medium">
-                              <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
+                              <CheckCircle className="mr-2 h-4 w-4 text-primary" />
                               Status Management
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-4 p-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="status">Current Status</Label>
-                              <div
-                                className={`flex items-center gap-2 rounded-md border p-3 ${getStatusColor(application.status)}`}
-                              >
-                                {getStatusIcon(application.status)}
-                                <span className="font-medium">
-                                  {formatStatusLabel(application.status)}
-                                </span>
-                              </div>
-                            </div>
-
                             <div className="space-y-2">
                               <Label>Change Status</Label>
                               <div className="grid grid-cols-2 gap-3">
@@ -1082,9 +1061,9 @@ const RenderApplicationDetail = ({
 
                         {/* Quick Actions */}
                         <Card className="border-none shadow-sm">
-                          <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
+                          <CardHeader className="border-b bg-primary/5 pb-3 pt-3">
                             <CardTitle className="flex items-center text-base font-medium">
-                              <MessageSquare className="mr-2 h-4 w-4 text-blue-500" />
+                              <MessageSquare className="mr-2 h-4 w-4 text-primary" />
                               Quick Actions
                             </CardTitle>
                           </CardHeader>

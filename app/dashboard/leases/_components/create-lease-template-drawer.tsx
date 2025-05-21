@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+
 import {
   FileText,
   Plus,
@@ -12,13 +12,14 @@ import {
   GripVertical,
   PenLine,
   ChevronRight,
+  XIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Form } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -36,27 +37,13 @@ import { Group } from "@/components/custom/group";
 import CustomSheetHeader from "@/components/custom/sheet-header";
 import { useCreateLeaseTemplateMutation } from "@/app/quries/useLeases";
 import { errorToast, successToast } from "@/components/custom/toasts";
-
-// Schema for lease template
-const leaseTemplateSchema = z.object({
-  name: z.string().min(1, "Template name is required"),
-  description: z.string().min(1, "Description is required"),
-  isDefault: z.boolean().default(false),
-  sections: z.array(
-    z.object({
-      title: z.string().min(1, "Section title is required"),
-      content: z.string().min(1, "Section content is required"),
-    }),
-  ),
-});
-
-type LeaseTemplateFormValues = z.infer<typeof leaseTemplateSchema>;
+import { LeaseTemplate, leaseTemplateSchema } from "../_schema";
 
 interface CreateLeaseTemplateDrawerProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateTemplate: (template: Partial<LeaseTemplateFormValues>) => void;
-  existingTemplate?: Partial<LeaseTemplateFormValues>;
+  onCreateTemplate: (template: Partial<LeaseTemplate>) => void;
+  existingTemplate?: Partial<LeaseTemplate>;
 }
 
 export function CreateLeaseTemplateDrawer({
@@ -72,7 +59,7 @@ export function CreateLeaseTemplateDrawer({
   const createLeaseTemplateMutation = useCreateLeaseTemplateMutation();
 
   // Form for the template
-  const form = useForm<LeaseTemplateFormValues>({
+  const form = useForm<LeaseTemplate>({
     resolver: zodResolver(leaseTemplateSchema),
     defaultValues: existingTemplate || {
       name: "",
@@ -125,7 +112,7 @@ export function CreateLeaseTemplateDrawer({
   };
 
   // Handle form submission
-  const onSubmit = (data: LeaseTemplateFormValues) => {
+  const onSubmit = (data: LeaseTemplate) => {
     createLeaseTemplateMutation.mutate({
       name: data.name,
       isDefault: data.isDefault,
@@ -152,8 +139,8 @@ export function CreateLeaseTemplateDrawer({
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full max-w-[600px] overflow-hidden p-0 sm:max-w-[700px] md:max-w-[900px]">
-        <div className="flex h-full flex-col px-4">
+      <SheetContent className="w-full max-w-[500px] overflow-hidden p-0 sm:max-w-[600px] md:max-w-[800px]">
+        <div className="flex h-full flex-col px-6">
           <CustomSheetHeader
             icon={FileText}
             title={
@@ -163,6 +150,16 @@ export function CreateLeaseTemplateDrawer({
               existingTemplate
                 ? "Modify your lease template with sections and clauses"
                 : "Create a new lease template with customizable sections and clauses"
+            }
+            rightSection={
+              <Button
+                type="button"
+                variant="secondary"
+                size={"sm"}
+                onClick={() => onOpenChange(false)}
+              >
+                <XIcon />
+              </Button>
             }
           />
 
@@ -182,7 +179,7 @@ export function CreateLeaseTemplateDrawer({
                   }
                   className="flex h-full flex-col"
                 >
-                  <TabsList className="h-14 w-full justify-start gap-8 bg-transparent p-0">
+                  <TabsList className="h-14 w-full justify-start gap-3 bg-transparent p-0">
                     <TabsTrigger value="details" className="">
                       Template Details
                     </TabsTrigger>
@@ -233,13 +230,39 @@ export function CreateLeaseTemplateDrawer({
                             />
                           </CardContent>
                         </Card>
+                        <section className="mt-6 border-t py-2">
+                          <div className="flex w-full justify-end">
+                            <Button
+                              type="button"
+                              className="gap-2"
+                              onClick={async () => {
+                                if (activeTab === "details") {
+                                  const isValid = await form.trigger([
+                                    "name",
+                                    "description",
+                                  ]);
+
+                                  if (isValid) {
+                                    setActiveTab("sections");
+                                  }
+                                }
+                              }}
+                            >
+                              Next
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </section>
                       </ScrollArea>
                     </TabsContent>
 
-                    <TabsContent value="sections" className="mt-0 h-full p-0">
-                      <ScrollArea className="h-full max-h-[35rem]">
-                        <Card>
-                          <Group justify={"between"}>
+                    <TabsContent
+                      value="sections"
+                      className="h-[calc(100vh-300px)]"
+                    >
+                      <ScrollArea className="h-full w-full pr-3">
+                        <Card className="h-full">
+                          <Group justify="between">
                             <CardHeader>
                               <CardTitle>Sections & Clauses</CardTitle>
                               <CardDescription>
@@ -249,7 +272,7 @@ export function CreateLeaseTemplateDrawer({
                             </CardHeader>
                           </Group>
 
-                          <CardContent className="flex flex-col gap-4">
+                          <CardContent className="flex flex-col gap-4 pb-6">
                             {form.watch("sections")?.map((section, index) => (
                               <Card
                                 key={index}
@@ -339,21 +362,43 @@ export function CreateLeaseTemplateDrawer({
                             <Button
                               type="button"
                               onClick={addSection}
-                              className="my-4 w-full border-dashed bg-secondary"
-                              variant={"outline"}
+                              className="w-full border-dashed bg-secondary"
+                              variant="outline"
                             >
-                              <Group>
+                              <Group spacing="sm">
                                 <Plus className="h-4 w-4" />
                                 Add Section
                               </Group>
                             </Button>
                           </CardContent>
                         </Card>
+                        <ScrollBar orientation="vertical" />
                       </ScrollArea>
+
+                      <section className="mt-4 border-t pt-4">
+                        <div className="flex w-full justify-end">
+                          <Button
+                            type="button"
+                            className="gap-2"
+                            onClick={async () => {
+                              if (activeTab === "sections") {
+                                const isValid = await form.trigger("sections");
+                                if (isValid) {
+                                  setActiveTab("preview");
+                                }
+                              }
+                            }}
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </section>
                     </TabsContent>
 
                     <TabsContent value="preview" className="mt-0 h-full p-0">
-                      <ScrollArea className="h-full max-h-[35rem]">
+                      <ScrollArea className="h-[65vh]">
+                        <ScrollBar orientation="vertical" hidden />
                         <Card className="">
                           <CardHeader>
                             <CardTitle>Template Preview</CardTitle>
@@ -363,11 +408,13 @@ export function CreateLeaseTemplateDrawer({
                           </CardHeader>
 
                           <CardContent>
-                            {form.watch("isDefault") && (
-                              <Badge className="border-0 bg-primary/10 text-primary hover:bg-primary/20">
-                                Default Template
-                              </Badge>
-                            )}
+                            <section className="mb-2">
+                              {form.watch("isDefault") && (
+                                <Badge className="border-0 bg-primary/10 text-primary hover:bg-primary/20">
+                                  Default Template
+                                </Badge>
+                              )}
+                            </section>
                             <div className="min-h-[600px] rounded-lg border border-neutral-100 bg-neutral-50 p-6">
                               <div className="mx-auto flex flex-col gap-6">
                                 <div className="space-y-2 text-center">
@@ -405,62 +452,24 @@ export function CreateLeaseTemplateDrawer({
                           </CardContent>
                         </Card>
                       </ScrollArea>
+                      <section className="mt-6 border-t py-2">
+                        <div className="flex w-full justify-end">
+                          <Button
+                            type="submit"
+                            className="gap-2"
+                            disabled={createLeaseTemplateMutation.isPending}
+                          >
+                            <Save className="h-4 w-4" />
+                            {existingTemplate
+                              ? "Update Template"
+                              : "Create Template"}
+                          </Button>
+                        </div>
+                      </section>
                     </TabsContent>
                   </div>
                 </Tabs>
               </div>
-
-              <SheetFooter className="border-t py-2">
-                <div className="flex w-full justify-between">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => onOpenChange(false)}
-                  >
-                    Cancel
-                  </Button>
-                  {activeTab !== "preview" && (
-                    <Button
-                      type="button"
-                      className="gap-2"
-                      onClick={async () => {
-                        if (activeTab === "details") {
-                          const isValid = await form.trigger([
-                            "name",
-                            "description",
-                          ]);
-
-                          if (isValid) {
-                            setActiveTab("sections");
-                          }
-                        }
-                        if (activeTab === "sections") {
-                          const isValid = await form.trigger("sections");
-                          if (isValid) {
-                            setActiveTab("preview");
-                          }
-                        }
-                      }}
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {activeTab === "preview" && (
-                    <Button
-                      type="submit"
-                      className="gap-2"
-                      disabled={createLeaseTemplateMutation.isPending}
-                      // onClick={() => {
-                      //   onCreateTemplate(form.getValues());
-                      // }}
-                    >
-                      <Save className="h-4 w-4" />
-                      {existingTemplate ? "Update Template" : "Create Template"}
-                    </Button>
-                  )}
-                </div>
-              </SheetFooter>
             </form>
           </Form>
         </div>

@@ -123,10 +123,10 @@ export function DataListInput({
             <div className="flex flex-wrap gap-1">
               {selected.length > 0 ? (
                 maxItems === 1 ? (
-                  <span>{selected.at(0)?.label}.</span>
+                  <span>{selected.at(0)?.label}</span>
                 ) : (
                   <span className="text-muted-foreground">
-                    {selected.length} items added.
+                    {selected.length} items added
                   </span>
                 )
               ) : (

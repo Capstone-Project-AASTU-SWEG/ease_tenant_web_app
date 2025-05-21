@@ -9,7 +9,7 @@ import {
   ServiceProvider,
   Tenant,
 } from "@/types";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect } from "react";
 
@@ -23,10 +23,11 @@ export const useGetAllTenants = () => {
             APIResponse<(Tenant & { userId: CommonUserData })[]>
           >("/tenants");
         const data = response.data;
-        const refinedData = data.data?.map((tenant) => ({
-          ...tenant,
-          ...tenant.userId,
-        }));
+        const refinedData =
+          data.data?.map((tenant) => ({
+            ...tenant,
+            ...tenant.userId,
+          })) || [];
         return refinedData;
       } catch (error) {
         console.log({ error });
@@ -100,6 +101,61 @@ export const useGetAllManagers = () => {
           throw new Error(errorMessage || "An error occurred");
         }
         throw new Error("An unexpected error occurred");
+      }
+    },
+  });
+};
+
+export const useManagerProfileUpdateMutation = () => {
+  return useMutation({
+    mutationKey: ["manageProfileUpdateMutation"],
+    mutationFn: async ({ manager }: { manager: Manager }) => {
+      try {
+        const response = await axiosClient.put<
+          APIResponse<{ user: Manager }[]>
+        >(`/managers/${manager.id}`, manager);
+        const data = response.data;
+
+        return data;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while updating manager profile",
+          );
+        }
+        throw new Error(
+          "An unexpected error occurred while updating manager profile",
+        );
+      }
+    },
+  });
+};
+
+export const useTenantProfileUpdateMutation = () => {
+  return useMutation({
+    mutationKey: ["tenantProfileUpdateMutation"],
+    mutationFn: async ({ tenant }: { tenant: Tenant }) => {
+      try {
+        const response = await axiosClient.put<APIResponse<{ user: Tenant }[]>>(
+          `/tenants/${tenant.id}`,
+          tenant,
+        );
+        const data = response.data;
+
+        return data;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while updating tenant profile",
+          );
+        }
+        throw new Error(
+          "An unexpected error occurred while updating tenant profile",
+        );
       }
     },
   });

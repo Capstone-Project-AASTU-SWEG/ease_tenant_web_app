@@ -60,7 +60,7 @@ export function RentalApplicationDetail({
       <div className="rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/5 text-primary">
               <Building2 className="h-6 w-6" />
             </div>
             <div>
@@ -74,7 +74,7 @@ export function RentalApplicationDetail({
           </div>
           <Badge
             variant="outline"
-            className="bg-blue-50 px-3 py-1 text-blue-700"
+            className="bg-primary/5 px-3 py-1 text-blue-700"
           >
             ${application.unit.monthlyRent.toLocaleString()}/month
           </Badge>
@@ -105,7 +105,7 @@ export function RentalApplicationDetail({
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <CustomTabs>
+        <CustomTabs className="bg-transparent">
           <CustomTabsList
             tabVariant={"outline"}
             value={activeTab}
@@ -138,7 +138,7 @@ export function RentalApplicationDetail({
           <Card className="overflow-hidden border-none bg-white shadow-sm">
             <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
               <CardTitle className="flex items-center text-base font-medium">
-                <Building2 className="mr-2 h-4 w-4 text-blue-500" />
+                <Building2 className="mr-2 h-4 w-4 text-primary" />
                 Unit Details
               </CardTitle>
             </CardHeader>
@@ -182,7 +182,7 @@ export function RentalApplicationDetail({
           <Card className="overflow-hidden border-none bg-white shadow-sm">
             <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
               <CardTitle className="flex items-center text-base font-medium">
-                <Calendar className="mr-2 h-4 w-4 text-blue-500" />
+                <Calendar className="mr-2 h-4 w-4 text-primary" />
                 Lease Details
               </CardTitle>
             </CardHeader>
@@ -227,7 +227,7 @@ export function RentalApplicationDetail({
           <Card className="overflow-hidden border-none bg-white shadow-sm">
             <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
               <CardTitle className="flex items-center text-base font-medium">
-                <Briefcase className="mr-2 h-4 w-4 text-blue-500" />
+                <Briefcase className="mr-2 h-4 w-4 text-primary" />
                 Business Details
               </CardTitle>
             </CardHeader>
@@ -275,7 +275,7 @@ export function RentalApplicationDetail({
           <Card className="overflow-hidden border-none bg-white shadow-sm">
             <CardHeader className="border-b bg-slate-50 pb-3 pt-3">
               <CardTitle className="flex items-center text-base font-medium">
-                <FileText className="mr-2 h-4 w-4 text-blue-500" />
+                <FileText className="mr-2 h-4 w-4 text-primary" />
                 Documents
               </CardTitle>
             </CardHeader>

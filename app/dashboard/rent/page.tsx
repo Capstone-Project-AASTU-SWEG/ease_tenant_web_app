@@ -68,6 +68,7 @@ import LogJSON from "@/components/custom/log-json";
 import { PageError } from "@/components/custom/page-error";
 import { PageLoader } from "@/components/custom/page-loader";
 import { useVerifyUserQuery } from "@/app/quries/useAuth";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Define the rental application schema (simplified since user identity is already in the system)
 const rentalApplicationSchema = z.object({
@@ -139,13 +140,13 @@ const RentUnitPage = () => {
       return;
     }
 
-    const buildingManager = building.managerId;
+    const buildingManager = building.manager;
     if (!buildingManager) {
       warningToast("Building manager not found.");
       return;
     }
 
-    const rentalApplication: RentalApplication = {
+    const rentalApplication: Omit<RentalApplication, "building"> = {
       id: Math.floor(Math.random() * 1000000).toString(),
       status: "pending",
       unit: unit,
@@ -157,10 +158,11 @@ const RentUnitPage = () => {
         requestedStartDate: data.moveInDate,
         specialRequirements: data.specialRequirements,
       },
+
       lastUpdated: new Date().toISOString(),
       priority: "high",
       submittedAt: new Date().toISOString(),
-      submittedBy: currentUser.user,
+      submittedBy: currentUser.tenant!,
       notes: data.additionalNotes,
       type: "rental",
       assignedTo: buildingManager,
@@ -173,6 +175,7 @@ const RentUnitPage = () => {
     formData.append("priority", rentalApplication.priority);
     formData.append("type", rentalApplication.type);
     formData.append("notes", rentalApplication.notes || "");
+    formData.append("buildingId", building.id);
 
     // Add nested objects as JSON strings
     formData.append("unitId", rentalApplication.unit.id);
@@ -464,12 +467,12 @@ const RentUnitPage = () => {
                         className="mt-0 space-y-6"
                       >
                         <div className="space-y-6">
-                          <div className="flex items-center gap-2 rounded-lg bg-primary/5 p-4 text-primary">
+                          {/* <div className="flex items-center gap-2 rounded-lg bg-primary/5 p-4 text-primary">
                             <Building2 className="h-5 w-5" />
                             <h3 className="text-lg font-medium">
                               Unit Information
                             </h3>
-                          </div>
+                          </div> */}
 
                           {/* Unit Description */}
                           <div className="space-y-6">
@@ -599,12 +602,12 @@ const RentUnitPage = () => {
                         className="mt-0 space-y-6"
                       >
                         <div className="space-y-6">
-                          <div className="flex items-center gap-2 rounded-lg bg-primary/5 p-4 text-primary">
+                          {/* <div className="flex items-center gap-2 rounded-lg bg-primary/5 p-4 text-primary">
                             <Calendar className="h-5 w-5" />
                             <h3 className="text-lg font-medium">
                               Lease Preferences
                             </h3>
-                          </div>
+                          </div> */}
 
                           <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="grid grid-cols-1 gap-5">
@@ -737,244 +740,251 @@ const RentUnitPage = () => {
                       {/* Review & Submit Tab */}
                       <TabsContent value="review" className="mt-0 space-y-6">
                         <div className="space-y-6">
-                          <div className="flex items-center gap-2 rounded-lg bg-primary/5 p-4 text-primary">
+                          {/* <div className="flex items-center gap-2 rounded-lg bg-primary/5 p-4 text-primary">
                             <Clipboard className="h-5 w-5" />
                             <h3 className="text-lg font-medium">
                               Review Your Application
                             </h3>
-                          </div>
+                          </div> */}
 
-                          <div className="flex flex-col gap-6">
-                            {/* Tenant Information Summary */}
-                            <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                              <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
-                                <Users className="h-5 w-5" />
-                                Tenant Information
-                              </h4>
-                              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                                  <p className="text-xs text-muted-foreground">
-                                    Business Name
-                                  </p>
-                                  <p className="font-medium">
-                                    {currentUser?.tenant?.businessName ||
-                                      "Not provided"}
-                                  </p>
-                                </div>
-                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                                  <p className="text-xs text-muted-foreground">
-                                    Business Type
-                                  </p>
-                                  <p className="font-medium">
-                                    {currentUser?.tenant?.businessType ||
-                                      "Not provided"}
-                                  </p>
-                                </div>
-                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                                  <p className="text-xs text-muted-foreground">
-                                    Contact Name
-                                  </p>
-                                  <p className="font-medium">
-                                    {currentUser?.user?.firstName}{" "}
-                                    {currentUser?.user?.lastName}
-                                  </p>
-                                </div>
-                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                                  <p className="text-xs text-muted-foreground">
-                                    Contact Email
-                                  </p>
-                                  <p className="font-medium">
-                                    {currentUser?.user?.email}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Unit Information Summary */}
-                            <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                              <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
-                                <Building2 className="h-5 w-5" />
-                                Unit Information
-                              </h4>
-                              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                                  <p className="text-xs text-muted-foreground">
-                                    Building
-                                  </p>
-                                  <p className="font-medium">{building.name}</p>
-                                </div>
-                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                                  <p className="text-xs text-muted-foreground">
-                                    Unit
-                                  </p>
-                                  <p className="font-medium">
-                                    {unit.unitNumber}
-                                  </p>
-                                </div>
-                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                                  <p className="text-xs text-muted-foreground">
-                                    Size
-                                  </p>
-                                  <p className="font-medium">
-                                    {unit.sizeSqFt} sq ft
-                                  </p>
-                                </div>
-                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                                  <p className="text-xs text-muted-foreground">
-                                    Type
-                                  </p>
-                                  <p className="font-medium">{unit.type}</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Lease Terms Summary */}
-                            <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                              <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
-                                <Calendar className="h-5 w-5" />
-                                Lease Terms
-                              </h4>
-                              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                                  <p className="text-xs text-muted-foreground">
-                                    Move-In Date
-                                  </p>
-                                  <p className="font-medium">
-                                    {form.watch("moveInDate")
-                                      ? new Date(
-                                          form.watch("moveInDate"),
-                                        ).toLocaleDateString()
-                                      : "Not provided"}
-                                  </p>
-                                </div>
-                                <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                                  <p className="text-xs text-muted-foreground">
-                                    Lease Duration
-                                  </p>
-                                  <p className="font-medium">
-                                    {form.watch("leaseDuration") ||
-                                      "Not provided"}{" "}
-                                    months
-                                  </p>
-                                </div>
-                                <div className="col-span-1 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30 sm:col-span-2">
-                                  <p className="text-xs text-muted-foreground">
-                                    Special Requirements
-                                  </p>
-                                  <p className="font-medium">
-                                    {form.watch("specialRequirements") ||
-                                      "None specified"}
-                                  </p>
-                                </div>
-                                <div className="col-span-1 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30 sm:col-span-2">
-                                  <p className="text-xs text-muted-foreground">
-                                    Additional Notes
-                                  </p>
-                                  <p className="font-medium">
-                                    {form.watch("additionalNotes") ||
-                                      "None specified"}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Financial Summary */}
-                            <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                              <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
-                                <CreditCard className="h-5 w-5" />
-                                Financial Summary
-                              </h4>
-                              <div className="overflow-hidden rounded-lg">
-                                <div className="space-y-3 bg-gradient-to-r from-primary to-primary/90 p-5 text-white">
-                                  <div className="flex items-center justify-between">
-                                    <span>Monthly Rent</span>
-                                    <span className="font-medium">
-                                      {formatCurrency(unit.monthlyRent)}
-                                    </span>
-                                  </div>
-
-                                  <Separator className="bg-white/20" />
-                                  <div className="flex items-center justify-between">
-                                    <span>Total Monthly</span>
-                                    <span className="text-lg font-bold">
-                                      {formatCurrency(calculateMonthlyCost())}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between">
-                                    <span>Security Deposit</span>
-                                    <span className="font-medium">
-                                      {formatCurrency(unit.monthlyRent)}
-                                    </span>
-                                  </div>
-                                  <Separator className="bg-white/20" />
-                                  <div className="flex items-center justify-between">
-                                    <span>Due at Signing</span>
-                                    <span className="text-lg font-bold">
-                                      {formatCurrency(
-                                        unit.monthlyRent +
-                                          calculateMonthlyCost(),
-                                      )}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Last components */}
-                            <section className="space-y-6">
-                              {/* Request Tour */}
-                              {form.watch("requestTour") && (
-                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
-                                  <div className="flex items-center gap-2">
-                                    <Star className="h-5 w-5 text-amber-500" />
+                          <ScrollArea>
+                            <div className="flex flex-col gap-6">
+                              {/* Tenant Information Summary */}
+                              <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
+                                  <Users className="h-5 w-5" />
+                                  Tenant Information
+                                </h4>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                  <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                    <p className="text-xs text-muted-foreground">
+                                      Business Name
+                                    </p>
                                     <p className="font-medium">
-                                      In-Person Tour Requested
+                                      {currentUser?.tenant?.businessName ||
+                                        "Not provided"}
                                     </p>
                                   </div>
-                                  <p className="mt-2 text-sm">
-                                    A property manager will contact you within
-                                    1-2 business days to schedule your tour.
-                                  </p>
+                                  <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                    <p className="text-xs text-muted-foreground">
+                                      Business Type
+                                    </p>
+                                    <p className="font-medium">
+                                      {currentUser?.tenant?.businessType ||
+                                        "Not provided"}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                    <p className="text-xs text-muted-foreground">
+                                      Contact Name
+                                    </p>
+                                    <p className="font-medium">
+                                      {currentUser?.user?.firstName}{" "}
+                                      {currentUser?.user?.lastName}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                    <p className="text-xs text-muted-foreground">
+                                      Contact Email
+                                    </p>
+                                    <p className="font-medium">
+                                      {currentUser?.user?.email}
+                                    </p>
+                                  </div>
                                 </div>
-                              )}
-
-                              {/* Terms and Conditions */}
-                              <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                                <div className="flex items-start gap-3">
-                                  <Checkbox
-                                    onCheckedChange={(checked) => {
-                                      form.setValue(
-                                        "agreeToTerms",
-                                        checked ? true : false,
-                                      );
-                                    }}
-                                    checked={form.watch("agreeToTerms")}
-                                    id="agreeToTerms"
-                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                                  />
-
-                                  <Label
-                                    htmlFor="agreeToTerms"
-                                    className="text-sm leading-relaxed"
-                                  >
-                                    I confirm that all information provided is
-                                    accurate and complete. I understand that
-                                    providing false information may result in
-                                    the rejection of my application or
-                                    termination of my lease. I authorize the
-                                    property management to verify all
-                                    information provided and conduct background
-                                    and credit checks as necessary.
-                                  </Label>
-                                </div>
-                                {form.formState.errors.agreeToTerms && (
-                                  <p className="ml-9 mt-2 text-xs text-red-500">
-                                    {form.formState.errors.agreeToTerms.message}
-                                  </p>
-                                )}
                               </div>
-                            </section>
-                          </div>
+
+                              {/* Unit Information Summary */}
+                              <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
+                                  <Building2 className="h-5 w-5" />
+                                  Unit Information
+                                </h4>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                  <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                    <p className="text-xs text-muted-foreground">
+                                      Building
+                                    </p>
+                                    <p className="font-medium">
+                                      {building.name}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                    <p className="text-xs text-muted-foreground">
+                                      Unit
+                                    </p>
+                                    <p className="font-medium">
+                                      {unit.unitNumber}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                    <p className="text-xs text-muted-foreground">
+                                      Size
+                                    </p>
+                                    <p className="font-medium">
+                                      {unit.sizeSqFt} sq ft
+                                    </p>
+                                  </div>
+                                  <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                    <p className="text-xs text-muted-foreground">
+                                      Type
+                                    </p>
+                                    <p className="font-medium">{unit.type}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Lease Terms Summary */}
+                              <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
+                                  <Calendar className="h-5 w-5" />
+                                  Lease Terms
+                                </h4>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                  <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                    <p className="text-xs text-muted-foreground">
+                                      Move-In Date
+                                    </p>
+                                    <p className="font-medium">
+                                      {form.watch("moveInDate")
+                                        ? new Date(
+                                            form.watch("moveInDate"),
+                                          ).toLocaleDateString()
+                                        : "Not provided"}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
+                                    <p className="text-xs text-muted-foreground">
+                                      Lease Duration
+                                    </p>
+                                    <p className="font-medium">
+                                      {form.watch("leaseDuration") ||
+                                        "Not provided"}{" "}
+                                      months
+                                    </p>
+                                  </div>
+                                  <div className="col-span-1 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30 sm:col-span-2">
+                                    <p className="text-xs text-muted-foreground">
+                                      Special Requirements
+                                    </p>
+                                    <p className="font-medium">
+                                      {form.watch("specialRequirements") ||
+                                        "None specified"}
+                                    </p>
+                                  </div>
+                                  <div className="col-span-1 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30 sm:col-span-2">
+                                    <p className="text-xs text-muted-foreground">
+                                      Additional Notes
+                                    </p>
+                                    <p className="font-medium">
+                                      {form.watch("additionalNotes") ||
+                                        "None specified"}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Financial Summary */}
+                              <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <h4 className="mb-4 flex items-center gap-2 font-medium text-primary">
+                                  <CreditCard className="h-5 w-5" />
+                                  Financial Summary
+                                </h4>
+                                <div className="overflow-hidden rounded-lg">
+                                  <div className="space-y-3 bg-gradient-to-r from-primary to-primary/90 p-5 text-white">
+                                    <div className="flex items-center justify-between">
+                                      <span>Monthly Rent</span>
+                                      <span className="font-medium">
+                                        {formatCurrency(unit.monthlyRent)}
+                                      </span>
+                                    </div>
+
+                                    <Separator className="bg-white/20" />
+                                    <div className="flex items-center justify-between">
+                                      <span>Total Monthly</span>
+                                      <span className="text-lg font-bold">
+                                        {formatCurrency(calculateMonthlyCost())}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span>Security Deposit</span>
+                                      <span className="font-medium">
+                                        {formatCurrency(unit.monthlyRent)}
+                                      </span>
+                                    </div>
+                                    <Separator className="bg-white/20" />
+                                    <div className="flex items-center justify-between">
+                                      <span>Due at Signing</span>
+                                      <span className="text-lg font-bold">
+                                        {formatCurrency(
+                                          unit.monthlyRent +
+                                            calculateMonthlyCost(),
+                                        )}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Last components */}
+                              <section className="space-y-6">
+                                {/* Request Tour */}
+                                {form.watch("requestTour") && (
+                                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
+                                    <div className="flex items-center gap-2">
+                                      <Star className="h-5 w-5 text-amber-500" />
+                                      <p className="font-medium">
+                                        In-Person Tour Requested
+                                      </p>
+                                    </div>
+                                    <p className="mt-2 text-sm">
+                                      A property manager will contact you within
+                                      1-2 business days to schedule your tour.
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Terms and Conditions */}
+                                <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                  <div className="flex items-start gap-3">
+                                    <Checkbox
+                                      onCheckedChange={(checked) => {
+                                        form.setValue(
+                                          "agreeToTerms",
+                                          checked ? true : false,
+                                        );
+                                      }}
+                                      checked={form.watch("agreeToTerms")}
+                                      id="agreeToTerms"
+                                      className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                    />
+
+                                    <Label
+                                      htmlFor="agreeToTerms"
+                                      className="text-sm leading-relaxed"
+                                    >
+                                      I confirm that all information provided is
+                                      accurate and complete. I understand that
+                                      providing false information may result in
+                                      the rejection of my application or
+                                      termination of my lease. I authorize the
+                                      property management to verify all
+                                      information provided and conduct
+                                      background and credit checks as necessary.
+                                    </Label>
+                                  </div>
+                                  {form.formState.errors.agreeToTerms && (
+                                    <p className="ml-9 mt-2 text-xs text-red-500">
+                                      {
+                                        form.formState.errors.agreeToTerms
+                                          .message
+                                      }
+                                    </p>
+                                  )}
+                                </div>
+                              </section>
+                            </div>
+                          </ScrollArea>
                         </div>
                       </TabsContent>
                     </CardContent>

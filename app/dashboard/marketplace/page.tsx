@@ -11,22 +11,30 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Search,
   Star,
   Filter,
   ShoppingCart,
-  Heart,
-  Share2,
-  Info,
   Clock,
   Calendar,
   CheckCircle,
-  ChevronDown,
 } from "lucide-react";
 import Image from "next/image";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import PageWrapper from "@/components/custom/page-wrapper";
+import SearchInput from "@/components/custom/search-input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -35,10 +43,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import PageWrapper from "@/components/custom/page-wrapper";
-import SearchInput from "@/components/custom/search-input";
+import ASSETS from "@/app/auth/_assets";
+import { IMAGES } from "@/constants/assets";
 
 export default function MarketplacePage() {
   const [activeTab, setActiveTab] = useState("all");
@@ -82,18 +88,16 @@ export default function MarketplacePage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="relative space-y-8 pb-10"
+        className="relative space-y-6 pb-10"
       >
-        {/* Background elements */}
-
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl font-bold tracking-tight">Marketplace</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Marketplace</h2>
           <p className="text-muted-foreground">
-            Discover services and products for your commercial space
+            Discover services for your commercial space
           </p>
         </motion.div>
 
@@ -113,7 +117,7 @@ export default function MarketplacePage() {
                 value="all"
                 className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
               >
-                All Services
+                All
               </TabsTrigger>
               <TabsTrigger
                 value="cleaning"
@@ -137,7 +141,7 @@ export default function MarketplacePage() {
                 value="technology"
                 className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
               >
-                Technology
+                Tech
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -147,17 +151,15 @@ export default function MarketplacePage() {
               searchQuery={searchQuery}
               onSearchQuery={setSearchQuery}
             />
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-full border-neutral-200/50 bg-background/60 backdrop-blur-sm hover:bg-primary/10"
-                onClick={() => setIsFilterOpen(true)}
-              >
-                <Filter className="h-4 w-4" />
-                <span className="sr-only">Filter</span>
-              </Button>
-            </motion.div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full border-neutral-200/50 bg-background/60 backdrop-blur-sm hover:bg-primary/10"
+              onClick={() => setIsFilterOpen(true)}
+            >
+              <Filter className="h-4 w-4" />
+              <span className="sr-only">Filter</span>
+            </Button>
           </div>
         </motion.div>
 
@@ -169,7 +171,7 @@ export default function MarketplacePage() {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredServices.length > 0 ? (
                 filteredServices.map((service, index) => (
                   <ServiceCard
@@ -181,15 +183,14 @@ export default function MarketplacePage() {
                   />
                 ))
               ) : (
-                <div className="col-span-full flex flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-background/50 p-12 text-center backdrop-blur-sm">
-                  <Search className="mb-4 h-12 w-12 text-muted-foreground/50" />
+                <div className="col-span-full flex flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-background/50 p-8 text-center backdrop-blur-sm">
+                  <Search className="mb-4 h-10 w-10 text-muted-foreground/50" />
                   <h3 className="text-lg font-medium">No services found</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    No services match your current filters. Try adjusting your
-                    search or category selection.
+                    Try adjusting your search or category selection.
                   </p>
                   <Button
-                    className="mt-6 rounded-full"
+                    className="mt-4"
                     onClick={() => {
                       setActiveTab("all");
                       setSearchQuery("");
@@ -205,7 +206,7 @@ export default function MarketplacePage() {
 
         {/* Filter Dialog */}
         <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-          <DialogContent className="border-none bg-background/80 backdrop-blur-xl sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[400px]">
             <DialogHeader>
               <DialogTitle>Filter Services</DialogTitle>
               <DialogDescription>
@@ -216,17 +217,9 @@ export default function MarketplacePage() {
               <div className="grid gap-2">
                 <Label>Price Range</Label>
                 <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Min"
-                    className="bg-background/60"
-                  />
+                  <Input type="number" placeholder="Min" />
                   <span>to</span>
-                  <Input
-                    type="number"
-                    placeholder="Max"
-                    className="bg-background/60"
-                  />
+                  <Input type="number" placeholder="Max" />
                 </div>
               </div>
               <div className="grid gap-2">
@@ -235,74 +228,41 @@ export default function MarketplacePage() {
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
-                      className="rounded-full bg-background/60 p-2 hover:bg-primary/10"
+                      className="rounded-full p-1 hover:bg-primary/10"
                     >
                       <Star
-                        className={`h-5 w-5 ${star <= 4 ? "fill-primary text-primary" : "text-muted-foreground"}`}
+                        className={`h-4 w-4 ${star <= 4 ? "fill-primary text-primary" : "text-muted-foreground"}`}
                       />
                     </button>
                   ))}
                   <span className="ml-2 text-sm">& Up</span>
                 </div>
               </div>
-              <div className="grid gap-2">
-                <Label>Features</Label>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    "Eco-Friendly",
-                    "24/7 Support",
-                    "Insured",
-                    "Certified",
-                    "Emergency Service",
-                  ].map((feature) => (
-                    <div key={feature} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={feature}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                      <Label htmlFor={feature} className="text-sm">
-                        {feature}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label>Availability</Label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                  <option value="any">Any Time</option>
-                  <option value="today">Available Today</option>
-                  <option value="week">Available This Week</option>
-                  <option value="weekend">Available on Weekends</option>
-                </select>
-              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsFilterOpen(false)}>
                 Reset
               </Button>
-              <Button type="submit" onClick={() => setIsFilterOpen(false)}>
-                Apply Filters
-              </Button>
+              <Button onClick={() => setIsFilterOpen(false)}>Apply</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Service Details Dialog */}
+        {/* Service Details Drawer */}
         {selectedService && (
-          <Dialog
+          <Sheet
             open={isServiceDetailsOpen}
             onOpenChange={setIsServiceDetailsOpen}
           >
-            <DialogContent className="border-none bg-background/80 backdrop-blur-xl sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>{selectedService.title}</DialogTitle>
-                <DialogDescription>
+            <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+              <SheetHeader className="pb-4">
+                <SheetTitle>{selectedService.title}</SheetTitle>
+                <SheetDescription>
                   {selectedService.category} Service
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="space-y-4 py-4">
                 <div className="relative aspect-video w-full overflow-hidden rounded-lg">
                   <Image
                     src={selectedService.image || "/placeholder.svg"}
@@ -310,7 +270,7 @@ export default function MarketplacePage() {
                     className="h-full w-full object-cover"
                     fill
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-primary/90 text-white">
                         {selectedService.price}
@@ -320,29 +280,29 @@ export default function MarketplacePage() {
                         <span className="font-medium">
                           {selectedService.rating}
                         </span>
-                        <span className="ml-1">
-                          ({selectedService.reviews} reviews)
+                        <span className="ml-1 text-xs">
+                          ({selectedService.reviews})
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <h3 className="font-semibold">Description</h3>
-                  <p className="text-sm text-muted-foreground">
+                <div>
+                  <h3 className="text-sm font-medium">Description</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {selectedService.description}
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <h3 className="font-semibold">Features</h3>
-                  <div className="flex flex-wrap gap-2">
+                <div>
+                  <h3 className="text-sm font-medium">Features</h3>
+                  <div className="mt-1 flex flex-wrap gap-1">
                     {selectedService.badges.map((badge) => (
                       <Badge
                         key={badge}
                         variant="secondary"
-                        className="bg-primary/10 text-primary"
+                        className="bg-primary/10 text-xs text-primary"
                       >
                         <CheckCircle className="mr-1 h-3 w-3" />
                         {badge}
@@ -351,100 +311,45 @@ export default function MarketplacePage() {
                   </div>
                 </div>
 
-                <div className="rounded-lg bg-muted/20 p-4">
-                  <h3 className="mb-2 font-semibold">Service Details</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="rounded-lg bg-muted/20 p-3">
+                  <h3 className="text-sm font-medium">Service Details</h3>
+                  <div className="mt-2 grid grid-cols-1 gap-2 text-xs">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>
                         Response time: <strong>Within 24 hours</strong>
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>
                         Availability: <strong>Mon-Fri, 8am-6pm</strong>
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        Service area: <strong>25 mile radius</strong>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        Satisfaction guarantee: <strong>100%</strong>
-                      </span>
-                    </div>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-semibold">Reviews</h3>
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((review) => (
-                      <div
-                        key={review}
-                        className="rounded-lg bg-background/60 p-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
-                              <span className="text-xs font-medium text-primary">
-                                JD
-                              </span>
-                            </div>
-                            <span className="font-medium">John Doe</span>
-                          </div>
-                          <div className="flex items-center">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`h-3 w-3 ${star <= 5 ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          Great service! The team was professional, on time, and
-                          did an excellent job. Would definitely recommend.
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <Button variant="outline" className="w-full text-sm">
-                    View All {selectedService.reviews} Reviews
-                    <ChevronDown className="ml-1 h-3 w-3" />
-                  </Button>
                 </div>
               </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsServiceDetailsOpen(false)}
-                >
-                  Close
-                </Button>
+
+              <SheetFooter className="pt-4">
                 <Button
                   onClick={() => {
                     setIsServiceDetailsOpen(false);
                     setIsBookingOpen(true);
                   }}
+                  className="w-full"
                 >
                   <ShoppingCart className="mr-2 h-4 w-4" />
                   Book Service
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
         )}
 
         {/* Booking Dialog */}
         {selectedService && (
           <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
-            <DialogContent className="border-none bg-background/80 backdrop-blur-xl sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[450px]">
               <DialogHeader>
                 <DialogTitle>Book Service</DialogTitle>
                 <DialogDescription>
@@ -453,7 +358,7 @@ export default function MarketplacePage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="flex items-center gap-3 rounded-lg bg-muted/20 p-3">
-                  <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md">
+                  <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md">
                     <Image
                       src={selectedService.image || "/placeholder.svg"}
                       alt={selectedService.title}
@@ -466,7 +371,7 @@ export default function MarketplacePage() {
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Badge
                         variant="outline"
-                        className="mr-2 bg-primary/10 text-primary"
+                        className="mr-2 bg-primary/10 text-xs text-primary"
                       >
                         {selectedService.category}
                       </Badge>
@@ -477,18 +382,14 @@ export default function MarketplacePage() {
 
                 <div className="grid gap-2">
                   <Label htmlFor="service-date">Service Date</Label>
-                  <Input
-                    id="service-date"
-                    type="date"
-                    className="bg-background/60"
-                  />
+                  <Input id="service-date" type="date" />
                 </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="service-time">Preferred Time</Label>
                   <select
                     id="service-time"
-                    className="flex h-10 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="">Select a time</option>
                     <option value="morning">Morning (8am - 12pm)</option>
@@ -498,47 +399,12 @@ export default function MarketplacePage() {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="service-location">Service Location</Label>
-                  <select
-                    id="service-location"
-                    className="flex h-10 w-full rounded-md border border-input bg-background/60 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Select a property</option>
-                    <option value="tech-tower">Tech Tower, Office #201</option>
-                    <option value="eastside-plaza">
-                      Eastside Plaza, Suite #405
-                    </option>
-                    <option value="west-point">West Point, Store #102</option>
-                  </select>
-                </div>
-
-                <div className="grid gap-2">
                   <Label htmlFor="service-notes">Special Instructions</Label>
                   <Textarea
                     id="service-notes"
                     placeholder="Any specific requirements or access instructions..."
-                    className="min-h-[100px] bg-background/60"
+                    className="min-h-[80px]"
                   />
-                </div>
-
-                <div className="rounded-lg bg-primary/10 p-3">
-                  <h4 className="mb-2 font-medium text-primary">
-                    Booking Summary
-                  </h4>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span>Service Fee</span>
-                      <span>{selectedService.price}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Estimated Duration</span>
-                      <span>2 hours</span>
-                    </div>
-                    <div className="mt-2 flex justify-between border-t border-primary/20 pt-2 font-medium">
-                      <span>Total</span>
-                      <span>{selectedService.price}</span>
-                    </div>
-                  </div>
                 </div>
               </div>
               <DialogFooter>
@@ -567,6 +433,7 @@ interface ServiceProps {
   price: string;
   description: string;
   badges: string[];
+  isPromotion?: boolean;
 }
 
 function ServiceCard({
@@ -576,8 +443,8 @@ function ServiceCard({
   rating,
   reviews,
   price,
-  description,
   badges,
+  isPromotion = false,
   index = 0,
   onClick,
   onBook,
@@ -588,72 +455,67 @@ function ServiceCard({
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
+  console.log({ image });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1 }}
-      whileHover={{ y: -5 }}
+      transition={{ duration: 0.4, delay: index * 0.05 }}
+      whileHover={{ y: -3 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
     >
       <Card
-        className="overflow-hidden border border-neutral-200/50 bg-background/70 backdrop-blur-md transition-all duration-300 hover:shadow-lg"
+        className={`overflow-hidden border ${
+          isPromotion
+            ? "border-primary/20 bg-primary/5 shadow-sm"
+            : "border-neutral-200/50 bg-background/70"
+        } backdrop-blur-md transition-all duration-300 hover:shadow-md`}
         onClick={onClick}
       >
         <div className="relative aspect-video w-full overflow-hidden">
           <Image
-            src={image || "/placeholder.svg"}
+            src={IMAGES.SERVICE_PLACEHOLDER}
             alt={title}
             className="h-full w-full object-cover transition-transform duration-500"
             style={{ transform: isHovered ? "scale(1.05)" : "scale(1)" }}
             fill
           />
-          <div
-            className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-300"
-            style={{ opacity: isHovered ? 1 : 0 }}
-          />
-          <div className="absolute right-2 top-2 flex gap-1">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="rounded-full bg-background/80 p-1.5 backdrop-blur-sm hover:bg-background/90"
-            >
-              <Heart className="h-4 w-4 text-muted-foreground hover:text-red-500" />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="rounded-full bg-background/80 p-1.5 backdrop-blur-sm hover:bg-background/90"
-            >
-              <Share2 className="h-4 w-4 text-muted-foreground hover:text-primary" />
-            </motion.button>
-          </div>
+          {isPromotion && (
+            <div className="absolute left-0 top-2 bg-primary px-2 py-0.5 text-xs font-medium text-white shadow-sm">
+              FEATURED
+            </div>
+          )}
           <div className="absolute bottom-2 left-2">
-            <Badge className="bg-primary/90 text-white">{price}</Badge>
+            <Badge
+              className={`${isPromotion ? "bg-primary" : "bg-primary/90"} text-white`}
+            >
+              {price}
+            </Badge>
           </div>
         </div>
-        <CardHeader className="p-4">
+        <CardHeader className="p-3">
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="text-lg">{title}</CardTitle>
-              <Badge variant="outline" className="mt-1 bg-background/60">
+              <CardTitle className="text-base">{title}</CardTitle>
+              <Badge
+                variant="outline"
+                className="mt-1 bg-background/60 text-xs"
+              >
                 {category}
               </Badge>
             </div>
-            <div className="flex items-center text-sm">
-              <Star className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <div className="flex items-center text-xs">
+              <Star className="mr-1 h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
               <span className="font-medium">{rating}</span>
               <span className="ml-1 text-muted-foreground">({reviews})</span>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <p className="line-clamp-2 text-sm text-muted-foreground">
-            {description}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-1">
-            {badges.slice(0, 3).map((badge) => (
+        <CardContent className="p-3 pt-0">
+          <div className="flex flex-wrap gap-1">
+            {badges.slice(0, 2).map((badge) => (
               <Badge
                 key={badge}
                 variant="secondary"
@@ -662,28 +524,28 @@ function ServiceCard({
                 {badge}
               </Badge>
             ))}
-            {badges.length > 3 && (
+            {badges.length > 2 && (
               <Badge variant="secondary" className="text-xs">
-                +{badges.length - 3} more
+                +{badges.length - 2}
               </Badge>
             )}
           </div>
         </CardContent>
-        <CardFooter className="flex items-center justify-between border-t bg-muted/10 p-4">
-          <div className="font-medium">{price}</div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              size="sm"
-              className="rounded-full bg-primary shadow-sm transition-all hover:bg-primary/90"
-              onClick={(e) => {
-                e.stopPropagation();
-                onBook?.();
-              }}
-            >
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Book Service
-            </Button>
-          </motion.div>
+        <CardFooter className="flex items-center justify-between border-t bg-muted/10 p-3">
+          <div className="text-sm font-medium">{price}</div>
+          <Button
+            size="sm"
+            className={`rounded-full ${
+              isPromotion ? "bg-primary shadow-sm" : "bg-primary/90"
+            } transition-all hover:bg-primary/90`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onBook?.();
+            }}
+          >
+            <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+            Book
+          </Button>
         </CardFooter>
       </Card>
     </motion.div>
@@ -702,6 +564,7 @@ const services: ServiceProps[] = [
     description:
       "Professional cleaning service tailored for commercial spaces. Regular and deep cleaning options available.",
     badges: ["Eco-Friendly", "Insured", "Background Checked"],
+    isPromotion: true,
   },
   {
     title: "IT Support & Management",
@@ -724,6 +587,7 @@ const services: ServiceProps[] = [
     description:
       "Licensed security personnel for building security, event management, and access control.",
     badges: ["Armed/Unarmed", "Uniformed", "Licensed"],
+    isPromotion: true,
   },
   {
     title: "HVAC Maintenance & Repair",
@@ -753,7 +617,7 @@ const services: ServiceProps[] = [
     image: "/placeholder.svg?height=200&width=300",
     rating: 4.7,
     reviews: 103,
-    price: "Custom Quote",
+    price: "Custom",
     description:
       "Professional interior and exterior window cleaning for commercial buildings of all heights.",
     badges: ["Insured", "High-Rise Certified"],
@@ -764,10 +628,11 @@ const services: ServiceProps[] = [
     image: "/placeholder.svg?height=200&width=300",
     rating: 4.8,
     reviews: 76,
-    price: "Custom Quote",
+    price: "Custom",
     description:
       "Smart office technology integration including access control, temperature management, and security systems.",
     badges: ["IoT Specialists", "Custom Design"],
+    isPromotion: true,
   },
   {
     title: "Commercial Pest Control",
@@ -779,16 +644,5 @@ const services: ServiceProps[] = [
     description:
       "Preventative and responsive pest control services specifically for commercial spaces.",
     badges: ["Eco-Friendly Options", "Regular Inspection"],
-  },
-  {
-    title: "Security Camera Installation",
-    category: "Security",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.9,
-    reviews: 93,
-    price: "Custom Quote",
-    description:
-      "Design and installation of state-of-the-art security camera and monitoring systems.",
-    badges: ["24/7 Monitoring Available", "Cloud Storage"],
   },
 ];

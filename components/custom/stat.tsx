@@ -44,9 +44,9 @@ const Stat = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: animationDelay }}
       className={cn(
-        "rounded-lg bg-background/60 p-4 shadow-sm backdrop-blur-sm",
+        "rounded-lg border bg-primary/5 p-4 shadow-sm backdrop-blur-sm",
         layout === "horizontal" && "flex items-center justify-between",
-        iconBg,
+        // iconBg,
         className,
       )}
     >

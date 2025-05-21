@@ -19,6 +19,7 @@ import {
   Calendar,
   DollarSign,
   ArrowUpDown,
+  XIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -48,11 +49,29 @@ import { CreateLeaseTemplateDrawer } from "./_components/create-lease-template-d
 import { CreateLeaseDrawer } from "./_components/create-lease-drawer";
 import PageHeader from "@/components/custom/page-header";
 import Stat from "@/components/custom/stat";
-import { Lease, LEASE_STATUS, LeaseTemplate } from "@/types";
-import { useGetLeaseTemplatesQuery } from "@/app/quries/useLeases";
+import { LEASE_STATUS } from "@/types";
+import {
+  useCreateLeaseMutation,
+  useDeleteLeaseTemplateMutation,
+  useGetAllLeaseQuery,
+  useGetLeaseTemplatesQuery,
+  useLeaseTemplatePutMutation,
+} from "@/app/quries/useLeases";
 import LogJSON from "@/components/custom/log-json";
-import { formatDate } from "../applications/_utils";
+import { formatDate, formatDateTime } from "../applications/_utils";
 import { useGetApplicationByIdQuery } from "@/app/quries/useApplications";
+import { warningToast } from "@/components/custom/toasts";
+import LeasePDFGenerator from "@/components/custom/lease-pdf-generator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CreateLease, LeaseTemplate } from "./_schema";
+
+import { generateLeaseDataValues } from "@/utils/lease-data-mapper";
+import { getFullNameFromObj, getLastDateAfterMonth } from "@/utils";
 
 export default function LeasesPage() {
   const router = useRouter();
@@ -60,46 +79,39 @@ export default function LeasesPage() {
   const [activeTab, setActiveTab] = useState<"leases" | "templates">("leases");
   const [createTemplateDialogOpen, setCreateTemplateDialogOpen] =
     useState(false);
+  const [isLeasePreviewOpen, setIsLeasePreviewOpen] = useState(false);
+  // const [leaseInfo, setLeaseInfo] = useState<CreateLease | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<
+    (LeaseTemplate & { id: string }) | null
+  >(null);
   const [createLeaseDialogOpen, setCreateLeaseDialogOpen] = useState(false);
 
   const getLeaseTemplatesQuery = useGetLeaseTemplatesQuery();
+
+  const deleteLeaseTemplateMutation = useDeleteLeaseTemplateMutation();
+  const leaseTemplatePutMutation = useLeaseTemplatePutMutation();
 
   const searchParam = useSearchParams();
   const appId = searchParam.get("appId") as string;
 
   const getApplicationByIdQuery = useGetApplicationByIdQuery(appId);
+  const application = getApplicationByIdQuery.data;
 
   // Sample data for templates
   const templates = getLeaseTemplatesQuery.data || [];
-
-  // Sample data for leases
-  const leases: Lease[] = [
-    {
-      id: "lease1",
-      templateId: "template1",
-      templateName: "Standard Office Lease",
-      unitId: "unit1",
-      unitNumber: "101",
-      tenantId: "tenant1",
-      tenantName: "Acme Corporation",
-      status: LEASE_STATUS.ACTIVE,
-      startDate: new Date("2023-01-01"),
-      endDate: new Date("2023-12-31"),
-      monthlyRent: 2500,
-      securityDeposit: 5000,
-      createdAt: new Date("2022-12-15"),
-      updatedAt: new Date("2022-12-15"),
-      sentAt: new Date("2022-12-16"),
-      signedAt: new Date("2022-12-20"),
-    },
-  ];
+  const [pdfBlob, setPDFBlob] = useState<Blob | null>(null);
+  const [isPDFBlobSet, setIsPDFBlobSet] = useState(false);
+  const createLeaseMutation = useCreateLeaseMutation();
+  const getAllLeaseQuery = useGetAllLeaseQuery();
+  const leases = getAllLeaseQuery.data || [];
 
   // Filter leases based on search query
   const filteredLeases = leases.filter(
     (lease) =>
-      lease.tenantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lease.unitNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lease.templateName.toLowerCase().includes(searchQuery.toLowerCase()),
+      lease.tenant.firstName
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      lease.unit.unitNumber?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Filter templates based on search query
@@ -116,9 +128,19 @@ export default function LeasesPage() {
   };
 
   // Handle creating a new lease
-  const handleCreateLease = (leaseData: Partial<Lease>) => {
-    console.log("Creating new lease:", leaseData);
-    // Implement API call to create lease
+  const handleCreateLease = (leaseData: Partial<CreateLease>) => {
+    const leaseTemplate = templates.find(
+      (temp) => temp.id === leaseData.templateId,
+    );
+
+    if (!leaseTemplate) {
+      warningToast("Lease template not found.");
+      return;
+    }
+
+    setSelectedTemplate(leaseTemplate);
+    setCreateLeaseDialogOpen(false);
+    setIsLeasePreviewOpen(true);
   };
 
   // Handle sending a lease to tenant
@@ -220,9 +242,10 @@ export default function LeasesPage() {
     const expired = leases.filter(
       (lease) => lease.status === LEASE_STATUS.EXPIRED,
     ).length;
+
     const totalRent = leases
       .filter((lease) => lease.status === LEASE_STATUS.ACTIVE)
-      .reduce((sum, lease) => sum + lease.monthlyRent, 0);
+      .reduce((sum, lease) => sum + lease.unit.monthlyRent, 0);
 
     return { active, pending, expired, totalRent };
   };
@@ -233,13 +256,38 @@ export default function LeasesPage() {
     if (appId && getApplicationByIdQuery.isSuccess) {
       // open drawer for creating lease info
       setCreateLeaseDialogOpen(true);
-
     }
   }, [appId, getApplicationByIdQuery.isSuccess]);
 
+  useEffect(() => {
+    if (isPDFBlobSet && pdfBlob) {
+      // TODO: CALL THE API ENDPOINT
+      if (!application) {
+        warningToast("Application info not found.");
+        return;
+      }
+      if (!selectedTemplate) {
+        warningToast("Template info not found.");
+        return;
+      }
+
+      console.log({ pdfBlob });
+
+      createLeaseMutation.mutate({
+        applicationId: application?.id,
+        contractFile: pdfBlob,
+        status: LEASE_STATUS.ACTIVE,
+        tenantId: application?.submittedBy.id,
+        unitId: application?.unit.id,
+        templateId: selectedTemplate.id,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPDFBlobSet]);
+
   return (
     <PageWrapper className="py-0">
-      <LogJSON data={{ templates, app: getApplicationByIdQuery.data }} />
+      <LogJSON data={{ ac: getAllLeaseQuery.data }} />
       <PageHeader
         title="Lease Management"
         description="Create, manage, and track lease agreements for your properties."
@@ -266,10 +314,33 @@ export default function LeasesPage() {
         }
       />
 
+      {/* Preview Dialog */}
+      <Dialog open={isLeasePreviewOpen} onOpenChange={setIsLeasePreviewOpen}>
+        <DialogHeader>
+          <DialogTitle />
+        </DialogHeader>
+        <DialogContent className="w-full max-w-xl p-0">
+          {isLeasePreviewOpen && (
+            <LeasePDFGenerator
+              showPreview={true}
+              generateOnMount={true}
+              leaseTitle={selectedTemplate?.name || "Lease Agreement"}
+              leaseDescription={selectedTemplate?.description}
+              sections={selectedTemplate?.sections || []}
+              dataValues={generateLeaseDataValues(application)}
+              onPdfGenerated={(blob) => {
+                setPDFBlob(blob);
+                setIsPDFBlobSet(true);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Stat
           title="Active Leases"
-          value={String(10)}
+          value={stats.active || 0}
           icon={CheckCircle2}
           moreInfo="Currently active lease agreements"
         />
@@ -292,7 +363,7 @@ export default function LeasesPage() {
 
         <Stat
           title="Monthly Revenue"
-          value={`$${stats.totalRent.toLocaleString()}`}
+          value={`ETB${stats.totalRent.toFixed(2)}`}
           icon={DollarSign}
           iconColor="text-primary"
           moreInfo="From active lease agreements"
@@ -359,7 +430,7 @@ export default function LeasesPage() {
 
             <TabsContent value="leases" className="mt-6 space-y-4">
               <Card className="border shadow-sm">
-                <ScrollArea className="h-[calc(100vh-360px)]">
+                <ScrollArea className="">
                   <Table>
                     <TableHeader className="bg-muted/50">
                       <TableRow className="hover:bg-transparent">
@@ -422,29 +493,37 @@ export default function LeasesPage() {
                             }
                           >
                             <TableCell className="font-medium">
-                              {lease.tenantName}
+                              {getFullNameFromObj(lease.tenant.userId || {})}
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="font-normal">
-                                {lease.unitNumber}
+                                {lease.unit.unitNumber}
                               </Badge>
                             </TableCell>
                             <TableCell className="max-w-[200px] truncate">
-                              {lease.templateName}
+                              {lease.leaseTemplate?.name || "Not Defined"}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1 text-sm">
                                 <span>
-                                  {lease.startDate.toLocaleDateString()}
+                                  {formatDateTime(
+                                    lease?.application?.leaseDetails.requestedStartDate?.toString(),
+                                  )}
                                 </span>
                                 <span className="text-muted-foreground">→</span>
                                 <span>
-                                  {lease.endDate.toLocaleDateString()}
+                                  {formatDateTime(
+                                    getLastDateAfterMonth(
+                                      lease?.application?.leaseDetails.requestedStartDate.toString(),
+                                      lease?.application.leaseDetails
+                                        .requestedDuration,
+                                    ).toString(),
+                                  )}
                                 </span>
                               </div>
                             </TableCell>
                             <TableCell className="font-medium">
-                              ${lease.monthlyRent.toLocaleString()}
+                              ${lease.unit.monthlyRent.toLocaleString()}
                             </TableCell>
                             <TableCell>
                               {getStatusBadge(lease.status)}
@@ -547,7 +626,7 @@ export default function LeasesPage() {
 
             <TabsContent value="templates" className="mt-6 space-y-4">
               <Card className="border shadow-sm">
-                <ScrollArea className="h-[calc(100vh-360px)]">
+                <ScrollArea className="">
                   <Table>
                     <TableHeader className="bg-muted/50">
                       <TableRow className="hover:bg-transparent">
@@ -660,20 +739,30 @@ export default function LeasesPage() {
                                     Edit Template
                                   </DropdownMenuItem>
                                   {!template.isDefault && (
-                                    <DropdownMenuItem className="cursor-pointer">
+                                    <DropdownMenuItem
+                                      className="cursor-pointer"
+                                      onClick={() => {
+                                        leaseTemplatePutMutation.mutate({
+                                          ...template,
+                                          isDefault: true,
+                                        });
+                                      }}
+                                    >
                                       <CheckCircle2 className="mr-2 h-4 w-4" />
                                       Set as Default
                                     </DropdownMenuItem>
                                   )}
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
-                                    onClick={() =>
-                                      setCreateLeaseDialogOpen(true)
-                                    }
-                                    className="cursor-pointer"
+                                    onClick={() => {
+                                      deleteLeaseTemplateMutation.mutate(
+                                        template.id,
+                                      );
+                                    }}
+                                    className="cursor-pointer text-red-500"
                                   >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Create Lease
+                                    <XIcon className="mr-2 h-4 w-4" />
+                                    Delete Template
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>

@@ -122,7 +122,11 @@ const Page = () => {
               variant="ghost"
               size="icon"
               className="ml-auto"
-              onClick={() => setIsEditBuildingOpen(true)}
+              onClick={() => {
+                router.push(
+                  `/dashboard/buildings/new?buildingId=${buildingID}`,
+                );
+              }}
             >
               <Edit className="h-4 w-4" />
               <span className="sr-only">Edit</span>
