@@ -59,12 +59,14 @@ export default function Home() {
           </nav>
           <div className="flex items-center gap-4">
             <Link
-              href="/login"
+              href="/auth/sign-in"
               className="hidden text-sm font-medium transition-colors hover:text-primary md:block"
             >
               Log in
             </Link>
-            <Button>Get Started</Button>
+            <Link href="/auth/sign-up">
+              <Button>Get Started</Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -364,7 +366,7 @@ export default function Home() {
         </section>
 
         {/* Pricing Section */}
-        <section
+        {/* <section
           id="pricing"
           className="w-full bg-gray-50 py-12 md:py-24 lg:py-32"
         >
@@ -480,7 +482,7 @@ export default function Home() {
               ))}
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* CTA Section */}
         <section
