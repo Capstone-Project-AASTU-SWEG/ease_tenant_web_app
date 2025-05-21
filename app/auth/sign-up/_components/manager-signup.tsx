@@ -110,7 +110,7 @@ export default function ManagerSignup() {
       form.reset();
 
       // Assuming you want to redirect after successful signup
-      router.push("/dashboard/manager");
+      router.push("/dashboard");
     }
   }, [form, router, managerSignUpMutation.isSuccess]);
 
