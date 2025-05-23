@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import {  useState } from "react";
 import {
   useGetAllMaintenanceWorkers,
   useGetAllManagers,
@@ -65,9 +65,12 @@ import {
   UserPen,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { User, USER_TYPE } from "@/types";
+import { User, USER_TYPE, UserDetail } from "@/types";
 import SearchInput from "@/components/custom/search-input";
 import Stat from "@/components/custom/stat";
+// import LogJSON from "@/components/custom/log-json";
+import { useAuth } from "@/app/quries/useAuth";
+import { cn } from "@/lib/utils";
 // import LogJSON from "@/components/custom/log-json";
 
 // ===== Main Page Component =====
@@ -79,6 +82,33 @@ export default function Page() {
 
   const maintenanceWorkers = useGetAllMaintenanceWorkers();
 
+  const { isOwner, isManager } = useAuth();
+
+  // useEffect(() => {
+  //   if (isFetched && isManager && userData?.building?.id) {
+  //     // tenants.data = tenants.data?.filter(
+  //     //   (t) => t?.building.id === userData?.building?.id,
+  //     // );
+  //     console.log({tenants: tenants.data})
+  //   }
+  // }, [isFetched, isManager, tenants, userData?.building?.id]);
+
+  // useEffect(() => {
+  //   if (isFetched && isManager && userData?.building?.id) {
+  //     serviceProviders.data = serviceProviders.data?.filter(
+  //       (t) => t?.building.id === userData?.building?.id,
+  //     );
+  //   }
+  // }, [isFetched, isManager, serviceProviders, userData?.building?.id]);
+
+  // useEffect(() => {
+  //   if (isFetched && isManager && userData?.building?.id) {
+  //     maintenanceWorkers.data = maintenanceWorkers.data?.filter(
+  //       (t) => t?.building.id === userData.building?.id,
+  //     );
+  //   }
+  // }, [isFetched, isManager, maintenanceWorkers, userData?.building?.id]);
+
   return (
     <PageWrapper className="py-0">
       <PageHeader
@@ -86,38 +116,43 @@ export default function Page() {
         description="Manage all clients of your commercial building"
       />
 
-      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <section
+        className={cn(
+          "mb-8 mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4",
+          {
+            "lg:grid-cols-3": isManager,
+          },
+        )}
+      >
         <Stat
           icon={User2Icon}
-          iconColor="text-green-600"
-          iconBg="bg-green-100"
           title="Total Tenants"
           value={tenants.data?.length.toString() || 0}
           moreInfo={`${10} Suspended tenants`}
+          layout="horizontal"
         />
-        <Stat
-          icon={UserPen}
-          iconColor="text-blue-600"
-          iconBg="bg-blue-100"
-          title="Total Managers"
-          value={managers.data?.length.toString() || 0}
-          moreInfo={`${10} Suspended managers`}
-        />
+        {isOwner && (
+          <Stat
+            icon={UserPen}
+            title="Total Managers"
+            value={managers.data?.length.toString() || 0}
+            moreInfo={`${10} Suspended managers`}
+            layout="horizontal"
+          />
+        )}
         <Stat
           icon={UserCog2Icon}
-          iconColor="text-yellow-600"
-          iconBg="bg-yellow-100"
           title="Total Service Providers"
           value={serviceProviders.data?.length.toString() || 0}
           moreInfo={`${10} Suspended service providers`}
+          layout="horizontal"
         />
         <Stat
           icon={User2Icon}
-          iconColor="text-purple-600"
-          iconBg="bg-purple-100"
           title="Total Maintenance Workers"
           value={maintenanceWorkers.data?.length.toString() || 0}
           moreInfo={`${10} Suspended maintenance workers`}
+          layout="horizontal"
         />
       </section>
 
@@ -134,7 +169,7 @@ export default function Page() {
       <Tabs defaultValue="tenants" className="w-full">
         <TabsList className="mb-8 flex justify-start gap-3">
           <TabsTrigger value="tenants">Tenants</TabsTrigger>
-          <TabsTrigger value="managers">Managers</TabsTrigger>
+          {isOwner && <TabsTrigger value="managers">Managers</TabsTrigger>}
           <TabsTrigger value="service-providers">Service Providers</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
         </TabsList>
@@ -645,7 +680,7 @@ function ClientCard({
 // ===== Client List Component =====
 interface ClientListProps {
   isPending?: boolean;
-  clients: User[];
+  clients: UserDetail[];
   clientType: USER_TYPE;
   searchQuery: string;
   emptyMessage?: string;

@@ -33,8 +33,9 @@ import { USER_TYPE } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useVerifyUserQuery } from "@/app/quries/useAuth";
-import LogJSON from "@/components/custom/log-json";
+import { useAuth } from "@/app/quries/useAuth";
+import LogJSON from "@/components//custom/log-json";
+import { getFullNameFromObj } from "@/utils";
 
 interface NavigationItem {
   href: string;
@@ -54,10 +55,27 @@ interface MobileNavigationProps {
   router: ReturnType<typeof useRouter>;
 }
 
-const adminNavigationItems: NavigationItem[] = [
+const ownerNavigationItems: NavigationItem[] = [
   { href: "/dashboard", icon: BarChart3, label: "Overview" },
   { href: "/dashboard/users", icon: UsersIcon, label: "Users" },
   { href: "/dashboard/buildings", icon: Building, label: "Buildings" },
+  { href: "/dashboard/leases", icon: FileText, label: "Leases" },
+  { href: "/dashboard/applications", icon: UserPlus, label: "Applications" },
+  {
+    href: "/dashboard/marketplace",
+    icon: ShoppingBasket,
+    label: "Marketplace",
+  },
+  { href: "/dashboard/maintenance", icon: Wrench, label: "Maintenance" },
+  { href: "/dashboard/messages", icon: MessageCircle, label: "Chat" },
+  // { href: "#", icon: Bell, label: "Notifications" },
+  // { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+];
+
+const managerNavigationItems: NavigationItem[] = [
+  { href: "/dashboard/management", icon: BarChart3, label: "Overview" },
+  { href: "/dashboard/users", icon: UsersIcon, label: "Users" },
+  // { href: "/dashboard/buildings", icon: Building, label: "Buildings" },
   { href: "/dashboard/leases", icon: FileText, label: "Leases" },
   { href: "/dashboard/applications", icon: UserPlus, label: "Applications" },
   {
@@ -99,7 +117,7 @@ function MobileNavigation({
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 z-50 w-full border-t border-gray-200 bg-white shadow-lg rounded-xl">
+      <div className="fixed bottom-0 left-0 z-50 w-full rounded-t-2xl border-t border-gray-200 bg-primary shadow-lg">
         <div className="grid h-16 grid-cols-5">
           {primaryNavItems.map((item) => (
             <button
@@ -108,8 +126,8 @@ function MobileNavigation({
               className={cn(
                 "flex flex-col items-center justify-center gap-1 transition-colors",
                 pathname === item.href
-                  ? "text-primary"
-                  : "text-gray-500 hover:text-primary",
+                  ? "text-white"
+                  : "text-white/40 hover:text-white/80",
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -117,12 +135,10 @@ function MobileNavigation({
             </button>
           ))}
 
-          
-
           {/* Menu Button */}
           <button
             onClick={() => setDrawerOpen(true)}
-            className="flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-primary"
+            className="flex flex-col items-center justify-center gap-1 text-white/50 hover:text-white"
           >
             <Menu className="h-5 w-5" />
             <span className="text-xs font-medium">Menu</span>
@@ -254,37 +270,15 @@ export default function AppSidebar() {
   const [isOpened, setIsOpened] = useState(false);
   const isMobile = useIsMobile();
 
-  const verifyUserQuery = useVerifyUserQuery();
-
-  const user = verifyUserQuery.data?.user;
-  const userType = user?.role;
-
-  const isManager = userType === USER_TYPE.MANAGER;
-  // const isOwner = userType === USER_TYPE.OWNER;
-
+  const { isTenant, isManager, isOwner, data: userData } = useAuth();
   let navigationItems: NavigationItem[] = [];
 
-  // successToast("Thy there")
-
-  switch (userType) {
-    case USER_TYPE.TENANT:
-      navigationItems = tenantNavigationItems;
-      break;
-    case USER_TYPE.OWNER:
-    case USER_TYPE.MANAGER:
-      navigationItems = adminNavigationItems;
-      break;
-    default:
-      navigationItems = [];
-  }
-
-  if (isManager) {
-    navigationItems = navigationItems.map((item) => {
-      return {
-        ...item,
-        href: item.href + `?buildingId=${verifyUserQuery.data?.building?.id}`,
-      };
-    });
+  if (isTenant) {
+    navigationItems = tenantNavigationItems;
+  } else if (isManager) {
+    navigationItems = managerNavigationItems;
+  } else if (isOwner) {
+    navigationItems = ownerNavigationItems;
   }
 
   return (
@@ -295,14 +289,14 @@ export default function AppSidebar() {
     >
       <LogJSON
         data={{
-          userData: verifyUserQuery.data,
+          userData: userData,
         }}
       />
       {isMobile ? (
         <MobileNavigation
           navigationItems={navigationItems}
-          user={user || null}
-          userType={userType || USER_TYPE.UNKNOWN}
+          user={userData?.user || null}
+          userType={userData?.user.role || USER_TYPE.UNKNOWN}
           pathname={pathname}
           router={router}
         />
@@ -322,15 +316,15 @@ export default function AppSidebar() {
               onClick={() => router.push("/dashboard/profile")}
               className="h-12 w-12 cursor-pointer rounded-lg border-2 border-white/20 shadow-md transition-transform duration-200 hover:scale-105"
             >
-              <AvatarImage alt={user?.firstName || "User"} />
+              <AvatarImage alt={userData?.user?.firstName || "User"} />
               <AvatarFallback className="rounded-lg bg-primary-foreground text-lg font-medium text-primary">
-                {`${user?.firstName?.at(0) ?? ""}${user?.lastName?.at(0) ?? ""}`.toUpperCase() ||
+                {`${userData?.user?.firstName?.at(0) ?? ""}${userData?.user?.lastName?.at(0) ?? ""}`.toUpperCase() ||
                   "***"}
               </AvatarFallback>
             </Avatar>
             <div className="mt-3 text-center text-white">
-              <p className="line-clamp-1 font-medium">{`${user?.firstName ?? ""} ${user?.lastName ?? ""}`}</p>
-              <p className="text-xs opacity-70">{userType}</p>
+              <p className="line-clamp-1 font-medium">{`${getFullNameFromObj(userData?.user)}`}</p>
+              <p className="text-xs opacity-70">{userData?.user.role}</p>
             </div>
           </SidebarHeader>
 

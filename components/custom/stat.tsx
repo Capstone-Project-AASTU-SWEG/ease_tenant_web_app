@@ -40,11 +40,11 @@ const Stat = ({
 }: StatProps) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay: animationDelay }}
       className={cn(
-        "rounded-lg border bg-primary/5 p-4 shadow-sm backdrop-blur-sm",
+        "rounded-lg border bg-primary/10 p-4 shadow-sm backdrop-blur-sm",
         layout === "horizontal" && "flex items-center justify-between",
         // iconBg,
         className,

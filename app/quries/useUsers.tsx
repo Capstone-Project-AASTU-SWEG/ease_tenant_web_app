@@ -8,6 +8,7 @@ import {
   Manager,
   ServiceProvider,
   Tenant,
+  UserDetail,
 } from "@/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
@@ -19,9 +20,9 @@ export const useGetAllTenants = () => {
     queryFn: async () => {
       try {
         const response =
-          await axiosClient.get<
-            APIResponse<(Tenant & { userId: CommonUserData })[]>
-          >("/tenants");
+          await axiosClient.get<APIResponse<(UserDetail & Tenant)[]>>(
+            "/tenants",
+          );
         const data = response.data;
         const refinedData =
           data.data?.map((tenant) => ({
@@ -47,7 +48,7 @@ export const useGetAllTenantsOfBuilding = (buildingId: string) => {
     queryFn: async () => {
       try {
         const response = await axiosClient.get<
-          APIResponse<(Tenant & { userId: CommonUserData })[]>
+          APIResponse<(UserDetail & Tenant)[]>
         >(`/tenants/buildings/${buildingId}`);
         const data = response.data;
         const refinedData = data.data?.map((tenant) => ({
@@ -85,7 +86,9 @@ export const useGetAllManagers = () => {
     queryFn: async () => {
       try {
         const response =
-          await axiosClient.get<APIResponse<{ user: Manager }[]>>("/managers");
+          await axiosClient.get<
+            APIResponse<(UserDetail & Manager & { user: CommonUserData })[]>
+          >("/managers");
         const data = response.data;
 
         const refineData = data.data?.map((manager) => ({
@@ -167,7 +170,7 @@ export const useGetAllServiceProviders = () => {
     queryFn: async () => {
       try {
         const response =
-          await axiosClient.get<APIResponse<ServiceProvider[]>>(
+          await axiosClient.get<APIResponse<(UserDetail & ServiceProvider)[]>>(
             "/service-providers",
           );
         const data = response.data;
@@ -189,7 +192,7 @@ export const useGetAllMaintenanceWorkers = () => {
     queryFn: async () => {
       try {
         const response = await axiosClient.get<
-          APIResponse<MaintenanceWorker[]>
+          APIResponse<(UserDetail & MaintenanceWorker)[]>
         >("/maintenance-workers");
         const data = response.data;
         return data.data;

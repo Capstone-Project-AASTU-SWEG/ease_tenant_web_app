@@ -300,8 +300,7 @@ const ApplicationsPage = () => {
           {/* Total Applications */}
           <Stat
             icon={FileText}
-            iconColor="text-blue-600"
-            iconBg="bg-blue-100"
+            layout="horizontal"
             title="Total Applications"
             value={stats.total.toString()}
             moreInfo={`${stats.total ? (stats.approved / stats.total) * 100 : 0} Pending Review`}
@@ -310,8 +309,7 @@ const ApplicationsPage = () => {
           {/* Approved */}
           <Stat
             icon={CheckCircle}
-            iconColor="text-green-600"
-            iconBg="bg-green-100"
+            layout="horizontal"
             title="Approved"
             value={stats.approved.toString()}
             moreInfo={`${stats.total ? (stats.urgent / stats.total) * 100 : 0}% Approval Rate`}
@@ -320,8 +318,7 @@ const ApplicationsPage = () => {
           {/* Urgent */}
           <Stat
             icon={AlertCircle}
-            iconColor="text-red-600"
-            iconBg="bg-red-100"
+            layout="horizontal"
             title="Urgent"
             value={stats.urgent.toString()}
             moreInfo={`${stats.pending + stats.inReview}% Of Total`}
@@ -330,8 +327,7 @@ const ApplicationsPage = () => {
           {/* Unassigned */}
           <Stat
             icon={Users}
-            iconColor="text-amber-600"
-            iconBg="bg-amber-100"
+            layout="horizontal"
             title="Unassigned"
             value={stats.unassigned.toString()}
             moreInfo={`${stats.total ? (stats.unassigned / stats.total) * 100 : 0}% Needs Assignment`}
@@ -582,10 +578,10 @@ const RenderApplicationCard = ({
       className="group"
     >
       <Card
-        className="mb-4 cursor-pointer overflow-hidden bg-primary transition-all duration-200 hover:shadow-md"
+        className="mb-4 cursor-pointer overflow-hidden bg-secondary/50 transition-all duration-200 hover:shadow-md"
         onClick={() => onSelectApplication(application)}
       >
-        <CardContent className="p-4 text-white">
+        <CardContent className="p-4 text-primary">
           <div className="flex flex-col space-y-4">
             {/* Header with ID, Type and Status */}
             <div className="flex items-center justify-between">
@@ -616,19 +612,18 @@ const RenderApplicationCard = ({
             <div className="space-y-2">
               {application.type === "rental" && (
                 <div className="space-y-1">
-                  <p className="font-medium">
-                    {/* TODO: Bussiness Name */}
+                  {/* <p className="font-medium">
                     {
                       (application as RentalApplication).submittedBy[
                         "businessName"
                       ]
                     }
-                  </p>
-                  <p className="text-sm text-white/70">
+                  </p> */}
+                  <p className="text-sm text-primary/70">
                     Unit {(application as RentalApplication).unit?.unitNumber}{" "}
                     at {application.building.name}
                   </p>
-                  <p className="text-sm text-white/60">
+                  <p className="text-sm text-primary/70">
                     {(application as RentalApplication).unit.type} •{" "}
                     {
                       (application as RentalApplication).leaseDetails
@@ -648,7 +643,7 @@ const RenderApplicationCard = ({
                     src={application.submittedBy?.firstName.slice(0, 2)}
                     alt={application.submittedBy?.firstName}
                   />
-                  <AvatarFallback className="text-xs text-primary">
+                  <AvatarFallback className="bg-white text-xs text-primary">
                     {(
                       application.submittedBy?.firstName +
                       application.submittedBy?.lastName
@@ -658,7 +653,7 @@ const RenderApplicationCard = ({
                       .join("")}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-white/70">
+                <span className="text-primary/70">
                   {application.submittedBy?.firstName}{" "}
                   {application.submittedBy?.lastName}
                 </span>
@@ -671,7 +666,7 @@ const RenderApplicationCard = ({
                   {application.priority.charAt(0).toUpperCase() +
                     application.priority.slice(1)}
                 </Badge>
-                <span className="text-white/50">
+                <span className="text-primary/50">
                   {timeElapsed(application.createdAt)}
                 </span>
               </div>

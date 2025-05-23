@@ -2,7 +2,7 @@ import axiosClient from "@/lib/axios-client";
 import {
   APIResponse,
   Application,
-  Building,
+  BuildingFromAPI,
   Manager,
   Tenant,
   Unit,
@@ -17,12 +17,12 @@ export type UserDetail = {
 } & {
   unit: Unit | null;
   tenant: Tenant | null;
-  building: Building | null;
+  building: BuildingFromAPI | null;
   manager: Manager | null;
   application: Application | null;
 };
 
-export const useVerifyUserQuery = () => {
+export function useVerifyUserQuery() {
   return useQuery({
     queryKey: ["verifyUser"],
     queryFn: async () => {
@@ -53,21 +53,33 @@ export const useVerifyUserQuery = () => {
       }
     },
   });
-};
+}
 
 export const useAuth = () => {
   const verifyUserQuery = useVerifyUserQuery();
   const isTenant = verifyUserQuery.data?.user.role === USER_TYPE.TENANT;
   const isManager = verifyUserQuery.data?.user.role === USER_TYPE.MANAGER;
   const isOwner = verifyUserQuery.data?.user.role === USER_TYPE.OWNER;
+  const isMaintenance =
+    verifyUserQuery.data?.user.role === USER_TYPE.MAINTENANCE;
+  const isServiceProvider =
+    verifyUserQuery.data?.user.role === USER_TYPE.SERVICE_PROVIDER;
 
   return {
     verifyUserQuery,
     isTenant,
     isManager,
     isOwner,
+    isMaintenance,
+    isServiceProvider,
+
     data: verifyUserQuery.data,
     isLoading: verifyUserQuery.isLoading,
     isError: verifyUserQuery.isError,
+    isFetched: verifyUserQuery.isFetched,
+    isSuccess: verifyUserQuery.isSuccess,
+    errorMessage:
+      verifyUserQuery.error?.message ||
+      "Error occured while verifing user info.",
   };
 };

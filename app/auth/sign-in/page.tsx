@@ -22,6 +22,7 @@ import {
   PasswordFormField,
 } from "@/components/custom/form-field";
 import { useUserSignInMutation } from "../_queries/useAuth";
+import { USER_TYPE } from "@/types";
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -42,7 +43,6 @@ const SignIn = () => {
 
   const userSignInMutation = useUserSignInMutation();
 
-
   const handleSubmit = (values: SignInSchema) => {
     userSignInMutation.mutate(values);
   };
@@ -54,6 +54,13 @@ const SignIn = () => {
 
       localStorage.setItem("token", token);
       successToast("You signed in successfully.");
+      if (userData.user.role === USER_TYPE.TENANT) {
+        router.push("/dashboard/tenant");
+      } else if (userData.user.role === USER_TYPE.MANAGER) {
+        router.push("/dashboard/management");
+      } else if (userData.user.role === USER_TYPE.OWNER) {
+        router.push("/dashboard");
+      }
       router.push("/dashboard");
     }
   }, [router, userSignInMutation.data, userSignInMutation.isSuccess]);

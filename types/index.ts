@@ -5,6 +5,7 @@ export type CommonUserData = {
   email: string;
   phone: string;
   password: string;
+  role: USER_TYPE;
 };
 
 export type Tenant = {
@@ -62,12 +63,14 @@ export enum USER_TYPE {
   MAINTENANCE = "Maintenance Personal",
 }
 
-export type User =
-  | Tenant
-  | Manager
-  | Owner
-  | ServiceProvider
-  | MaintenanceWorker;
+export type User = CommonUserData &
+  (Tenant | Manager | Owner | ServiceProvider | MaintenanceWorker);
+
+export type UserDetail = User & {
+  userId: CommonUserData & { role: USER_TYPE };
+  application: Application;
+  building: Building;
+};
 
 export type Manager = {
   id: string;
@@ -290,8 +293,17 @@ export type Building = {
   accessibilityFeatures?: string[];
   fireSafetyCertified: boolean;
   leaseTerms: LeaseTerms;
+  buildingType: string;
+
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type BuildingFromAPI = Building & {
+  vacantUnits: number;
+  occupancyRate: number;
+  avaliableUnits: number;
+  occupiedUnits: number;
 };
 
 /* ========== UTILITY TYPES ========== */
@@ -320,27 +332,16 @@ export type APIResponse<T> = {
   message?: string;
 };
 
-/**
- * Application status types
- */
 export type APPLICATION_STATUS =
   | "pending"
   | "approved"
   | "rejected"
   | "in_review";
 
-/**
- * Application types
- */
 export type APPLICATION_TYPE = "rental" | "maintenance";
-/**
- * Application priority levels
- */
+
 export type PRIORITY_LEVEL = "low" | "medium" | "high" | "urgent";
 
-/**
- * Base application interface
- */
 export interface BaseApplication {
   id: string;
   type: APPLICATION_TYPE;
@@ -356,9 +357,6 @@ export interface BaseApplication {
   updatedAt?: string;
 }
 
-/**
- * Rental application specific fields
- */
 export interface RentalApplication extends BaseApplication {
   type: "rental";
   unit: Unit;
@@ -372,16 +370,10 @@ export interface RentalApplication extends BaseApplication {
   documentsMetadata: {
     name: string;
   }[];
-
-  submittedBy: Tenant;
 }
 
-/**
- * Union type for all application types
- */
 export type Application = RentalApplication;
 
-// Lease status enum
 export enum LEASE_STATUS {
   DRAFT = "Draft",
   SENT = "Sent",

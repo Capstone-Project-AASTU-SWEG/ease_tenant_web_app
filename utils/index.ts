@@ -34,9 +34,9 @@ export function getFullName(fName?: string, lName?: string) {
   return `${fName} ${lName}`;
 }
 export function getFullNameFromObj(
-  obj: unknown & { firstName?: string; lastName?: string },
+  obj?: unknown & { firstName?: string; lastName?: string },
 ) {
-  return `${obj.firstName} ${obj.lastName}`;
+  return `${obj?.firstName} ${obj?.lastName}`;
 }
 
 export function getFormatedAddress(address?: Address) {

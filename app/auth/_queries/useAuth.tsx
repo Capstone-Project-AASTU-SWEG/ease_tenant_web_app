@@ -10,10 +10,9 @@ export const useUserSignInMutation = () => {
     mutationKey: ["userSignIn"],
     mutationFn: async (payload: { email: string; password: string }) => {
       try {
-        const response = await axiosClient.post<APIResponse<{ token: string }>>(
-          "/users/sign-in",
-          payload,
-        );
+        const response = await axiosClient.post<
+          APIResponse<{ token: string; user: CommonUserData }>
+        >("/users/sign-in", payload);
 
         const data = response.data.data;
         if (!data) {

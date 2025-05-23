@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -19,13 +20,46 @@ import {
   Star,
 } from "lucide-react";
 import { IMAGES } from "@/constants/assets";
+import { useAuth } from "./quries/useAuth";
+import { useRouter } from "next/navigation";
+import { CustomButton } from "@/components/custom/button";
 
 export default function Home() {
+  const auth = useAuth();
+  const router = useRouter();
+  function handleGetStarted() {
+    const userData = auth.verifyUserQuery.data;
+
+    if (!userData) {
+      router.push("/auth/sign-up");
+      return;
+    }
+
+    if (auth.isTenant) {
+      router.push("/dashboard/tenant");
+    }
+
+    if (auth.isMaintenance) {
+      router.push("/dashboard/maintenance");
+    }
+
+    if (auth.isServiceProvider) {
+      router.push("/dashboard/services");
+    }
+
+    if (auth.isOwner) {
+      router.push("/dashboard");
+    }
+
+    if (auth.isManager) {
+      router.push("/dashboard/management");
+    }
+  }
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-white">
-        <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-2">
             <Building className="h-6 w-6 text-primary" />
             <span className="text-xl font-bold">easeTenant</span>
@@ -43,7 +77,7 @@ export default function Home() {
             >
               Testimonials
             </Link>
-            
+
             <Link
               href="#contact"
               className="text-sm font-medium transition-colors hover:text-primary"
@@ -52,15 +86,14 @@ export default function Home() {
             </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Link
-              href="/auth/sign-in"
-              className="hidden text-sm font-medium transition-colors hover:text-primary md:block"
+            <CustomButton
+              loading={auth.isLoading}
+              onClick={() => {
+                handleGetStarted();
+              }}
             >
-              Log in
-            </Link>
-            <Link href="/auth/sign-up">
-              <Button>Get Started</Button>
-            </Link>
+              Get Started
+            </CustomButton>
           </div>
         </div>
       </header>
@@ -68,7 +101,7 @@ export default function Home() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="w-full bg-gradient-to-b from-white to-gray-50 py-12 md:py-24 lg:py-32 xl:py-48">
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 xl:gap-16">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
@@ -122,7 +155,7 @@ export default function Home() {
 
         {/* Logos Section */}
         <section className="w-full border-y bg-white py-12">
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h2 className="text-xl font-medium tracking-tight text-gray-500">
@@ -151,7 +184,7 @@ export default function Home() {
           id="features"
           className="w-full bg-white py-12 md:py-24 lg:py-32"
         >
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">
@@ -234,7 +267,7 @@ export default function Home() {
 
         {/* How It Works Section */}
         <section className="w-full bg-gray-50 py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">
@@ -293,7 +326,7 @@ export default function Home() {
           id="testimonials"
           className="w-full bg-white py-12 md:py-24 lg:py-32"
         >
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">
@@ -359,131 +392,12 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Pricing Section */}
-        {/* <section
-          id="pricing"
-          className="w-full bg-gray-50 py-12 md:py-24 lg:py-32"
-        >
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">
-                  Pricing
-                </div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  Simple, transparent pricing
-                </h2>
-                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Choose the plan {`that's`} right for your property portfolio.
-                </p>
-              </div>
-            </div>
-            <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
-              {[
-                {
-                  name: "Starter",
-                  price: "$99",
-                  description:
-                    "Perfect for small property managers with up to 5 buildings.",
-                  features: [
-                    "Up to 5 properties",
-                    "Up to 50 units",
-                    "Tenant portal",
-                    "Maintenance requests",
-                    "Basic reporting",
-                    "Email support",
-                  ],
-                  cta: "Get Started",
-                  popular: false,
-                },
-                {
-                  name: "Professional",
-                  price: "$249",
-                  description:
-                    "Ideal for growing property management companies.",
-                  features: [
-                    "Up to 20 properties",
-                    "Up to 200 units",
-                    "All Starter features",
-                    "Financial tracking",
-                    "Document management",
-                    "Advanced reporting",
-                    "Priority support",
-                  ],
-                  cta: "Get Started",
-                  popular: true,
-                },
-                {
-                  name: "Enterprise",
-                  price: "Custom",
-                  description:
-                    "Tailored solutions for large property portfolios.",
-                  features: [
-                    "Unlimited properties",
-                    "Unlimited units",
-                    "All Professional features",
-                    "API access",
-                    "Custom integrations",
-                    "Dedicated account manager",
-                    "24/7 support",
-                  ],
-                  cta: "Contact Sales",
-                  popular: false,
-                },
-              ].map((plan, i) => (
-                <Card
-                  key={i}
-                  className={`flex flex-col ${plan.popular ? "relative border-primary shadow-lg" : ""}`}
-                >
-                  {plan.popular && (
-                    <div className="absolute right-0 top-0 -translate-y-1/2 translate-x-0 rounded-full bg-primary px-3 py-1 text-xs font-medium text-white">
-                      Most Popular
-                    </div>
-                  )}
-                  <CardHeader>
-                    <CardTitle>{plan.name}</CardTitle>
-                    <div className="mt-4 flex items-baseline text-5xl font-extrabold">
-                      {plan.price}
-                      {plan.price !== "Custom" && (
-                        <span className="ml-1 text-xl font-medium text-gray-500">
-                          /month
-                        </span>
-                      )}
-                    </div>
-                    <CardDescription className="mt-4">
-                      {plan.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    <ul className="space-y-3">
-                      {plan.features.map((feature, j) => (
-                        <li key={j} className="flex items-center">
-                          <CheckCircle className="mr-2 h-5 w-5 text-primary" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                  <CardFooter>
-                    <Button
-                      className="w-full"
-                      variant={plan.popular ? "default" : "outline"}
-                    >
-                      {plan.cta}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section> */}
-
         {/* CTA Section */}
         <section
           id="contact"
           className="w-full bg-primary py-12 text-primary-foreground md:py-24 lg:py-32"
         >
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
