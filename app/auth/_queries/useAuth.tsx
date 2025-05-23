@@ -75,7 +75,7 @@ export const useManagerSignUp = () => {
   return useMutation({
     mutationKey: ["managerSignUp"],
     mutationFn: async (
-      payload: Omit<CommonUserData, "id"> & {
+      payload: Omit<CommonUserData, "id" | "role"> & {
         assignedBuilding?: string;
         employmentDate?: Date;
         salary?: number;

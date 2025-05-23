@@ -346,20 +346,21 @@ export interface BaseApplication {
   id: string;
   type: APPLICATION_TYPE;
   status: APPLICATION_STATUS;
-  submittedBy: User;
   priority: PRIORITY_LEVEL;
   notes?: string;
   building: Building;
   assignedTo: User;
+  submittedBy: User;
   submittedAt: string;
   lastUpdated: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
-export interface RentalApplication extends BaseApplication {
+export type RentalApplication = BaseApplication & {
   type: "rental";
   unit: Unit;
+  submittedBy: Tenant;
   leaseDetails: {
     requestedStartDate: Date;
     requestedDuration: number;
@@ -370,7 +371,7 @@ export interface RentalApplication extends BaseApplication {
   documentsMetadata: {
     name: string;
   }[];
-}
+};
 
 export type Application = RentalApplication;
 

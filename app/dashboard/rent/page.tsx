@@ -60,7 +60,7 @@ import {
   successToast,
   warningToast,
 } from "@/components/custom/toasts";
-import type { RentalApplication } from "@/types";
+import { USER_TYPE, type RentalApplication } from "@/types";
 import { useGetBuildingQuery } from "@/app/quries/useBuildings";
 import { cn } from "@/lib/utils";
 import { useCreateRentalApplicationMutation } from "@/app/quries/useApplications";
@@ -163,10 +163,18 @@ const RentUnitPage = () => {
       lastUpdated: new Date().toISOString(),
       priority: "high",
       submittedAt: new Date().toISOString(),
-      submittedBy: currentUser.tenant!,
+      submittedBy: {
+        ...currentUser.tenant!,
+        role: USER_TYPE.TENANT,
+        password: "***",
+      },
       notes: data.additionalNotes,
       type: "rental",
-      assignedTo: buildingManager,
+      assignedTo: {
+        ...buildingManager,
+        role: USER_TYPE.MANAGER,
+        password: "***",
+      },
     };
 
     const formData = new FormData();
