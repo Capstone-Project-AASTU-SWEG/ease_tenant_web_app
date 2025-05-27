@@ -1,38 +1,10 @@
 "use client";
 
 import axiosClient from "@/lib/axios-client";
-import { APIResponse } from "@/types";
+import { APIResponse, MaintenanceRequest } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect } from "react";
-
-export type MaintenanceRequest = {
-  _id: string;
-  tenantId: string;
-  unitNumber: string;
-  category: string;
-  description: string;
-  priority: "Low" | "Medium" | "High";
-  status: "Open" | "In Progress" | "Closed";
-  assignedTo?: string;
-  preferredDate?: string;
-  preferredTime?: string;
-  images?: string[];
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type MaintenanceWithDetails = MaintenanceRequest & {
-  tenant: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  assignedToUser?: {
-    firstName: string;
-    lastName: string;
-  };
-};
 
 export const useGetAllMaintenanceRequestsQuery = (filters?: {
   status?: string;
@@ -42,18 +14,21 @@ export const useGetAllMaintenanceRequestsQuery = (filters?: {
     queryKey: ["getAllMaintenanceRequests", filters],
     queryFn: async () => {
       try {
-        const response = await axiosClient.get<APIResponse<MaintenanceWithDetails[]>>(
-          "/maintenance",
-          { params: filters }
-        );
+        const response = await axiosClient.get<
+          APIResponse<MaintenanceRequest[]>
+        >("/maintenances", { params: filters });
         return response.data.data;
       } catch (error) {
-        console.log({ error });
         if (axios.isAxiosError(error)) {
           const errorMessage = error.response?.data.message;
-          throw new Error(errorMessage || "An error occurred");
+          throw new Error(
+            errorMessage ||
+              "An error occurred while getting all maintenace requestes",
+          );
         }
-        throw new Error("An unexpected error occurred");
+        throw new Error(
+          "An unexpected error occurred while getting all maintenace requestes",
+        );
       }
     },
   });
@@ -67,8 +42,8 @@ export const useGetMaintenanceRequestQuery = (id?: string) => {
         if (!id) {
           throw new Error("Maintenance request ID is required");
         }
-        const response = await axiosClient.get<APIResponse<MaintenanceWithDetails>>(
-          `/maintenance/${id}`
+        const response = await axiosClient.get<APIResponse<MaintenanceRequest>>(
+          `/maintenance/${id}`,
         );
         const request = response.data.data;
         if (!request) {
@@ -99,18 +74,16 @@ export const useCreateMaintenanceRequestMutation = () => {
     mutationKey: ["createMaintenanceRequest"],
     mutationFn: async (data: FormData) => {
       try {
-        const response = await axiosClient.post<APIResponse<MaintenanceRequest>>(
-          "/maintenance",
-          data,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        const response = await axiosClient.post<
+          APIResponse<MaintenanceRequest>
+        >("/maintenances", data, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
         const request = response.data.data;
-        await queryClient.invalidateQueries({ 
-          queryKey: ["getAllMaintenanceRequests"] 
+        await queryClient.invalidateQueries({
+          queryKey: ["getAllMaintenanceRequests"],
         });
         return request;
       } catch (error) {
@@ -134,16 +107,15 @@ export const useUpdateMaintenanceRequestMutation = () => {
       updates: Partial<MaintenanceRequest>;
     }) => {
       try {
-        const response = await axiosClient.patch<APIResponse<MaintenanceRequest>>(
-          `/maintenance/${data.id}`,
-          data.updates
-        );
+        const response = await axiosClient.patch<
+          APIResponse<MaintenanceRequest>
+        >(`/maintenance/${data.id}`, data.updates);
         const request = response.data.data;
-        await queryClient.invalidateQueries({ 
-          queryKey: ["getAllMaintenanceRequests"] 
+        await queryClient.invalidateQueries({
+          queryKey: ["getAllMaintenanceRequests"],
         });
-        await queryClient.invalidateQueries({ 
-          queryKey: ["getMaintenanceRequest", data.id] 
+        await queryClient.invalidateQueries({
+          queryKey: ["getMaintenanceRequest", data.id],
         });
         return request;
       } catch (error) {
@@ -165,8 +137,8 @@ export const useDeleteMaintenanceRequestMutation = () => {
     mutationFn: async (id: string) => {
       try {
         await axiosClient.delete(`/maintenance/${id}`);
-        await queryClient.invalidateQueries({ 
-          queryKey: ["getAllMaintenanceRequests"] 
+        await queryClient.invalidateQueries({
+          queryKey: ["getAllMaintenanceRequests"],
         });
       } catch (error) {
         console.log({ error });
@@ -180,25 +152,27 @@ export const useDeleteMaintenanceRequestMutation = () => {
   });
 };
 
+export type MaintenanceStatus =
+  | "Open"
+  | "In Progress"
+  | "Canceled"
+  | "Completed";
+
 export const useUpdateMaintenanceStatusMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["updateMaintenanceStatus"],
-    mutationFn: async (data: {
-      id: string;
-      status: "Open" | "In Progress" | "Closed";
-    }) => {
+    mutationFn: async (data: { id: string; status: MaintenanceStatus }) => {
       try {
-        const response = await axiosClient.patch<APIResponse<MaintenanceRequest>>(
-          `/maintenance/${data.id}/status`,
-          { status: data.status }
-        );
+        const response = await axiosClient.patch<
+          APIResponse<MaintenanceRequest>
+        >(`/maintenances/${data.id}/status`, { status: data.status });
         const request = response.data.data;
-        await queryClient.invalidateQueries({ 
-          queryKey: ["getAllMaintenanceRequests"] 
+        await queryClient.invalidateQueries({
+          queryKey: ["getAllMaintenanceRequests"],
         });
-        await queryClient.invalidateQueries({ 
-          queryKey: ["getMaintenanceRequest", data.id] 
+        await queryClient.invalidateQueries({
+          queryKey: ["getMaintenanceRequest", data.id],
         });
         return request;
       } catch (error) {
@@ -217,21 +191,17 @@ export const useAssignMaintenanceRequestMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["assignMaintenanceRequest"],
-    mutationFn: async (data: {
-      id: string;
-      assignedTo: string;
-    }) => {
+    mutationFn: async (data: { id: string; assignedTo: string }) => {
       try {
-        const response = await axiosClient.patch<APIResponse<MaintenanceRequest>>(
-          `/maintenance/${data.id}/assign`,
-          { assignedTo: data.assignedTo }
-        );
+        const response = await axiosClient.patch<
+          APIResponse<MaintenanceRequest>
+        >(`/maintenance/${data.id}/assign`, { assignedTo: data.assignedTo });
         const request = response.data.data;
-        await queryClient.invalidateQueries({ 
-          queryKey: ["getAllMaintenanceRequests"] 
+        await queryClient.invalidateQueries({
+          queryKey: ["getAllMaintenanceRequests"],
         });
-        await queryClient.invalidateQueries({ 
-          queryKey: ["getMaintenanceRequest", data.id] 
+        await queryClient.invalidateQueries({
+          queryKey: ["getMaintenanceRequest", data.id],
         });
         return request;
       } catch (error) {

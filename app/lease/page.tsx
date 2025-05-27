@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,10 +14,7 @@ import {
   Clock,
   AlertCircle,
   CreditCard,
-  Lock,
   Download,
-  ChevronRight,
-  Shield,
   CheckCircle,
 } from "lucide-react";
 
@@ -43,8 +40,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import {
   Form,
   FormField,
@@ -53,18 +48,34 @@ import {
   FormMessage,
   FormControl,
 } from "@/components/ui/form";
-import { SignatureLine, SignaturePad } from "@/components/custom/signature-pad";
+import {
+  type SignatureLine,
+  SignaturePad,
+} from "@/components/custom/signature-pad";
 import { useSearchParams } from "next/navigation";
 import { PageError } from "@/components/custom/page-error";
-import { useGetLeaseQuery } from "@/app/quries/useLeases";
+import {
+  useCreateContractMutation,
+  useGetLeaseQuery,
+} from "@/app/quries/useLeases";
 import { PageLoader } from "@/components/custom/page-loader";
-import LeasePDFGenerator from "@/components/custom/lease-pdf-generator_v2";
+import LeasePDFGenerator from "@/components/custom/lease-pdf-generator";
 import { generateLeaseDataValues } from "@/utils/lease-data-mapper";
-import { Lease, LeaseTemplate, RentalApplication, Tenant, Unit } from "@/types";
+import type {
+  Lease,
+  LeaseTemplate,
+  RentalApplication,
+  Tenant,
+  Unit,
+} from "@/types";
 import { Steps, Step } from "@/components/custom/steps";
 
 import { format } from "date-fns";
-import { chapaCheckout } from "@/lib/chapa";
+import { useGetBuildingQuery } from "../quries/useBuildings";
+import { ErrorDisplay } from "@/components/custom/error-display";
+import ChapaPayment from "@/components/custom/chapa/chapa-payment";
+import { genUUID, getFullFileURL } from "@/utils";
+import { warningToast } from "@/components/custom/toasts";
 
 // Define the schema for lease response
 const rejectLeaseSchema = z.object({
@@ -105,8 +116,9 @@ const Page = () => {
     isEmpty: true,
   });
   const [currentStep, setCurrentStep] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+
+  const [txRef, setTxRef] = useState(() => genUUID("tx-"));
 
   // Form for rejection reasons
   const rejectForm = useForm<RejectLeaseFormData>({
@@ -128,10 +140,15 @@ const Page = () => {
     },
   });
 
+  const handleCreatingNewTX = useCallback(() => {
+    setTxRef(genUUID("tx-"));
+  }, []);
   const searchParams = useSearchParams();
   const leaseId = searchParams.get("leaseId") as string;
 
   const getLeaseQuery = useGetLeaseQuery(leaseId);
+
+  const createContractMutation = useCreateContractMutation();
 
   const lease = getLeaseQuery.data as Lease & {
     tenant: Tenant;
@@ -139,6 +156,13 @@ const Page = () => {
     application: RentalApplication;
     leaseTemplate: LeaseTemplate;
   };
+
+  const getBuildingQuery = useGetBuildingQuery(lease?.unit.buildingId);
+  const manager = getBuildingQuery.data?.manager;
+
+  const isSigned = !!lease?.finalContractFile;
+
+  const tenant = lease?.tenant;
 
   if (getLeaseQuery.isPending) {
     return (
@@ -156,9 +180,12 @@ const Page = () => {
       />
     );
   }
+  if (!lease) {
+    return null;
+  }
 
   if (!leaseId) {
-    return <PageError message={"Lease Id not found"} variant={"403"} />;
+    return <PageError message={"Lease info not provided."} variant={"403"} />;
   }
 
   const handleReject = (data: RejectLeaseFormData) => {
@@ -185,37 +212,21 @@ const Page = () => {
     }
     setCurrentStep(1);
     setShowPaymentDialog(true);
-
-    const result = await chapaCheckout({
-      amount: lease.unit.monthlyRent + "",
-      description: "ertyui",
-      email: "nesru@gmail.com",
-      first_name: "djakdjka dja",
-      last_name: "jfklajdkf akdjfa",
-      return_url: "http://localhost:3000",
-      title: "djfakldjfkaj",
-    });
-
-    console.log({ result });
   };
 
-  const handlePaymentSubmit = async (data: PaymentFormData) => {
-    setIsProcessing(true);
-
-    try {
-      // Simulate API call to Chapa payment gateway
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      console.log("Payment processed:", data);
-      setShowPaymentDialog(false);
-      setLeaseStatus("paid");
-      setCurrentStep(2);
-      setShowSuccessDialog(true);
-    } catch (error) {
-      console.error("Payment failed:", error);
-    } finally {
-      setIsProcessing(false);
+  const handlePaymentSubmit = async () => {
+    // TODO: API REQUEST TO SEND SUCCESSFULL CONTRACT
+    if (!pdfBlob) {
+      warningToast("Contract pdf not provided.");
+      return;
     }
+
+    createContractMutation.mutate({
+      leaseId,
+      signedContractFile: pdfBlob,
+      tenantSignature: signatureData.svg,
+      txRef,
+    });
   };
 
   const handlePdfGenerated = (blob: Blob) => {
@@ -238,22 +249,357 @@ const Page = () => {
     return null;
   }
 
-  return (
-    <PageWrapper className="py-0">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+  if (isSigned) {
+    const downloadFinalPdf = () => {
+      if (lease.finalContractFile) {
+        const link = document.createElement("a");
+        link.href = getFullFileURL(lease.finalContractFile);
+        link.download = `${lease?.leaseTemplate?.name || "Lease"}_Final_Signed.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    };
+
+    return (
+      <PageWrapper className="py-0">
         <PageHeader
-          title="Lease Agreement"
-          description="Review, sign, and complete payment for your commercial property lease"
+          title="Lease Agreement - Completed"
+          description="Your lease has been successfully signed and finalized"
           withBackButton
         />
-      </motion.div>
+
+        <div className="">
+          {/* Success Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 overflow-hidden rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 p-8 text-white shadow-lg"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                <CheckCircle className="h-8 w-8" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">
+                  Lease Successfully Completed!
+                </h1>
+                <p className="mt-1 text-green-100">
+                  Your lease agreement has been signed by all parties and is now
+                  active.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+            {/* Main Content */}
+            <div className="space-y-6">
+              {/* Lease Details Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <Card className="overflow-hidden border-0 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <FileText className="h-6 w-6 text-primary" />
+                      Lease Agreement Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Property
+                          </label>
+                          <p className="text-lg font-semibold">
+                            {lease.unit.unitNumber}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Lease Term
+                          </label>
+                          <p className="text-lg font-semibold">
+                            {lease.application.leaseDetails.requestedDuration}{" "}
+                            months
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Monthly Rent
+                          </label>
+                          <p className="text-lg font-semibold text-primary">
+                            ${lease.unit.monthlyRent.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Start Date
+                          </label>
+                          <p className="text-lg font-semibold">
+                            {format(
+                              new Date(
+                                lease.application.leaseDetails.requestedStartDate,
+                              ),
+                              "MMM d, yyyy",
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            End Date
+                          </label>
+                          <p className="text-lg font-semibold">
+                            {format(
+                              new Date(
+                                new Date(
+                                  lease.application.leaseDetails.requestedStartDate,
+                                ).setMonth(
+                                  new Date(
+                                    lease.application.leaseDetails.requestedStartDate,
+                                  ).getMonth() +
+                                    lease.application.leaseDetails
+                                      .requestedDuration,
+                                ),
+                              ),
+                              "MMM d, yyyy",
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Signatures Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card className="overflow-hidden border-0 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Edit3 className="h-6 w-6 text-primary" />
+                      Digital Signatures
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="grid gap-6 md:grid-cols-2">
+                      {/* Tenant Signature */}
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Tenant Signature
+                        </label>
+                        <div className="rounded-lg border-2 border-green-200 bg-green-50/50 p-4 dark:border-green-800 dark:bg-green-900/20">
+                          {lease.tenant.signature && (
+                            <div
+                              className="flex h-16 items-center justify-center"
+                              dangerouslySetInnerHTML={{
+                                __html: lease.tenant.signature,
+                              }}
+                            />
+                          )}
+                          <div className="mt-2 flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+                            <CheckCircle className="h-4 w-4" />
+                            <span>
+                              Signed by {tenant.firstName} {tenant.lastName}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Manager Signature */}
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Manager/Landlord Signature
+                        </label>
+                        <div className="rounded-lg border-2 border-green-200 bg-green-50/50 p-4 dark:border-green-800 dark:bg-green-900/20">
+                          {manager?.signature && (
+                            <div
+                              className="flex h-16 items-center justify-center"
+                              dangerouslySetInnerHTML={{
+                                __html: manager.signature,
+                              }}
+                            />
+                          )}
+                          <div className="mt-2 flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+                            <CheckCircle className="h-4 w-4" />
+                            <span>Signed by Property Manager</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 rounded-lg bg-slate-50 p-4 dark:bg-slate-900">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>
+                          Agreement finalized on{" "}
+                          {format(
+                            new Date(lease.updatedAt || lease.createdAt),
+                            "PPP 'at' p",
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+
+            {/* Sidebar Actions */}
+            <div className="space-y-6">
+              {/* Download Card */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Card className="overflow-hidden border-0 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Download className="h-5 w-5 text-primary" />
+                      Download Documents
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <Button
+                        onClick={downloadFinalPdf}
+                        className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 transition-all hover:from-primary/90 hover:to-primary"
+                        size="lg"
+                      >
+                        <Download className="h-5 w-5" />
+                        Download Final Signed Lease
+                      </Button>
+
+                      <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-900">
+                        <p className="text-xs text-muted-foreground">
+                          This document contains all signatures and is legally
+                          binding. Keep this copy for your records.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Status Card */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <Card className="overflow-hidden border-0 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                    <CardTitle className="flex items-center gap-2 text-lg text-green-700 dark:text-green-400">
+                      <CheckCircle className="h-5 w-5" />
+                      Lease Status
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-green-700 dark:text-green-400">
+                            Active Lease
+                          </p>
+                          <p className="text-sm text-green-600 dark:text-green-500">
+                            All parties have signed
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Lease ID:
+                          </span>
+                          <span className="font-mono">
+                            {leaseId.substring(0, 8)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Status:</span>
+                          <span className="font-medium text-green-600 dark:text-green-400">
+                            Completed
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Next Steps Card */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <Card className="overflow-hidden border-0 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <AlertCircle className="h-5 w-5 text-primary" />
+                      Next Steps
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 h-2 w-2 rounded-full bg-primary"></div>
+                        <p>Keep a copy of your signed lease agreement</p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 h-2 w-2 rounded-full bg-primary"></div>
+                        <p>
+                          Property access will be available on your start date
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 h-2 w-2 rounded-full bg-primary"></div>
+                        <p>Contact property management for any questions</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  return (
+    <PageWrapper className="py-0">
+      <PageHeader
+        title="Lease Agreement"
+        description="Review, sign, and complete payment for your commercial property lease"
+        withBackButton
+      />
+
+      {/* <LogJSON
+        data={{
+          manager,
+          abc: lease?.application?.building?.managerId,
+          li: lease.unit.buildingId,
+        }}
+      /> */}
 
       {/* Progress Steps */}
-      <div className="mb-8 mt-6">
+      <div className="mb-8 mt-4">
         <Steps currentStep={currentStep} className="mx-auto max-w-3xl">
           <Step
             title="Review & Sign"
@@ -280,16 +626,21 @@ const Page = () => {
 
       <main className="mb-8 grid grid-cols-1 gap-8 lg:grid-cols-[3fr_2fr]">
         {/* Lease Agreement Column */}
-        <LeasePDFGenerator
-          dataValues={generateLeaseDataValues(lease.application)}
-          leaseTitle={lease.leaseTemplate.name}
-          leaseDescription={lease.leaseTemplate.description}
-          sections={lease.leaseTemplate.sections}
-          generateOnMount={false}
-          showPreview={true}
-          onPdfGenerated={handlePdfGenerated}
-          signatureData={signatureData.svg}
-        />
+        {manager ? (
+          <LeasePDFGenerator
+            dataValues={generateLeaseDataValues(lease.application)}
+            leaseTitle={lease.leaseTemplate.name}
+            leaseDescription={lease.leaseTemplate.description}
+            sections={lease.leaseTemplate.sections}
+            generateOnMount={true}
+            showPreview={true}
+            onPdfGenerated={handlePdfGenerated}
+            tenantSignature={signatureData.svg}
+            managerSignature={manager?.signature}
+          />
+        ) : (
+          <ErrorDisplay message="Manager info not found" />
+        )}
 
         {/* Actions Column */}
         <motion.div
@@ -623,158 +974,25 @@ const Page = () => {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="mt-2 rounded-lg bg-primary/5 p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">
-                Security Deposit + First Month
-              </span>
-              <span className="text-lg font-semibold text-primary">
-                ${(lease?.unit?.monthlyRent * 2).toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          <div className="my-2 flex items-center justify-center">
-            <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-              <Lock className="h-3 w-3" />
-              Secured by Chapa Payment
-            </div>
-          </div>
-
-          <Form {...paymentForm}>
-            <form
-              onSubmit={paymentForm.handleSubmit(handlePaymentSubmit)}
-              className="space-y-4"
-            >
-              <FormField
-                control={paymentForm.control}
-                name="cardNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Card Number</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="1234 5678 9012 3456"
-                        {...field}
-                        onChange={(e) => {
-                          // Format card number with spaces
-                          const value = e.target.value.replace(/\s/g, "");
-                          const formattedValue = value.replace(
-                            /(\d{4})(?=\d)/g,
-                            "$1 ",
-                          );
-                          field.onChange(formattedValue);
-                        }}
-                        maxLength={19}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <section>
+            {showPaymentDialog && (
+              <ChapaPayment
+                txRef={txRef}
+                setNewTxRef={handleCreatingNewTX}
+                onSuccessfulPayment={handlePaymentSubmit}
+                amount={100}
+                currency="ETB"
+                onClose={() => {}}
+                user={{
+                  id: tenant.id,
+                  email: tenant.email,
+                  firstName: tenant.firstName,
+                  lastName: tenant.lastName,
+                  phone: tenant.phone,
+                }}
               />
-
-              <FormField
-                control={paymentForm.control}
-                name="cardHolder"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cardholder Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={paymentForm.control}
-                  name="expiryDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Expiry Date</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="MM/YY"
-                          {...field}
-                          onChange={(e) => {
-                            // Format expiry date
-                            const value = e.target.value.replace(/\D/g, "");
-                            if (value.length <= 2) {
-                              field.onChange(value);
-                            } else {
-                              field.onChange(
-                                `${value.slice(0, 2)}/${value.slice(2, 4)}`,
-                              );
-                            }
-                          }}
-                          maxLength={5}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={paymentForm.control}
-                  name="cvv"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CVV</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="123"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, "");
-                            field.onChange(value);
-                          }}
-                          maxLength={4}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="rounded-lg bg-slate-50 p-3 text-sm">
-                <div className="flex items-center gap-2 text-slate-600">
-                  <Shield className="h-4 w-4 text-primary" />
-                  <span>Your payment information is encrypted and secure</span>
-                </div>
-              </div>
-
-              <Separator />
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowPaymentDialog(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="gap-2 bg-gradient-to-r from-primary to-primary/80 transition-all hover:from-primary/90 hover:to-primary"
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>Processing...</>
-                  ) : (
-                    <>
-                      Pay ${(lease?.unit?.monthlyRent * 2).toLocaleString()}
-                      <ChevronRight className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+            )}
+          </section>
         </DialogContent>
       </Dialog>
 

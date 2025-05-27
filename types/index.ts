@@ -29,6 +29,8 @@ export type Tenant = {
   taxId?: string;
   businessRegistrationNumber: string;
   status: string;
+  signature?: string;
+  unit?: Unit;
 };
 
 export type ServiceProvider = {
@@ -38,10 +40,15 @@ export type ServiceProvider = {
   fullName?: string;
   email: string;
   phone: string;
-  company: string;
+  businessName: string;
   serviceType: string;
-  contractDetails?: string;
-};
+  serviceDescription: string;
+  servicePrice: number;
+  businessAddress: string;
+  status: string;
+  taxId: string;
+  images: string[];
+} & WithTimestampsStr;
 
 export type MaintenanceWorker = {
   id: string;
@@ -70,6 +77,7 @@ export type UserDetail = User & {
   userId: CommonUserData & { role: USER_TYPE };
   application: Application;
   building: Building;
+  maintenanceRequests: MaintenanceRequest[];
 };
 
 export type Manager = {
@@ -287,8 +295,7 @@ export type Building = {
     url: string;
   }[];
   status: BUILDING_STATUS;
-  imageUrls?: string[];
-  videoUrls?: string[];
+  images?: string[];
   operatingHours: string;
   accessibilityFeatures?: string[];
   fireSafetyCertified: boolean;
@@ -304,6 +311,7 @@ export type BuildingFromAPI = Building & {
   occupancyRate: number;
   avaliableUnits: number;
   occupiedUnits: number;
+  units: Unit[];
 };
 
 /* ========== UTILITY TYPES ========== */
@@ -338,7 +346,7 @@ export type APPLICATION_STATUS =
   | "rejected"
   | "in_review";
 
-export type APPLICATION_TYPE = "rental" | "maintenance";
+export type APPLICATION_TYPE = "rental" | "maintenance" | "service";
 
 export type PRIORITY_LEVEL = "low" | "medium" | "high" | "urgent";
 
@@ -373,7 +381,12 @@ export type RentalApplication = BaseApplication & {
   }[];
 };
 
-export type Application = RentalApplication;
+export type ServiceApplication = BaseApplication & {
+  type: "service";
+  user: ServiceProvider;
+};
+
+export type Application = RentalApplication | ServiceApplication;
 
 export enum LEASE_STATUS {
   DRAFT = "Draft",
@@ -403,6 +416,7 @@ export type Lease = {
   id: string;
   templateId: string;
   unitId: string;
+  unit?: Unit;
   tenantId: string;
   status: LEASE_STATUS;
   contractFile: string;
@@ -410,4 +424,39 @@ export type Lease = {
   updatedAt: Date;
   sentAt?: Date;
   signedAt?: Date;
+  finalContractFile?: string;
 };
+
+export type Contact = {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string;
+  lastMessage: string;
+  time: string;
+  unread: boolean;
+  isOnline: boolean;
+};
+
+export type Message = {
+  id: string;
+  message: string;
+  time: string;
+  sender: "me" | "other";
+  read: boolean;
+  senderRole: USER_TYPE;
+  receiverRole: USER_TYPE;
+  receiverId: CommonUserData;
+  status: string;
+} & WithTimestampsStr;
+
+export type MaintenanceRequest = {
+  id: string;
+  tenant: Tenant;
+  unit: Unit;
+  category: string;
+  description: string;
+  priority: "Low" | "Medium" | "High";
+  status: "Open" | "In Progress" | "Closed" | "Completed" | "Cancelled";
+  images: string[];
+} & WithTimestampsStr;

@@ -18,9 +18,8 @@ import {
   Check,
   Home,
   Building,
-  Wrench,
+  // Wrench,
   Briefcase,
-  MoreHorizontal,
   Calendar,
   ArrowLeft,
   User,
@@ -51,13 +50,12 @@ import PageWrapper from "@/components/custom/page-wrapper";
 import SearchInput from "@/components/custom/search-input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
-  Application,
   APPLICATION_STATUS,
   APPLICATION_TYPE,
   PRIORITY_LEVEL,
   RentalApplication,
+  ServiceApplication,
   Tenant,
-  WithTimestampsStr,
 } from "@/types";
 import {
   formatDateTime,
@@ -73,8 +71,10 @@ import {
 import { RentalApplicationDetail } from "./_components/rental-application-detail";
 import PageHeader from "@/components/custom/page-header";
 import {
+  ApplicationWithIdAndTS,
   useDeleteApplicationMutation,
   useGetApplicationsOfBuildingQuery,
+  useGetApplicationsQuery,
   useUpdateApplicationStatusMutation,
 } from "@/app/quries/useApplications";
 import LogJSON from "@/components/custom/log-json";
@@ -88,7 +88,9 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { successToast } from "@/components/custom/toasts";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/quries/useAuth";
-// import { getBuildingByID } from "../buildings/ks/useBuildings";
+import { getFullFileURL } from "@/utils";
+import Image from "next/image";
+import Stack from "@/components/custom/stack";
 
 const tabs: TabItem[] = [
   {
@@ -101,47 +103,60 @@ const tabs: TabItem[] = [
     label: "Rental",
     icon: Building,
   },
-  {
-    value: "maintenance",
-    label: "Maintenance",
-    icon: Wrench,
-  },
-  {
-    value: "provider",
-    label: "Provider",
-    icon: Users,
-  },
+  // {
+  //   value: "maintenance",
+  //   label: "Maintenance",
+  //   icon: Wrench,
+  // },
   {
     value: "service",
     label: "Service",
     icon: Briefcase,
-  },
-  {
-    value: "other",
-    label: "Other",
-    icon: MoreHorizontal,
   },
 ];
 
 const ApplicationsPage = () => {
   // State for applications data
 
-  const { isTenant, isManager, data } = useAuth();
+  const { isTenant, isManager, isOwner, data } = useAuth();
   const router = useRouter();
 
-  const [applications, setApplications] = useState<
-    (Application & WithTimestampsStr)[]
-  >([]);
+  const [applications, setApplications] = useState<ApplicationWithIdAndTS[]>(
+    [],
+  );
 
   const getApplicationsOfBuildingQuery = useGetApplicationsOfBuildingQuery(
     data?.building?.id,
   );
 
+  const getApplicationsQuery = useGetApplicationsQuery();
+
   useEffect(() => {
     if (isManager) {
-      setApplications(getApplicationsOfBuildingQuery.data || []);
+      const applications = getApplicationsOfBuildingQuery.data || [];
+
+      if (!data?.building) {
+        return;
+      }
+
+      const buildingApplications = applications.filter(
+        (app) => app.building.id === data?.building?.id,
+      );
+
+      setApplications(buildingApplications);
     }
-  }, [getApplicationsOfBuildingQuery.data, isManager]);
+
+    if (isOwner) {
+      const applications = getApplicationsQuery.data || [];
+      setApplications(applications);
+    }
+  }, [
+    data?.building,
+    getApplicationsOfBuildingQuery.data,
+    getApplicationsQuery.data,
+    isManager,
+    isOwner,
+  ]);
 
   // State for filters and search
   const [activeTab, setActiveTab] = useState<APPLICATION_TYPE | "all">("all");
@@ -156,9 +171,8 @@ const ApplicationsPage = () => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // State for selected application and detail view
-  const [selectedApplication, setSelectedApplication] = useState<
-    (Application & WithTimestampsStr) | null
-  >(null);
+  const [selectedApplication, setSelectedApplication] =
+    useState<ApplicationWithIdAndTS | null>(null);
   const [showDetailView, setShowDetailView] = useState(false);
 
   if (isTenant) {
@@ -269,9 +283,7 @@ const ApplicationsPage = () => {
   }, [applications]);
 
   // Handle application selection
-  const handleSelectApplication = (
-    application: Application & WithTimestampsStr,
-  ) => {
+  const handleSelectApplication = (application: ApplicationWithIdAndTS) => {
     setSelectedApplication(application);
     setShowDetailView(true);
   };
@@ -544,7 +556,7 @@ const ApplicationsPage = () => {
         </div>
       </main>
 
-      <LogJSON data={{ selectedApplication }} />
+      <LogJSON data={{ selectedApplication, applications }} />
 
       {/* Application Detail Dialog */}
       {selectedApplication && (
@@ -560,8 +572,8 @@ const ApplicationsPage = () => {
 };
 
 type RenderApplicationCardProps = {
-  application: Application & WithTimestampsStr;
-  onSelectApplication: (application: Application & WithTimestampsStr) => void;
+  application: ApplicationWithIdAndTS;
+  onSelectApplication: (application: ApplicationWithIdAndTS) => void;
 };
 
 // Render application card based on type
@@ -578,10 +590,10 @@ const RenderApplicationCard = ({
       className="group"
     >
       <Card
-        className="mb-4 cursor-pointer overflow-hidden bg-secondary/50 transition-all duration-200 hover:shadow-md"
+        className="mb-4 cursor-pointer overflow-hidden border-primary/50 bg-white transition-all duration-200 hover:shadow-md"
         onClick={() => onSelectApplication(application)}
       >
-        <CardContent className="p-4 text-primary">
+        <CardContent className="p-4 text-black">
           <div className="flex flex-col space-y-4">
             {/* Header with ID, Type and Status */}
             <div className="flex items-center justify-between">
@@ -619,17 +631,35 @@ const RenderApplicationCard = ({
                       ]
                     }
                   </p> */}
-                  <p className="text-sm text-primary/70">
+                  <p className="text-sm text-black/70">
                     Unit {(application as RentalApplication).unit?.unitNumber}{" "}
                     at {application.building.name}
                   </p>
-                  <p className="text-sm text-primary/70">
+                  <p className="text-sm text-black/70">
                     {(application as RentalApplication).unit.type} •{" "}
                     {
                       (application as RentalApplication).leaseDetails
                         .numberOfEmployees
                     }{" "}
                     employees
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              {application.type === "service" && (
+                <div className="space-y-1">
+                  <p className="text-sm text-black/70">
+                    Serve as /
+                    {(application as ServiceApplication).user.serviceType}/ at{" "}
+                    {application.building.name}
+                  </p>
+                  <p className="line-clamp-1 text-sm text-black/70">
+                    {
+                      (application as ServiceApplication).user
+                        .serviceDescription
+                    }
                   </p>
                 </div>
               )}
@@ -643,7 +673,7 @@ const RenderApplicationCard = ({
                     src={application.submittedBy?.firstName.slice(0, 2)}
                     alt={application.submittedBy?.firstName}
                   />
-                  <AvatarFallback className="bg-white text-xs text-primary">
+                  <AvatarFallback className="bg-white text-xs text-black">
                     {(
                       application.submittedBy?.firstName +
                       application.submittedBy?.lastName
@@ -653,7 +683,7 @@ const RenderApplicationCard = ({
                       .join("")}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-primary/70">
+                <span className="text-black/70">
                   {application.submittedBy?.firstName}{" "}
                   {application.submittedBy?.lastName}
                 </span>
@@ -666,8 +696,8 @@ const RenderApplicationCard = ({
                   {application.priority.charAt(0).toUpperCase() +
                     application.priority.slice(1)}
                 </Badge>
-                <span className="text-primary/50">
-                  {timeElapsed(application.createdAt)}
+                <span className="text-black/50">
+                  {timeElapsed(application.createdAt || "0")}
                 </span>
               </div>
             </div>
@@ -679,7 +709,7 @@ const RenderApplicationCard = ({
 };
 
 type RenderApplicationDetailProps = {
-  application: Application & WithTimestampsStr;
+  application: ApplicationWithIdAndTS
   showDetailView: boolean;
   setShowDetailView: (show: boolean) => void;
 };
@@ -833,6 +863,85 @@ const RenderApplicationDetail = ({
                             <RentalApplicationDetail
                               application={application as RentalApplication}
                             />
+                          </div>
+                        )}
+                        {application.type === "service" && (
+                          <div className="space-y-6">
+                            <motion.div
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.1, duration: 0.4 }}
+                              className="space-y-4"
+                            >
+                              <h3 className="border-b pb-2 text-lg font-semibold text-primary">
+                                Business Information
+                              </h3>
+                              <div className="space-y-3">
+                                <div>
+                                  <label className="text-sm font-medium text-muted-foreground">
+                                    Business Name
+                                  </label>
+                                  <p className="font-medium">
+                                    {
+                                      (application as ServiceApplication).user
+                                        .businessName
+                                    }
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-muted-foreground">
+                                    Service Price
+                                  </label>
+                                  <p className="font-medium">
+                                    ETB
+                                    {
+                                      (application as ServiceApplication).user
+                                        .servicePrice
+                                    }
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-muted-foreground">
+                                    Business Address
+                                  </label>
+                                  <p className="font-medium">
+                                    {
+                                      (application as ServiceApplication).user
+                                        .businessAddress
+                                    }
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-muted-foreground">
+                                    Tax ID
+                                  </label>
+                                  <p className="font-medium">
+                                    {
+                                      (application as ServiceApplication).user
+                                        .taxId
+                                    }
+                                  </p>
+                                </div>
+                                <Stack spacing={"sm"}>
+                                  <label className="text-sm font-medium text-muted-foreground">
+                                    Service Assets
+                                  </label>
+                                  <section className="relative h-[20rem]">
+                                    {(
+                                      application as ServiceApplication
+                                    ).user.images.map((img, ind) => (
+                                      <Image
+                                        key={ind}
+                                        src={getFullFileURL(img)}
+                                        fill
+                                        className="rounded-lg object-cover"
+                                        alt="Service image"
+                                      />
+                                    ))}
+                                  </section>
+                                </Stack>
+                              </div>
+                            </motion.div>
                           </div>
                         )}
 
@@ -1061,32 +1170,34 @@ const RenderApplicationDetail = ({
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="p-4">
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                              <Button className="justify-start gap-2">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                              <Button
+                                onClick={() => {
+                                  router.push(
+                                    "/dashboard/messages?userId=" +
+                                      application.submittedBy.id,
+                                  );
+                                }}
+                                className="justify-start gap-2"
+                              >
                                 <MessageSquare className="h-4 w-4" />
                                 <span>Contact Applicant</span>
                               </Button>
 
-                              <Button
-                                variant="outline"
-                                className="justify-start gap-2"
-                              >
-                                <Calendar className="h-4 w-4" />
-                                <span>Schedule Meeting</span>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="justify-start gap-2"
-                                onClick={() => {
-                                  // TODO: MAKE END POINT
-                                  router.push(
-                                    `/dashboard/leases?appId=${application.id}`,
-                                  );
-                                }}
-                              >
-                                <FileText className="h-4 w-4" />
-                                <span>Send Lease</span>
-                              </Button>
+                              {application.type === "rental" && (
+                                <Button
+                                  variant="outline"
+                                  className="justify-start gap-2"
+                                  onClick={() => {
+                                    router.push(
+                                      `/dashboard/leases?appId=${application.id}`,
+                                    );
+                                  }}
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  <span>Send Lease</span>
+                                </Button>
+                              )}
                               <Button
                                 variant="outline"
                                 className="justify-start gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"

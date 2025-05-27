@@ -49,7 +49,7 @@ import { CreateLeaseTemplateDrawer } from "./_components/create-lease-template-d
 import { CreateLeaseDrawer } from "./_components/create-lease-drawer";
 import PageHeader from "@/components/custom/page-header";
 import Stat from "@/components/custom/stat";
-import { LEASE_STATUS } from "@/types";
+import { LEASE_STATUS, RentalApplication } from "@/types";
 import {
   useCreateLeaseMutation,
   useDeleteLeaseTemplateMutation,
@@ -72,6 +72,8 @@ import { CreateLease, LeaseTemplate } from "./_schema";
 
 import { generateLeaseDataValues } from "@/utils/lease-data-mapper";
 import { getFullNameFromObj, getLastDateAfterMonth } from "@/utils";
+import { useAuth } from "@/app/quries/useAuth";
+import { getStatusBadge } from "@/utils/components";
 
 export default function LeasesPage() {
   const router = useRouter();
@@ -97,6 +99,8 @@ export default function LeasesPage() {
   const getApplicationByIdQuery = useGetApplicationByIdQuery(appId);
   const application = getApplicationByIdQuery.data;
 
+  const auth = useAuth();
+
   // Sample data for templates
   const templates = getLeaseTemplatesQuery.data || [];
   const [pdfBlob, setPDFBlob] = useState<Blob | null>(null);
@@ -108,7 +112,6 @@ export default function LeasesPage() {
   const appFound = !!leases.find((l) => {
     return l.application.id === appId;
   });
-
 
   // Filter leases based on search query
   const filteredLeases = leases.filter(
@@ -143,6 +146,13 @@ export default function LeasesPage() {
       return;
     }
 
+    const managerSignature = auth.data?.manager?.signature;
+
+    if (!managerSignature) {
+      warningToast("Please, set signature before creating leases.");
+      return;
+    }
+
     setSelectedTemplate(leaseTemplate);
     setCreateLeaseDialogOpen(false);
     setIsLeasePreviewOpen(true);
@@ -152,86 +162,6 @@ export default function LeasesPage() {
   const handleSendLease = (leaseId: string) => {
     console.log("Sending lease:", leaseId);
     // Implement API call to send lease
-  };
-
-  // Get status badge for lease
-  const getStatusBadge = (status: LEASE_STATUS) => {
-    switch (status) {
-      case LEASE_STATUS.DRAFT:
-        return (
-          <Badge
-            variant="outline"
-            className="bg-muted/50 text-muted-foreground"
-          >
-            <div className="flex items-center gap-1.5">
-              <FileText className="h-3 w-3" />
-              <span>Draft</span>
-            </div>
-          </Badge>
-        );
-      case LEASE_STATUS.SENT:
-        return (
-          <Badge
-            variant="secondary"
-            className="border-0 bg-blue-100 text-blue-700 hover:bg-blue-200"
-          >
-            <div className="flex items-center gap-1.5">
-              <Send className="h-3 w-3" />
-              <span>Sent</span>
-            </div>
-          </Badge>
-        );
-      case LEASE_STATUS.SIGNED:
-        return (
-          <Badge
-            variant="default"
-            className="border-0 bg-purple-100 text-purple-700 hover:bg-purple-200"
-          >
-            <div className="flex items-center gap-1.5">
-              <FileSignature className="h-3 w-3" />
-              <span>Signed</span>
-            </div>
-          </Badge>
-        );
-      case LEASE_STATUS.ACTIVE:
-        return (
-          <Badge
-            variant="default"
-            className="border-0 bg-green-100 text-green-700 hover:bg-green-200"
-          >
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3 w-3" />
-              <span>Active</span>
-            </div>
-          </Badge>
-        );
-      case LEASE_STATUS.EXPIRED:
-        return (
-          <Badge
-            variant="destructive"
-            className="border-0 bg-amber-100 text-amber-700 hover:bg-amber-200"
-          >
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-3 w-3" />
-              <span>Expired</span>
-            </div>
-          </Badge>
-        );
-      case LEASE_STATUS.TERMINATED:
-        return (
-          <Badge
-            variant="destructive"
-            className="border-0 bg-red-100 text-red-700 hover:bg-red-200"
-          >
-            <div className="flex items-center gap-1.5">
-              <AlertCircle className="h-3 w-3" />
-              <span>Terminated</span>
-            </div>
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
   };
 
   // Get summary stats
@@ -287,7 +217,7 @@ export default function LeasesPage() {
         contractFile: pdfBlob,
         status: LEASE_STATUS.ACTIVE,
         tenantId: application?.submittedBy.id,
-        unitId: application?.unit.id,
+        unitId: (application as RentalApplication)?.unit.id,
         templateId: selectedTemplate.id,
       });
     }
@@ -331,12 +261,13 @@ export default function LeasesPage() {
         <DialogContent className="w-full max-w-xl p-0">
           {isLeasePreviewOpen && (
             <LeasePDFGenerator
+              managerSignature={auth.data?.manager?.signature}
               showPreview={true}
               generateOnMount={true}
               leaseTitle={selectedTemplate?.name || "Lease Agreement"}
               leaseDescription={selectedTemplate?.description}
               sections={selectedTemplate?.sections || []}
-              dataValues={generateLeaseDataValues(application)}
+              dataValues={generateLeaseDataValues(application as RentalApplication)}
               onPdfGenerated={(blob) => {
                 setPDFBlob(blob);
                 setIsPDFBlobSet(true);
@@ -504,11 +435,7 @@ export default function LeasesPage() {
                             <TableCell className="font-medium">
                               {getFullNameFromObj(lease.tenant.userId || {})}
                             </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="font-normal">
-                                {lease.unit.unitNumber}
-                              </Badge>
-                            </TableCell>
+                            <TableCell>{lease.unit.unitNumber}</TableCell>
                             <TableCell className="max-w-[200px] truncate">
                               {lease.leaseTemplate?.name || "Not Defined"}
                             </TableCell>
@@ -800,7 +727,7 @@ export default function LeasesPage() {
         onOpenChange={setCreateLeaseDialogOpen}
         templates={templates}
         onCreateLease={handleCreateLease}
-        application={getApplicationByIdQuery.data}
+        application={(getApplicationByIdQuery.data as RentalApplication)}
       />
     </PageWrapper>
   );

@@ -31,7 +31,7 @@ import {
 } from "@/components/custom/form-field";
 import CustomSheetHeader from "@/components/custom/sheet-header";
 import { Group } from "@/components/custom/group";
-import { RentalApplication, Tenant, WithTimestampsStr } from "@/types";
+import { RentalApplication } from "@/types";
 // import LogJSON from "@/components/custom/log-json";
 import Stack from "@/components/custom/stack";
 // import { DataListInput } from "@/components/custom/data-list-input";
@@ -50,13 +50,7 @@ interface CreateLeaseDrawerProps {
   onOpenChange: (open: boolean) => void;
   templates: (LeaseTemplate & { id: string })[];
   onCreateLease: (lease: Partial<CreateLease>) => void;
-  application:
-    | (RentalApplication & {
-        id: string;
-      } & {
-        submittedBy: Tenant;
-      } & WithTimestampsStr)
-    | undefined;
+  application: RentalApplication
 }
 
 export function CreateLeaseDrawer({

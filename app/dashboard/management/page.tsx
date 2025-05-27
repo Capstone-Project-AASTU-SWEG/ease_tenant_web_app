@@ -14,10 +14,7 @@ import {
   AlertTriangle,
   MapPin,
   Clock,
-  TrendingUp,
-  DollarSign,
-  CheckCircle,
-  MoreHorizontalIcon,
+  MoreVerticalIcon,
 } from "lucide-react";
 import {
   Card,
@@ -33,17 +30,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { BuildingFromAPI } from "@/types";
 import Stat from "@/components/custom/stat";
 import {
-  LineChart,
-  Line,
   PieChart as RechartsPieChart,
   Pie,
   Cell,
   ResponsiveContainer,
-  XAxis,
   Tooltip,
   Legend,
-  AreaChart,
-  Area,
 } from "recharts";
 import {
   DropdownMenu,
@@ -53,37 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import { warningToast } from "@/components/custom/toasts";
-
-// Mock data for charts
-const occupancyTrendData = [
-  { month: "Jan", occupancy: 85 },
-  { month: "Feb", occupancy: 88 },
-  { month: "Mar", occupancy: 90 },
-  { month: "Apr", occupancy: 92 },
-  { month: "May", occupancy: 95 },
-  { month: "Jun", occupancy: 98 },
-  { month: "Jul", occupancy: 100 },
-  { month: "Aug", occupancy: 100 },
-  { month: "Sep", occupancy: 98 },
-  { month: "Oct", occupancy: 97 },
-  { month: "Nov", occupancy: 95 },
-  { month: "Dec", occupancy: 100 },
-];
-
-const revenueData = [
-  { month: "Jan", revenue: 12500 },
-  { month: "Feb", revenue: 12500 },
-  { month: "Mar", revenue: 12800 },
-  { month: "Apr", revenue: 13000 },
-  { month: "May", revenue: 13200 },
-  { month: "Jun", revenue: 13500 },
-  { month: "Jul", revenue: 13500 },
-  { month: "Aug", revenue: 13500 },
-  { month: "Sep", revenue: 13200 },
-  { month: "Oct", revenue: 13000 },
-  { month: "Nov", revenue: 12800 },
-  { month: "Dec", revenue: 13500 },
-];
+import LogJSON from "@/components/custom/log-json";
 
 const maintenanceData = [
   { name: "Plumbing", value: 8 },
@@ -103,6 +65,13 @@ const Page = () => {
 
   return (
     <PageWrapper className="py-0">
+      <LogJSON
+        data={{
+          isManager: auth.isManager,
+          isOwner: auth.isOwner,
+          data: auth.data,
+        }}
+      />
       <PageHeader
         title="Manager Dashboard"
         description={`Welcome back, ${getFullNameFromObj(userData?.user)}`}
@@ -111,9 +80,20 @@ const Page = () => {
             {/* Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger>
-                <MoreHorizontalIcon />
+                <MoreVerticalIcon />
               </DropdownMenuTrigger>
-              <DropdownMenuContent side="bottom">
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (!building) {
+                      warningToast("Building info not found.");
+                      return;
+                    }
+                    router.push(`/dashboard/buildings/${building.id}`);
+                  }}
+                >
+                  Building Detail
+                </DropdownMenuItem>
                 <DropdownMenuItem>Manage Tenants</DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
@@ -128,8 +108,6 @@ const Page = () => {
                 >
                   Edit Building Detail
                 </DropdownMenuItem>
-                <DropdownMenuItem>Generate Reports</DropdownMenuItem>
-                <DropdownMenuItem>Maintenance</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </section>
@@ -161,8 +139,6 @@ const BuildingAnalytics = ({ building }: { building: BuildingFromAPI }) => {
     },
   );
 
-  // Calculate monthly revenue based on occupancy
-  const estimatedMonthlyRevenue = building.occupiedUnits * 3000; // Assuming $3000 per unit
 
   return (
     <div className="space-y-6">
@@ -199,133 +175,6 @@ const BuildingAnalytics = ({ building }: { building: BuildingFromAPI }) => {
           moreInfo="Building information"
           icon={Clock}
         />
-      </div>
-
-      {/* New Premium Dashboard Overview Section */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="col-span-1 overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-lg">
-              <DollarSign className="mr-2 h-5 w-5 text-primary" />
-              Estimated Monthly Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mt-2 flex items-end justify-between">
-              <div>
-                <p className="text-3xl font-bold">
-                  ${estimatedMonthlyRevenue.toLocaleString()}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Based on current occupancy
-                </p>
-              </div>
-              <Badge variant="outline" className="mb-1 bg-primary/10">
-                <TrendingUp className="mr-1 h-3 w-3" />
-                {building.occupancyRate}% Efficiency
-              </Badge>
-            </div>
-            <div className="mt-4 h-[100px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData}>
-                  <defs>
-                    <linearGradient
-                      id="colorRevenue"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="hsl(var(--primary))"
-                        stopOpacity={0.3}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="hsl(var(--primary))"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--background))",
-                      borderColor: "hsl(var(--border))",
-                    }}
-                    labelStyle={{ color: "hsl(var(--foreground))" }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="hsl(var(--primary))"
-                    fillOpacity={1}
-                    fill="url(#colorRevenue)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="col-span-1 overflow-hidden bg-gradient-to-br from-green-500/5 to-green-500/10 backdrop-blur-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-lg">
-              <CheckCircle className="mr-2 h-5 w-5 text-green-500" />
-              Occupancy Trend
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mt-2 flex items-end justify-between">
-              <div>
-                <p className="text-3xl font-bold">{building.occupancyRate}%</p>
-                <p className="text-sm text-muted-foreground">
-                  Current occupancy rate
-                </p>
-              </div>
-              <Badge
-                variant="outline"
-                className="mb-1 bg-green-500/10 text-green-600"
-              >
-                <TrendingUp className="mr-1 h-3 w-3" />
-                Stable
-              </Badge>
-            </div>
-            <div className="mt-4 h-[100px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={occupancyTrendData}>
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--background))",
-                      borderColor: "hsl(var(--border))",
-                    }}
-                    labelStyle={{ color: "hsl(var(--foreground))" }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="occupancy"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    dot={{ r: 0 }}
-                    activeDot={{ r: 4, strokeWidth: 0 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Tabs defaultValue="details" className="w-full">

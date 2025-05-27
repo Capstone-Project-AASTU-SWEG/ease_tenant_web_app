@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowUpRight,
   Edit,
-  FileText,
   DollarSign,
   SquareIcon as SquareFoot,
   XCircle,
@@ -32,17 +31,9 @@ import {
   Search,
 } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,7 +43,7 @@ import { StatusBadgeStyles, UnitTypeIcons } from "@/constants/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useGetBuildingQuery } from "@/app/quries/useBuildings";
-import { useDeleteUnitMutation, type UnitWithId } from "@/app/quries/useUnits";
+import { UnitWithIdOnly, useDeleteUnitMutation } from "@/app/quries/useUnits";
 import {
   UnitDetailsSheet,
   type UnitAction,
@@ -74,8 +65,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
 
   // State management
   const [selectedFloor, setSelectedFloor] = useState("1");
-  const [isEditFloorPlanOpen, setIsEditFloorPlanOpen] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState<UnitWithId | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<UnitWithIdOnly | null>(null);
   const [isUnitDetailsDrawerOpen, setIsUnitDetailsDrawerOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [statusFilter, setStatusFilter] = useState<UNIT_STATUS | "ALL">("ALL");
@@ -114,7 +104,15 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
       {
         icon: <Edit className="h-4 w-4" />,
         label: "Edit",
-        onClick: () => console.log("Edit clicked"),
+        onClick: () => {
+          if (!selectedUnit) {
+            warningToast("Unit not found.");
+            return;
+          }
+          router.push(
+            `/dashboard/buildings/${buildingID}/units/new?unitId=${selectedUnit.id}&buildingId=${buildingID}`,
+          );
+        },
         variant: "outline" as const,
       },
       {
@@ -153,7 +151,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
     return isAdmin ? [...commonActions, ...adminOnlyActions] : commonActions;
   };
 
-  const filterUnits = (units: UnitWithId[]) => {
+  const filterUnits = (units: UnitWithIdOnly[]) => {
     console.log({ units });
     return units.filter((unit) => {
       const unitStatus = unit.status;
@@ -177,7 +175,7 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
     });
   };
 
-  const handleUnitClick = (unit: UnitWithId) => {
+  const handleUnitClick = (unit: UnitWithIdOnly) => {
     setSelectedUnit(unit);
     setIsUnitDetailsDrawerOpen(true);
   };
@@ -610,6 +608,9 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   console.log("Edit clicked", unit);
+                                  router.push(
+                                    `/dashboard/buildings/${buildingID}/units/new?unitId=${unit.id}&buildingId=${buildingID}`,
+                                  );
                                 }}
                               >
                                 <Edit className="h-4 w-4" />
@@ -676,6 +677,9 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     console.log("Edit clicked", unit);
+                                    router.push(
+                                      `/dashboard/buildings/${buildingID}/units/new?unitId=${unit.id}&buildingId=${buildingID}`,
+                                    );
                                   }}
                                 >
                                   <Edit className="h-3.5 w-3.5" />
@@ -698,78 +702,9 @@ const FloorPlan = ({ buildingID }: { buildingID: string }) => {
               Showing {filteredUnits.length} of {units.length} units on Floor{" "}
               {selectedFloor}
             </p>
-            {isAdmin && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditFloorPlanOpen(true)}
-              >
-                <Edit className="mr-2 h-3.5 w-3.5" />
-                Edit Floor Plan
-              </Button>
-            )}
           </div>
         </CardFooter>
       </section>
-
-      {/* Edit Floor Plan Dialog */}
-      <Dialog open={isEditFloorPlanOpen} onOpenChange={setIsEditFloorPlanOpen}>
-        <DialogContent className="border-none sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Edit Commercial Floor Plan</DialogTitle>
-            <DialogDescription>
-              Modify the layout and units of Floor {selectedFloor}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="floor-name">Floor Name</Label>
-                <Input
-                  id="floor-name"
-                  defaultValue={`Floor ${selectedFloor}`}
-                  className="bg-background/60"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="floor-units">Number of Units</Label>
-                <Input
-                  id="floor-units"
-                  type="number"
-                  defaultValue="12"
-                  className="bg-background/60"
-                />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label>Floor Layout</Label>
-              <div className="flex aspect-video w-full items-center justify-center rounded-lg border border-dashed border-gray-300 bg-muted/10 p-4">
-                <p className="text-center text-muted-foreground">
-                  <FileText className="mx-auto mb-2 h-8 w-8" />
-                  Drag and drop a floor plan image or click to upload
-                </p>
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="floor-notes">Notes</Label>
-              <Textarea
-                id="floor-notes"
-                placeholder="Add any notes about this commercial floor..."
-                className="bg-background/60"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditFloorPlanOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit">Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Unit Details Sheet - Using the new reusable component */}
       {selectedUnit && (

@@ -47,7 +47,7 @@ import {
 } from "@/app/quries/useBuildings";
 import { errorToast } from "@/components/custom/toasts";
 import { useRouter } from "next/navigation";
-import { storeBuildingId } from "@/utils";
+import { getFullFileURL, storeBuildingId } from "@/utils";
 import { useAuth } from "@/app/quries/useAuth";
 
 // Extended building type with calculated fields
@@ -139,7 +139,10 @@ export default function BuildingsPage() {
         <div className="relative mb-12 overflow-hidden rounded-xl bg-gradient-to-r from-primary/90 to-primary/70 shadow-xl">
           <div className="absolute inset-0 z-0 opacity-20">
             <Image
-              src="/placeholder.svg?height=400&width=1200"
+              src={
+                ASSETS.IMAGES.BUILDING_IMAGE ||
+                "/placeholder.svg?height=400&width=1200"
+              }
               alt="Buildings background"
               fill
               className="object-cover"
@@ -337,91 +340,6 @@ export default function BuildingsPage() {
           </motion.div>
         </div>
 
-        {/* Testimonials Section */}
-        {/* <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mb-12 rounded-xl bg-slate-50 p-8 dark:bg-slate-900/50"
-        >
-          <h2 className="mb-6 text-center text-2xl font-bold">
-            What Our Tenants Say
-          </h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="border-none bg-white shadow-sm dark:bg-slate-800">
-              <CardContent className="p-6">
-                <div className="mb-4 flex text-amber-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-current" />
-                  ))}
-                </div>
-                <p className="mb-4 italic text-muted-foreground">
-                  {`"Moving our business here was the best decision we made. The
-                  facilities are top-notch and the management team is incredibly
-                  responsive."`}
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-slate-200" />
-                  <div>
-                    <p className="font-medium">Sarah Johnson</p>
-                    <p className="text-sm text-muted-foreground">
-                      Johnson & Associates
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none bg-white shadow-sm dark:bg-slate-800">
-              <CardContent className="p-6">
-                <div className="mb-4 flex text-amber-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-current" />
-                  ))}
-                </div>
-                <p className="mb-4 italic text-muted-foreground">
-                  {`"The location is perfect for our clients, and the amenities
-                  have helped us attract top talent. Couldn't be happier with
-                  our choice."`}
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-slate-200" />
-                  <div>
-                    <p className="font-medium">Michael Chen</p>
-                    <p className="text-sm text-muted-foreground">
-                      Innovate Tech Solutions
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none bg-white shadow-sm dark:bg-slate-800 md:col-span-2 lg:col-span-1">
-              <CardContent className="p-6">
-                <div className="mb-4 flex text-amber-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-current" />
-                  ))}
-                </div>
-                <p className="mb-4 italic text-muted-foreground">
-                  {` "The flexible lease terms allowed us to scale our business
-                  without worry. The building's prestige has also elevated our
-                  brand image."`}
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-slate-200" />
-                  <div>
-                    <p className="font-medium">Emily Rodriguez</p>
-                    <p className="text-sm text-muted-foreground">
-                      Catalyst Marketing
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div> */}
-
         {/* Call to Action */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -537,7 +455,11 @@ const BuildingCard = ({
         {/* Image with overlay */}
         <div className="relative aspect-[4/3] w-full overflow-hidden">
           <Image
-            src={building.imageUrls?.[0] || ASSETS.IMAGES.BUILDING_IMAGE}
+            src={
+              building.images?.[0]
+                ? getFullFileURL(building.images?.[0])
+                : ASSETS.IMAGES.BUILDING_IMAGE
+            }
             alt={building.name}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
             fill

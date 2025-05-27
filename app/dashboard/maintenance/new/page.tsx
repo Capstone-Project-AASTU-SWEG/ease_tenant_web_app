@@ -2,8 +2,8 @@
 
 import type React from "react";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -27,7 +27,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
-import { errorToast, successToast } from "@/components/custom/toasts";
+import {
+  errorToast,
+  successToast,
+  warningToast,
+} from "@/components/custom/toasts";
 import PageWrapper from "@/components/custom/page-wrapper";
 import PageHeader from "@/components/custom/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,7 +39,6 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Wrench,
   AlertTriangle,
-  UploadCloud,
   Info,
   CheckCircle2,
   Sparkles,
@@ -45,32 +48,27 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useGetUnitQuery } from "@/app/quries/useUnits";
+import { FileUploader } from "@/components/custom/file-upload";
+import LogJSON from "@/components/custom/log-json";
+import { useCreateMaintenanceRequestMutation } from "@/app/quries/useMaintenance";
+import { useAuth } from "@/app/quries/useAuth";
 
 // Schema
 const maintenanceRequestSchema = z.object({
-  property: z.string({
-    required_error: "Please select a property.",
-  }),
   category: z.string({
     required_error: "Please select a category.",
   }),
   description: z.string().min(10, {
     message: "Description must be at least 10 characters.",
   }),
-  priority: z.enum(["low", "medium", "high"], {
+  priority: z.enum(["Low", "Medium", "High"], {
     required_error: "Please select a priority level.",
   }),
   accessInstructions: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof maintenanceRequestSchema>;
-
-// Constants
-const properties = [
-  { id: "tt-201", name: "Office #201, Tech Tower" },
-  { id: "ep-405", name: "Suite #405, Eastside Plaza" },
-  { id: "wp-102", name: "Store #102, West Point" },
-];
 
 const categories = [
   { id: "plumbing", name: "Plumbing" },
@@ -86,7 +84,21 @@ const categories = [
 export default function NewMaintenanceRequestPage() {
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const searchParams = useSearchParams();
+  const unitId = searchParams.get("unitId") as string;
+  const auth = useAuth();
+
+  const { isTenant } = auth;
+
+  const getUnitQuery = useGetUnitQuery({
+    unitId: unitId,
+  });
+
+  const createMaintenanceRequestMutation =
+    useCreateMaintenanceRequestMutation();
+
+  const unit = getUnitQuery.data;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(maintenanceRequestSchema),
@@ -95,43 +107,60 @@ export default function NewMaintenanceRequestPage() {
     },
   });
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+  async function onSubmit(values: FormValues) {
+    const tenant = auth.data?.tenant;
+    if (!tenant) {
+      warningToast("Tenant info not found.");
+      return;
     }
+
+    if (!unit) {
+      warningToast("Unit info not found.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("tenantId", tenant.id);
+    formData.append("unitId", unit.id);
+    formData.append("category", values.category);
+    formData.append("description", values.description);
+    formData.append("priority", values.priority);
+    files.forEach((f) => {
+      formData.append("images", f);
+    });
+
+    createMaintenanceRequestMutation.mutate(formData);
   }
 
-  async function onSubmit(values: FormValues) {
-    setIsSubmitting(true);
-
-    try {
-      console.log(values);
-      console.log(files);
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
+  useEffect(() => {
+    if (createMaintenanceRequestMutation.isSuccess) {
       successToast("", {
         title: "Request Submitted!",
         description:
           "Your maintenance request has been successfully submitted.",
       });
 
-      router.push("/dashboard/maintenance?success=true");
-    } catch (error) {
-      const isErrorInstance = error instanceof Error;
-      errorToast("", {
-        title: "Error",
-        description: isErrorInstance
-          ? error.message
-          : "There was a problem submitting your request. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
+      if (isTenant) {
+        router.push("/dashboard/tenant?key=maintenance");
+      }
     }
-  }
+  }, [createMaintenanceRequestMutation.isSuccess, isTenant, router]);
+
+  useEffect(() => {
+    if (createMaintenanceRequestMutation.isError) {
+      errorToast("", {
+        title: "Request Submission",
+        description: createMaintenanceRequestMutation.error.message,
+      });
+    }
+  }, [
+    createMaintenanceRequestMutation.error?.message,
+    createMaintenanceRequestMutation.isError,
+  ]);
 
   return (
     <PageWrapper className="py-0">
+      <LogJSON data={{ unit }} />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -155,7 +184,8 @@ export default function NewMaintenanceRequestPage() {
               <h3 className="mb-6 text-lg font-semibold">Request Form</h3>
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Fields marked with <span className="text-red-500">*</span> are required
+                  Fields marked with <span className="text-red-500">*</span> are
+                  required
                 </p>
               </div>
             </CardContent>
@@ -201,42 +231,6 @@ export default function NewMaintenanceRequestPage() {
                             Issue Information
                           </h3>
                           <div className="space-y-6">
-                            <FormField
-                              control={form.control}
-                              name="property"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>
-                                    Property <span className="text-red-500">*</span>
-                                  </FormLabel>
-                                  <Select
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select a property" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {properties.map((property) => (
-                                        <SelectItem
-                                          key={property.id}
-                                          value={property.id}
-                                        >
-                                          {property.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  <FormDescription>
-                                    Select the property that needs maintenance
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
                             <div className="grid gap-6 md:grid-cols-2">
                               <FormField
                                 control={form.control}
@@ -244,7 +238,8 @@ export default function NewMaintenanceRequestPage() {
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>
-                                      Category <span className="text-red-500">*</span>
+                                      Category{" "}
+                                      <span className="text-red-500">*</span>
                                     </FormLabel>
                                     <Select
                                       onValueChange={field.onChange}
@@ -278,7 +273,8 @@ export default function NewMaintenanceRequestPage() {
                                   <FormItem className="space-y-3">
                                     <div className="flex items-center gap-2">
                                       <FormLabel>
-                                        Priority <span className="text-red-500">*</span>
+                                        Priority{" "}
+                                        <span className="text-red-500">*</span>
                                       </FormLabel>
                                       <Popover>
                                         <PopoverTrigger asChild>
@@ -332,7 +328,8 @@ export default function NewMaintenanceRequestPage() {
                                                     High Priority
                                                   </p>
                                                   <p className="text-xs text-muted-foreground">
-                                                    Same day or next business day
+                                                    Same day or next business
+                                                    day
                                                   </p>
                                                 </div>
                                               </div>
@@ -349,7 +346,7 @@ export default function NewMaintenanceRequestPage() {
                                       >
                                         <FormItem className="flex items-center space-x-2 space-y-0 rounded-lg border border-muted bg-white/20 px-4 py-2 transition-colors hover:bg-white/30">
                                           <FormControl>
-                                            <RadioGroupItem value="low" />
+                                            <RadioGroupItem value="Low" />
                                           </FormControl>
                                           <FormLabel className="font-normal">
                                             Low
@@ -357,7 +354,7 @@ export default function NewMaintenanceRequestPage() {
                                         </FormItem>
                                         <FormItem className="flex items-center space-x-2 space-y-0 rounded-lg border border-muted bg-white/20 px-4 py-2 transition-colors hover:bg-white/30">
                                           <FormControl>
-                                            <RadioGroupItem value="medium" />
+                                            <RadioGroupItem value="Medium" />
                                           </FormControl>
                                           <FormLabel className="font-normal">
                                             Medium
@@ -365,7 +362,7 @@ export default function NewMaintenanceRequestPage() {
                                         </FormItem>
                                         <FormItem className="flex items-center space-x-2 space-y-0 rounded-lg border border-muted bg-white/20 px-4 py-2 transition-colors hover:bg-white/30">
                                           <FormControl>
-                                            <RadioGroupItem value="high" />
+                                            <RadioGroupItem value="High" />
                                           </FormControl>
                                           <FormLabel className="font-normal">
                                             High
@@ -385,7 +382,8 @@ export default function NewMaintenanceRequestPage() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>
-                                    Description <span className="text-red-500">*</span>
+                                    Description{" "}
+                                    <span className="text-red-500">*</span>
                                   </FormLabel>
                                   <FormControl>
                                     <Textarea
@@ -395,9 +393,8 @@ export default function NewMaintenanceRequestPage() {
                                     />
                                   </FormControl>
                                   <FormDescription>
-                                    Please describe the issue in detail.
-                                    Include when it started, any
-                                    troubleshooting
+                                    Please describe the issue in detail. Include
+                                    when it started, any troubleshooting
                                     {"you've"} tried, etc.
                                   </FormDescription>
                                   <FormMessage />
@@ -405,64 +402,19 @@ export default function NewMaintenanceRequestPage() {
                               )}
                             />
 
-                            <div className="rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
-                              <h3 className="mb-4 text-base font-medium">
-                                Upload Photos
-                              </h3>
-                              <div className="flex justify-center rounded-lg border border-dashed border-gray-900/25 bg-white px-6 py-10 transition-colors hover:bg-white/90">
-                                <div className="text-center">
-                                  <UploadCloud className="mx-auto h-12 w-12 text-gray-300" />
-                                  <div className="mt-4 flex text-sm leading-6 text-muted-foreground">
-                                    <label
-                                      htmlFor="file-upload"
-                                      className="relative cursor-pointer rounded-md bg-transparent text-primary hover:text-primary/80"
-                                    >
-                                      <span>Upload files</span>
-                                      <input
-                                        id="file-upload"
-                                        name="file-upload"
-                                        type="file"
-                                        className="sr-only"
-                                        multiple
-                                        onChange={handleFileChange}
-                                      />
-                                    </label>
-                                    <p className="pl-1">or drag and drop</p>
-                                  </div>
-                                  <p className="text-xs leading-5 text-muted-foreground">
-                                    PNG, JPG, PDF up to 10MB each
-                                  </p>
-                                </div>
-                              </div>
-                              {files.length > 0 && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  className="mt-4 rounded-lg bg-white p-4 shadow-sm"
-                                >
-                                  <p className="text-sm font-medium">
-                                    Selected files:
-                                  </p>
-                                  <ul className="mt-2 space-y-1">
-                                    {files.map((file, index) => (
-                                      <motion.li
-                                        key={index}
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.1 }}
-                                        className="flex items-center text-sm text-muted-foreground"
-                                      >
-                                        <div className="mr-2 rounded-full bg-emerald-100 p-1">
-                                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                                        </div>
-                                        {file.name}
-                                      </motion.li>
-                                    ))}
-                                  </ul>
-                                </motion.div>
-                              )}
-                            </div>
-                            
+                            <FileUploader
+                              label="Upload Images"
+                              acceptedFormats={[
+                                "image/png",
+                                "image/jpeg",
+                                "image/gif",
+                              ]}
+                              maxFiles={3}
+                              showPreview
+                              onFilesChange={(files) => {
+                                setFiles(files);
+                              }}
+                            />
                           </div>
                         </div>
                       </motion.div>
@@ -471,10 +423,12 @@ export default function NewMaintenanceRequestPage() {
                     <div className="mt-auto flex justify-end border-t pt-6">
                       <Button
                         type="submit"
-                        disabled={isSubmitting}
+                        disabled={createMaintenanceRequestMutation.isPending}
                         className="gap-2 bg-gradient-to-r from-primary to-primary/80 transition-all hover:from-primary/90 hover:to-primary"
                       >
-                        {isSubmitting ? "Submitting..." : "Submit Request"}
+                        {createMaintenanceRequestMutation.isPending
+                          ? "Submitting..."
+                          : "Submit Request"}
                         <Sparkles className="h-4 w-4" />
                       </Button>
                     </div>

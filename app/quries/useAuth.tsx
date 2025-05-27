@@ -3,6 +3,7 @@ import {
   APIResponse,
   Application,
   BuildingFromAPI,
+  MaintenanceRequest,
   Manager,
   Tenant,
   Unit,
@@ -20,6 +21,7 @@ export type UserDetail = {
   building: BuildingFromAPI | null;
   manager: Manager | null;
   application: Application | null;
+  maintenanceRequests: MaintenanceRequest[]
 };
 
 export function useVerifyUserQuery() {
@@ -57,9 +59,15 @@ export function useVerifyUserQuery() {
 
 export const useAuth = () => {
   const verifyUserQuery = useVerifyUserQuery();
-  const isTenant = verifyUserQuery.data?.user.role === USER_TYPE.TENANT;
-  const isManager = verifyUserQuery.data?.user.role === USER_TYPE.MANAGER;
-  const isOwner = verifyUserQuery.data?.user.role === USER_TYPE.OWNER;
+  const isTenant =
+    verifyUserQuery.data?.user.role.toLocaleLowerCase() ===
+    USER_TYPE.TENANT.toLocaleLowerCase();
+  const isManager =
+    verifyUserQuery.data?.user.role.toLocaleLowerCase() ===
+    USER_TYPE.MANAGER.toLocaleLowerCase();
+  const isOwner =
+    verifyUserQuery.data?.user.role.toLocaleLowerCase() ===
+    USER_TYPE.OWNER.toLowerCase();
   const isMaintenance =
     verifyUserQuery.data?.user.role === USER_TYPE.MAINTENANCE;
   const isServiceProvider =

@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -28,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   CheckCircle2,
   Clock,
@@ -46,141 +47,22 @@ import {
   X,
   CalendarClock,
 } from "lucide-react";
-import Link from "next/link";
+
 import PageWrapper from "@/components/custom/page-wrapper";
 import Stat from "@/components/custom/stat";
 import SearchInput from "@/components/custom/search-input";
 import Image from "next/image";
+import {
+  MaintenanceStatus,
+  useGetAllMaintenanceRequestsQuery,
+  useUpdateMaintenanceStatusMutation,
+} from "@/app/quries/useMaintenance";
+import LogJSON from "@/components/custom/log-json";
+import { getFullFileURL } from "@/utils";
+import { MaintenanceRequest } from "@/types";
 
 // Types
 type Priority = "high" | "medium" | "low";
-type Status =
-  | "pending"
-  | "scheduled"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
-
-interface MaintenanceRequest {
-  id: string;
-  title: string;
-  property: string;
-  location: string;
-  description: string;
-  submittedDate: string;
-  completedDate?: string;
-  priority: Priority;
-  status: Status;
-  assignedTo?: string;
-  scheduledDate?: string;
-  images?: string[];
-  notes?: string[];
-}
-
-// Sample data
-const maintenanceRequests: MaintenanceRequest[] = [
-  {
-    id: "REQ-001",
-    title: "Broken Window",
-    property: "Tech Tower",
-    location: "Office #201",
-    description:
-      "The window in the conference room is cracked and needs to be replaced as soon as possible.",
-    submittedDate: "April 8, 2025",
-    priority: "high",
-    status: "scheduled",
-    assignedTo: "Maintenance Team A",
-    scheduledDate: "April 12, 2025",
-    images: ["/placeholder.svg?height=100&width=100"],
-    notes: [
-      "Technician will arrive between 9-11 AM",
-      "Replacement glass has been ordered",
-    ],
-  },
-  {
-    id: "REQ-002",
-    title: "Plumbing Issues",
-    property: "Eastside Plaza",
-    location: "Suite #405",
-    description:
-      "Water leaking from the bathroom sink. The area under the sink is wet and there appears to be a loose connection.",
-    submittedDate: "April 5, 2025",
-    priority: "medium",
-    status: "in_progress",
-    assignedTo: "John's Plumbing",
-    scheduledDate: "April 9, 2025",
-    images: [
-      "/placeholder.svg?height=100&width=100",
-      "/placeholder.svg?height=100&width=100",
-    ],
-    notes: [
-      "Plumber arrived at 10:30 AM",
-      "Additional parts needed, will return tomorrow",
-    ],
-  },
-  {
-    id: "REQ-003",
-    title: "Lighting Replacement",
-    property: "West Point",
-    location: "Store #102",
-    description:
-      "Several overhead lights are flickering and need to be replaced in the main retail area.",
-    submittedDate: "April 2, 2025",
-    priority: "low",
-    status: "pending",
-    notes: ["Waiting for approval from property management"],
-  },
-  {
-    id: "REQ-004",
-    title: "AC Repair",
-    property: "Tech Tower",
-    location: "Office #201",
-    description:
-      "Air conditioning unit is not cooling properly. Office temperature is consistently above 78°F.",
-    submittedDate: "March 15, 2025",
-    completedDate: "April 2, 2025",
-    priority: "high",
-    status: "completed",
-    assignedTo: "Cool Air Services",
-    notes: [
-      "Refrigerant was low",
-      "System cleaned and recharged",
-      "Recommended annual maintenance",
-    ],
-  },
-  {
-    id: "REQ-005",
-    title: "Door Lock Replacement",
-    property: "Eastside Plaza",
-    location: "Suite #405",
-    description:
-      "Main entrance door lock is sticking and difficult to open with the key.",
-    submittedDate: "March 10, 2025",
-    completedDate: "March 12, 2025",
-    priority: "medium",
-    status: "completed",
-    assignedTo: "Security Solutions Inc.",
-    notes: ["Lock mechanism replaced", "New keys provided to tenant"],
-  },
-  {
-    id: "REQ-006",
-    title: "Pest Control",
-    property: "West Point",
-    location: "Store #102",
-    description:
-      "Signs of rodent activity in the storage area. Need pest control services.",
-    submittedDate: "February 25, 2025",
-    completedDate: "February 27, 2025",
-    priority: "medium",
-    status: "completed",
-    assignedTo: "City Pest Control",
-    notes: [
-      "Traps set",
-      "Entry points sealed",
-      "Follow-up inspection scheduled for March",
-    ],
-  },
-];
 
 export default function MaintenancePage() {
   const [activeTab, setActiveTab] = useState("active");
@@ -191,24 +73,58 @@ export default function MaintenancePage() {
     useState<MaintenanceRequest | null>(null);
   const [showDetailPanel, setShowDetailPanel] = useState(false);
 
+  const getAllMaintenanceRequests = useGetAllMaintenanceRequestsQuery();
+
+  // Add loading state handling
+  if (getAllMaintenanceRequests.isLoading) {
+    return (
+      <PageWrapper className="relative min-h-screen">
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+            <p>Loading maintenance requests...</p>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  if (getAllMaintenanceRequests.isError) {
+    return (
+      <PageWrapper className="relative min-h-screen">
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-center">
+            <p className="text-destructive">
+              Error loading maintenance requests
+            </p>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  const maintenanceRequests = getAllMaintenanceRequests.data || [];
+
   const activeRequests = maintenanceRequests.filter(
-    (req) => req.status !== "completed" && req.status !== "cancelled",
+    (req) => req.status !== "Completed" && req.status !== "Cancelled",
   );
   const completedRequests = maintenanceRequests.filter(
-    (req) => req.status === "completed" || req.status === "cancelled",
+    (req) => req.status === "Completed" || req.status === "Cancelled",
   );
 
   const filteredActiveRequests = activeRequests.filter((req) => {
     const matchesSearch =
       searchQuery === "" ||
-      req.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.location.toLowerCase().includes(searchQuery.toLowerCase());
+      req.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.unit.unitNumber.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesPriority =
-      priorityFilter === "all" || req.priority === priorityFilter;
+      priorityFilter === "all" || req.priority.toLowerCase() === priorityFilter;
+
+    // For property filter, we'll use unit type or building info
     const matchesProperty =
-      propertyFilter === "all" || req.property === propertyFilter;
+      propertyFilter === "all" || req.unit.type === propertyFilter;
 
     return matchesSearch && matchesPriority && matchesProperty;
   });
@@ -216,20 +132,20 @@ export default function MaintenancePage() {
   const filteredCompletedRequests = completedRequests.filter((req) => {
     const matchesSearch =
       searchQuery === "" ||
-      req.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.location.toLowerCase().includes(searchQuery.toLowerCase());
+      req.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.unit.unitNumber.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesPriority =
-      priorityFilter === "all" || req.priority === priorityFilter;
+      priorityFilter === "all" || req.priority.toLowerCase() === priorityFilter;
     const matchesProperty =
-      propertyFilter === "all" || req.property === propertyFilter;
+      propertyFilter === "all" || req.unit.type === propertyFilter;
 
     return matchesSearch && matchesPriority && matchesProperty;
   });
 
   const properties = [
-    ...new Set(maintenanceRequests.map((req) => req.property)),
+    ...new Set(maintenanceRequests.map((req) => req.unit.type)),
   ];
 
   const handleViewRequest = (request: MaintenanceRequest) => {
@@ -244,18 +160,20 @@ export default function MaintenancePage() {
   // Calculate statistics
   const totalActive = activeRequests.length;
   const highPriority = activeRequests.filter(
-    (req) => req.priority === "high",
+    (req) => req.priority.toLowerCase() === "high",
   ).length;
   const inProgress = activeRequests.filter(
-    (req) => req.status === "in_progress",
+    (req) =>
+      req.status.toLowerCase() === "In Progress" || req.status === "Open",
   ).length;
   const scheduled = activeRequests.filter(
-    (req) => req.status === "scheduled",
+    (req) => req.status.toLowerCase() === "In ",
   ).length;
 
   return (
     <PageWrapper className="relative min-h-screen">
       <div className="space-y-8 pb-16">
+        <LogJSON data={{ maintenanceRequests }} position="bottom-left" />
         <PageHeader />
         <StatisticsSection
           totalActive={totalActive}
@@ -342,7 +260,7 @@ export default function MaintenancePage() {
                 />
               </TabsContent>
 
-              <TabsContent value="completed" className="m-0">
+              <TabsContent value="Completed" className="m-0">
                 <RequestsTable
                   requests={filteredCompletedRequests}
                   isActive={false}
@@ -382,15 +300,6 @@ function PageHeader() {
           Submit and track maintenance requests for your properties
         </p>
       </div>
-      <Button
-        asChild
-        className="bg-primary shadow-md transition-all hover:bg-primary/90"
-      >
-        <Link href="/dashboard/maintenance/new">
-          <Plus className="mr-2 h-4 w-4" />
-          New Request
-        </Link>
-      </Button>
     </motion.div>
   );
 }
@@ -435,7 +344,7 @@ function StatisticsSection({
         // color="blue"
       />
       <Stat
-        title="Scheduled"
+        title="In "
         value={scheduled}
         moreInfo="Upcoming maintenance"
         icon={CalendarClock}
@@ -492,23 +401,27 @@ function RequestsTable({
                     className="bg-background/60 transition-colors hover:bg-background/80"
                   >
                     <TableCell className="font-medium">
-                      {request.title}
+                      {request.category}
                     </TableCell>
                     <TableCell>
-                      {request.location}, {request.property}
+                      Unit {request.unit.unitNumber}, {request.unit.type}
                     </TableCell>
                     <TableCell>
-                      {isActive ? request.submittedDate : request.completedDate}
+                      {isActive
+                        ? new Date(request.createdAt).toLocaleDateString()
+                        : new Date(request.updatedAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       {isActive ? (
-                        <PriorityBadge priority={request.priority} />
+                        <PriorityBadge
+                          priority={request.priority.toLowerCase() as Priority}
+                        />
                       ) : (
-                        request.submittedDate
+                        new Date(request.createdAt).toLocaleDateString()
                       )}
                     </TableCell>
                     <TableCell>
-                      <StatusBadge status={request.status} />
+                      <StatusBadge status={request.status as MaintenanceStatus} />
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -587,37 +500,31 @@ function PriorityBadge({ priority }: { priority: Priority }) {
   }
 }
 
-function StatusBadge({ status }: { status: Status }) {
+function StatusBadge({ status }: { status: MaintenanceStatus }) {
   switch (status) {
-    case "pending":
+    case "Open":
       return (
         <Badge variant="outline" className="bg-muted/50 text-muted-foreground">
           <Clock className="mr-1 h-3 w-3" />
-          Pending
+          Open
         </Badge>
       );
-    case "scheduled":
-      return (
-        <Badge variant="outline" className="bg-amber-500/10 text-amber-500">
-          <Calendar className="mr-1 h-3 w-3" />
-          Scheduled
-        </Badge>
-      );
-    case "in_progress":
+
+    case "In Progress":
       return (
         <Badge variant="outline" className="bg-blue-500/10 text-blue-500">
           <Wrench className="mr-1 h-3 w-3" />
           In Progress
         </Badge>
       );
-    case "completed":
+    case "Completed":
       return (
         <Badge variant="outline" className="bg-green-500/10 text-green-500">
           <CheckCircle2 className="mr-1 h-3 w-3" />
           Completed
         </Badge>
       );
-    case "cancelled":
+    case "Canceled":
       return (
         <Badge variant="outline" className="bg-destructive/10 text-destructive">
           <X className="mr-1 h-3 w-3" />
@@ -634,6 +541,8 @@ function RequestDetailPanel({
   request: MaintenanceRequest;
   onClose: () => void;
 }) {
+  const updateMaintenanceRequestStatusMutation =
+    useUpdateMaintenanceStatusMutation();
   return (
     <motion.div
       initial={{ opacity: 0, x: 300 }}
@@ -652,56 +561,48 @@ function RequestDetailPanel({
       <div className="space-y-6 p-6">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">{request.title}</h2>
-            <StatusBadge status={request.status} />
+            <h2 className="text-2xl font-bold capitalize">
+              {request.category}
+            </h2>
+            <StatusBadge status={request.status as MaintenanceStatus} />
           </div>
           <div className="flex items-center text-sm text-muted-foreground">
             <Building className="mr-2 h-4 w-4" />
-            {request.location}, {request.property}
+            Unit {request.unit.unitNumber}, {request.unit.type}
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Request ID</p>
-            <p className="font-medium">{request.id}</p>
+            <p className="font-medium">{request.id.slice(0, 7) + "..."}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Priority</p>
-            <PriorityBadge priority={request.priority} />
+            <PriorityBadge
+              priority={request.priority.toLowerCase() as Priority}
+            />
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Submitted</p>
-            <p className="font-medium">{request.submittedDate}</p>
+            <p className="font-medium">
+              {new Date(request.createdAt).toLocaleDateString()}
+            </p>
           </div>
-          {request.completedDate && (
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Completed</p>
-              <p className="font-medium">{request.completedDate}</p>
-            </div>
-          )}
-          {request.scheduledDate && (
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Scheduled</p>
-              <p className="font-medium">{request.scheduledDate}</p>
-            </div>
-          )}
-          {request.assignedTo && (
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Assigned To</p>
-              <div className="flex items-center">
-                <Avatar className="mr-2 h-6 w-6">
-                  <AvatarFallback className="bg-primary/20 text-xs text-primary">
-                    {request.assignedTo
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <p className="font-medium">{request.assignedTo}</p>
-              </div>
-            </div>
-          )}
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Unit Details</p>
+            <p className="font-medium">{request.unit.sizeSqFt} sq ft</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Tenant</p>
+            <p className="font-medium">
+              {request.tenant.businessName || "N/A"}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Category</p>
+            <p className="font-medium">{request.category}</p>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -719,26 +620,14 @@ function RequestDetailPanel({
                   className="relative aspect-square overflow-hidden rounded-md border bg-muted/20"
                 >
                   <Image
-                    src={image || "/placeholder.svg"}
+                    src={getFullFileURL(image) || "/placeholder.svg"}
                     alt={`Request image ${index + 1}`}
                     className="h-full w-full object-cover"
+                    fill
                   />
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {request.notes && request.notes.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="font-semibold">Notes</h4>
-            <ul className="space-y-2">
-              {request.notes.map((note, index) => (
-                <li key={index} className="rounded-md bg-muted/20 p-3 text-sm">
-                  {note}
-                </li>
-              ))}
-            </ul>
           </div>
         )}
 
@@ -747,63 +636,60 @@ function RequestDetailPanel({
           <div className="space-y-4">
             <TimelineItem
               title="Request Submitted"
-              date={request.submittedDate}
+              date={new Date(request.createdAt).toLocaleDateString()}
               icon={<ClipboardList className="h-4 w-4" />}
-              status="completed"
+              status="Completed"
             />
 
-            {request.status === "scheduled" ||
-            request.status === "in_progress" ||
-            request.status === "completed" ? (
+            {request.status === "In Progress" ||
+            request.status === "Completed" ? (
               <TimelineItem
                 title="Maintenance Scheduled"
-                date={request.scheduledDate || "N/A"}
+                date={request.updatedAt || "N/A"}
                 icon={<Calendar className="h-4 w-4" />}
-                status="completed"
+                status="Completed"
               />
             ) : (
               <TimelineItem
                 title="Maintenance Scheduled"
                 date="Pending"
                 icon={<Calendar className="h-4 w-4" />}
-                status="pending"
+                status="Open"
               />
             )}
 
-            {request.status === "in_progress" ||
-            request.status === "completed" ? (
+            {request.status === "In Progress" ||
+            request.status === "Completed" ? (
               <TimelineItem
                 title="Work In Progress"
                 date={
-                  request.status === "in_progress" ? "Current" : "Completed"
+                  request.status === "In Progress" ? "Current" : "Completed"
                 }
                 icon={<Wrench className="h-4 w-4" />}
-                status={
-                  request.status === "in_progress" ? "current" : "completed"
-                }
+                status={"In Progress"}
               />
             ) : (
               <TimelineItem
                 title="Work In Progress"
                 date="Pending"
                 icon={<Wrench className="h-4 w-4" />}
-                status="pending"
+                status="Open"
               />
             )}
 
-            {request.status === "completed" ? (
+            {request.status === "Completed" ? (
               <TimelineItem
                 title="Request Completed"
-                date={request.completedDate || "N/A"}
+                date={request.updatedAt || "N/A"}
                 icon={<CheckCircle2 className="h-4 w-4" />}
-                status="completed"
+                status="Completed"
               />
             ) : (
               <TimelineItem
                 title="Request Completed"
                 date="Pending"
                 icon={<CheckCircle2 className="h-4 w-4" />}
-                status="pending"
+                status="Open"
               />
             )}
           </div>
@@ -811,34 +697,35 @@ function RequestDetailPanel({
       </div>
 
       <div className="sticky bottom-0 flex justify-between border-t bg-background/90 p-4 backdrop-blur-sm">
-        {request.status !== "completed" && request.status !== "cancelled" && (
+        {request.status !== "Completed" && request.status !== "Cancelled" && (
           <>
             <Button
               variant="outline"
               className="border-destructive/50 text-destructive hover:bg-destructive/10"
+              onClick={() => {
+                updateMaintenanceRequestStatusMutation.mutate({
+                  id: request.id,
+                  status: "Canceled",
+                });
+              }}
             >
               <X className="mr-2 h-4 w-4" />
               Cancel Request
             </Button>
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button
+              className="bg-primary hover:bg-primary/90"
+              onClick={() => {
+                updateMaintenanceRequestStatusMutation.mutate({
+                  id: request.id,
+                  status:
+                    request.status === "Open" ? "In Progress" : "Completed",
+                });
+              }}
+            >
               <Wrench className="mr-2 h-4 w-4" />
-              {request.status === "pending"
-                ? "Schedule"
-                : request.status === "scheduled"
-                  ? "Start Work"
-                  : "Complete"}
-            </Button>
-          </>
-        )}
-        {(request.status === "completed" || request.status === "cancelled") && (
-          <>
-            <Button variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              New Similar Request
-            </Button>
-            <Button>
-              <ArrowUpRight className="mr-2 h-4 w-4" />
-              View Property
+              {request.status === "Open"
+                ? "In Progress"
+                : request.status === "In Progress" && "Completed"}
             </Button>
           </>
         )}
@@ -856,17 +743,20 @@ function TimelineItem({
   title: string;
   date: string;
   icon: React.ReactNode;
-  status: "pending" | "current" | "completed";
+  status: MaintenanceStatus;
 }) {
   const statusColors = {
-    pending: "bg-muted/50 text-muted-foreground border-muted",
-    current: "bg-blue-500/10 text-blue-500 border-blue-500/30",
-    completed: "bg-green-500/10 text-green-500 border-green-500/30",
+    Open: "bg-muted/50 text-muted-foreground border-muted",
+    "In Progress": "bg-blue-500/10 text-blue-500 border-blue-500/30",
+    Completed: "bg-green-500/10 text-green-500 border-green-500/30",
+    Canceled: "bg-red-500/10 text-green-500 border-green-500/30",
   };
 
   return (
     <div className="flex items-start">
-      <div className={`mr-3 rounded-full p-2 ${statusColors[status]}`}>
+      <div
+        className={`mr-3 rounded-full p-2 ${statusColors[status] as string}`}
+      >
         {icon}
       </div>
       <div className="flex-1">

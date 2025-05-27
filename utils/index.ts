@@ -1,4 +1,5 @@
-import { Address } from "@/types";
+import ENV from "@/config/env";
+import { Address, PRIORITY_LEVEL } from "@/types";
 
 // Helper functions for occupancy indicators
 export const getOccupancyColor = (occupancy: number) => {
@@ -70,3 +71,47 @@ export const getFloors = (floorCount: number) => {
     return i + 1;
   });
 };
+
+export const timeElapsed = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffHours = Math.floor(
+    (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+  );
+
+  if (diffDays > 0) {
+    return `${diffDays}d ago`;
+  } else if (diffHours > 0) {
+    return `${diffHours}h ago`;
+  } else {
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${diffMinutes}m ago`;
+  }
+};
+
+export const getPriorityColor = (priority: PRIORITY_LEVEL): string => {
+  switch (priority) {
+    case "urgent":
+      return "bg-red-100 text-red-800 hover:bg-red-200";
+    case "high":
+      return "bg-orange-100 text-orange-800 hover:bg-orange-200";
+    case "medium":
+      return "bg-blue-100 text-blue-800 hover:bg-blue-200";
+    case "low":
+      return "bg-green-100 text-green-800 hover:bg-green-200";
+    default:
+      return "bg-slate-100 text-slate-800 hover:bg-slate-200";
+  }
+};
+
+export function genUUID(prefix?: string) {
+  return `${prefix}${Date.now()}`;
+}
+
+export function getFullFileURL(path: string) {
+  return path
+    ? `${ENV.NEXT_PUBLIC_BACKEND_BASE_URL_WITHOUT_PREFIX}/${path}`
+    : "";
+}

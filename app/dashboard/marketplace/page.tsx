@@ -18,7 +18,6 @@ import {
   Filter,
   Clock,
   Calendar,
-  CheckCircle,
   ArrowBigRight,
   PhoneCall,
 } from "lucide-react";
@@ -45,6 +44,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { IMAGES } from "@/constants/assets";
+import { useGetAllServiceProviders } from "@/app/quries/useUsers";
+import { getFullFileURL } from "@/utils";
 
 export default function MarketplacePage() {
   const [activeTab, setActiveTab] = useState("all");
@@ -61,11 +62,24 @@ export default function MarketplacePage() {
     setIsServiceDetailsOpen(true);
   };
 
-  // const handleBookService = (service: ServiceProps) => {
-  //   setSelectedService(service);
-  //   setIsServiceDetailsOpen(false);
-  //   setIsBookingOpen(true);
-  // };
+  const getAllServiceProviders = useGetAllServiceProviders();
+
+  let serviceProviders = getAllServiceProviders.data || [];
+
+  serviceProviders = serviceProviders.filter((sp) => {
+    return sp.status == "approved";
+  });
+
+  const services: ServiceProps[] = serviceProviders.map((sp) => {
+    return {
+      category: sp.serviceType,
+      description: sp.serviceDescription,
+      image: sp.images.at(0) ? getFullFileURL(sp.images.at(0) || "") : "",
+      price: sp.servicePrice + " /Birr",
+      title: sp.businessName,
+      isPromotion: true,
+    };
+  });
 
   const filteredServices = services.filter((service) => {
     // Filter by category
@@ -179,7 +193,6 @@ export default function MarketplacePage() {
                     {...service}
                     index={index}
                     onClick={() => handleServiceClick(service)}
-                    
                   />
                 ))
               ) : (
@@ -275,7 +288,7 @@ export default function MarketplacePage() {
                       <Badge className="bg-primary/90 text-white">
                         {selectedService.price}
                       </Badge>
-                      <div className="flex items-center text-white">
+                      {/* <div className="flex items-center text-white">
                         <Star className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
                         <span className="font-medium">
                           {selectedService.rating}
@@ -283,7 +296,7 @@ export default function MarketplacePage() {
                         <span className="ml-1 text-xs">
                           ({selectedService.reviews})
                         </span>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>
@@ -293,22 +306,6 @@ export default function MarketplacePage() {
                   <p className="mt-1 text-sm text-muted-foreground">
                     {selectedService.description}
                   </p>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-medium">Features</h3>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {selectedService.badges.map((badge) => (
-                      <Badge
-                        key={badge}
-                        variant="secondary"
-                        className="bg-primary/10 text-xs text-primary"
-                      >
-                        <CheckCircle className="mr-1 h-3 w-3" />
-                        {badge}
-                      </Badge>
-                    ))}
-                  </div>
                 </div>
 
                 <div className="rounded-lg bg-muted/20 p-3">
@@ -331,9 +328,7 @@ export default function MarketplacePage() {
               </div>
 
               <SheetFooter className="pt-4">
-                <Button
-                  className="w-full"
-                >
+                <Button className="w-full">
                   <PhoneCall className="mr-2 h-4 w-4" />
                   +251-957-736889
                 </Button>
@@ -424,11 +419,9 @@ interface ServiceProps {
   title: string;
   category: string;
   image: string;
-  rating: number;
-  reviews: number;
+
   price: string;
   description: string;
-  badges: string[];
   isPromotion?: boolean;
 }
 
@@ -436,17 +429,14 @@ function ServiceCard({
   title,
   category,
   image,
-  rating,
-  reviews,
+
   price,
-  badges,
   isPromotion = false,
   index = 0,
   onClick,
 }: ServiceProps & {
   index?: number;
   onClick?: () => void;
- 
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -501,31 +491,14 @@ function ServiceCard({
                 {category}
               </Badge>
             </div>
-            <div className="flex items-center text-xs">
+            {/* <div className="flex items-center text-xs">
               <Star className="mr-1 h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
               <span className="font-medium">{rating}</span>
               <span className="ml-1 text-muted-foreground">({reviews})</span>
-            </div>
+            </div> */}
           </div>
         </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <div className="flex flex-wrap gap-1">
-            {badges.slice(0, 2).map((badge) => (
-              <Badge
-                key={badge}
-                variant="secondary"
-                className="bg-primary/10 text-xs text-primary"
-              >
-                {badge}
-              </Badge>
-            ))}
-            {badges.length > 2 && (
-              <Badge variant="secondary" className="text-xs">
-                +{badges.length - 2}
-              </Badge>
-            )}
-          </div>
-        </CardContent>
+        <CardContent className="p-3 pt-0"></CardContent>
         <CardFooter className="flex items-center justify-between border-t bg-muted/10 p-3">
           <div className="text-sm font-medium">{price}</div>
           <Button
@@ -543,98 +516,3 @@ function ServiceCard({
     </motion.div>
   );
 }
-
-// Sample data
-const services: ServiceProps[] = [
-  {
-    title: "Premium Office Cleaning",
-    category: "Cleaning",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.8,
-    reviews: 124,
-    price: "25/hr Birr",
-    description:
-      "Professional cleaning service tailored for commercial spaces. Regular and deep cleaning options available.",
-    badges: ["Eco-Friendly", "Insured", "Background Checked"],
-    isPromotion: true,
-  },
-  {
-    title: "IT Support & Management",
-    category: "Technology",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.6,
-    reviews: 87,
-    price: "75/hr Birr",
-    description:
-      "On-demand IT support, networking setup, and technology management for businesses.",
-    badges: ["24/7 Support", "Certified Technicians"],
-  },
-  {
-    title: "Security Guard Services",
-    category: "Security",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.9,
-    reviews: 156,
-    price: "30/hr Birr",
-    description:
-      "Licensed security personnel for building security, event management, and access control.",
-    badges: ["Armed/Unarmed", "Uniformed", "Licensed"],
-    isPromotion: true,
-  },
-  {
-    title: "HVAC Maintenance & Repair",
-    category: "Maintenance",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.7,
-    reviews: 92,
-    price: "85/hr Birr",
-    description:
-      "Preventative maintenance and emergency repair services for HVAC systems.",
-    badges: ["Emergency Service", "Certified Technicians"],
-  },
-  {
-    title: "Office Plant Services",
-    category: "Maintenance",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.5,
-    reviews: 68,
-    price: "150/mo Birr",
-    description:
-      "Interior plant design, installation, and ongoing maintenance for your workspace.",
-    badges: ["Sustainable", "Design Services"],
-  },
-  {
-    title: "Window Cleaning",
-    category: "Cleaning",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.7,
-    reviews: 103,
-    price: "Custom",
-    description:
-      "Professional interior and exterior window cleaning for commercial buildings of all heights.",
-    badges: ["Insured", "High-Rise Certified"],
-  },
-  {
-    title: "Smart Office Solutions",
-    category: "Technology",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.8,
-    reviews: 76,
-    price: "Custom",
-    description:
-      "Smart office technology integration including access control, temperature management, and security systems.",
-    badges: ["IoT Specialists", "Custom Design"],
-    isPromotion: true,
-  },
-  {
-    title: "Commercial Pest Control",
-    category: "Maintenance",
-    image: "/placeholder.svg?height=200&width=300",
-    rating: 4.6,
-    reviews: 112,
-    price: "200/mo Birr",
-    description:
-      "Preventative and responsive pest control services specifically for commercial spaces.",
-    badges: ["Eco-Friendly Options", "Regular Inspection"],
-  },
-];

@@ -68,14 +68,11 @@ const ownerNavigationItems: NavigationItem[] = [
   },
   { href: "/dashboard/maintenance", icon: Wrench, label: "Maintenance" },
   { href: "/dashboard/messages", icon: MessageCircle, label: "Chat" },
-  // { href: "#", icon: Bell, label: "Notifications" },
-  // { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
 const managerNavigationItems: NavigationItem[] = [
   { href: "/dashboard/management", icon: BarChart3, label: "Overview" },
   { href: "/dashboard/users", icon: UsersIcon, label: "Users" },
-  // { href: "/dashboard/buildings", icon: Building, label: "Buildings" },
   { href: "/dashboard/leases", icon: FileText, label: "Leases" },
   { href: "/dashboard/applications", icon: UserPlus, label: "Applications" },
   {
@@ -85,8 +82,6 @@ const managerNavigationItems: NavigationItem[] = [
   },
   { href: "/dashboard/maintenance", icon: Wrench, label: "Maintenance" },
   { href: "/dashboard/messages", icon: MessageCircle, label: "Chat" },
-  // { href: "#", icon: Bell, label: "Notifications" },
-  // { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
 const tenantNavigationItems: NavigationItem[] = [
@@ -99,8 +94,17 @@ const tenantNavigationItems: NavigationItem[] = [
   },
   { href: "/dashboard/maintenance", icon: Wrench, label: "Maintenance" },
   { href: "/dashboard/messages", icon: MessageCircle, label: "Chat" },
-  // { href: "#", icon: Bell, label: "Notifications" },
-  // { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+];
+
+const maintenaceNavigationItems: NavigationItem[] = [
+  { href: "/dashboard/maintenance", icon: Wrench, label: "Overview" },
+  { href: "/dashboard/buildings", icon: Building, label: "Buildings" },
+  {
+    href: "/dashboard/marketplace",
+    icon: ShoppingBasket,
+    label: "Marketplace",
+  },
+  { href: "/dashboard/messages", icon: MessageCircle, label: "Chat" },
 ];
 
 function MobileNavigation({
@@ -270,7 +274,13 @@ export default function AppSidebar() {
   const [isOpened, setIsOpened] = useState(false);
   const isMobile = useIsMobile();
 
-  const { isTenant, isManager, isOwner, data: userData } = useAuth();
+  const {
+    isTenant,
+    isManager,
+    isOwner,
+    isMaintenance,
+    data: userData,
+  } = useAuth();
   let navigationItems: NavigationItem[] = [];
 
   if (isTenant) {
@@ -279,6 +289,8 @@ export default function AppSidebar() {
     navigationItems = managerNavigationItems;
   } else if (isOwner) {
     navigationItems = ownerNavigationItems;
+  } else if (isMaintenance) {
+    navigationItems = maintenaceNavigationItems;
   }
 
   return (

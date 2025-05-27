@@ -181,6 +181,54 @@ export const useCreateLeaseMutation = () => {
     },
   });
 };
+export const useCreateContractMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ["createContractMutation"],
+    mutationFn: async (payload: {
+      leaseId: string;
+      txRef: string;
+      tenantSignature: string;
+      signedContractFile: Blob;
+    }) => {
+      const formData = new FormData();
+
+      formData.append("leaseId", payload.leaseId);
+      formData.append("signedContractFile", payload.signedContractFile);
+
+      try {
+        const response = await axiosClient.post<APIResponse<null>>(
+          "/leases/contract",
+          payload,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          },
+        );
+
+        const data = response.data.data;
+
+        queryClient.invalidateQueries({
+          queryKey: ["getLeaseQuery"],
+        });
+
+        return data;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while creating a lease contract",
+          );
+        }
+        throw new Error(
+          "An unexpected error occurred while creating a lease contract",
+        );
+      }
+    },
+  });
+};
 
 export const useLeaseTemplatePutMutation = () => {
   const queryClient = useQueryClient();

@@ -47,6 +47,8 @@ import { UNIT_STATUS, UNIT_TYPE } from "@/types";
 const mergedUnitSchema = z.object({
   unitNumber: z.string().min(1, "Unit number is required"),
   sizeSqFt: z.number().min(1, "Size must be greater than 0"),
+  monthlyRent: z.number().min(1, "Size must be greater than 0"),
+
   type: z.nativeEnum(UNIT_TYPE),
   status: z.nativeEnum(UNIT_STATUS),
   notes: z.string().optional(),
@@ -63,6 +65,7 @@ interface UnitMergeSheetProps {
     unitNumber: string;
     sizeSqFt: number;
     floorNumber: number;
+    monthlyRent: number;
   }[];
   onMergeUnits: (unitIds: string[], mergedUnit: MergedUnitFormValues) => void;
 }
@@ -100,6 +103,7 @@ export function UnitMergeSheet({
     defaultValues: {
       unitNumber: "",
       sizeSqFt: 0,
+      monthlyRent: 0,
       type: UNIT_TYPE.OFFICE,
       status: UNIT_STATUS.AVAILABLE,
       notes: "",
@@ -115,7 +119,13 @@ export function UnitMergeSheet({
     setTotalSize(size);
 
     // Update the form with the total size
+    let totalMontlyRent = 0;
+
+    selected.forEach((u) => {
+      totalMontlyRent += u.monthlyRent;
+    });
     form.setValue("sizeSqFt", size);
+    form.setValue("monthlyRent", totalMontlyRent);
 
     // Suggest a unit number based on selected units
     if (selected.length > 0) {
@@ -396,6 +406,11 @@ export function UnitMergeSheet({
                               control={form.control}
                               name="sizeSqFt"
                               label="Total Size (sq ft)"
+                            />
+                            <NumberFormField
+                              control={form.control}
+                              name="monthlyRent"
+                              label="Monthly Rent"
                             />
 
                             <Group className="grid grid-cols-1 gap-4 sm:grid-cols-2">

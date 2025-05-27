@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { UNIT_STATUS } from "@/types";
 import { StatusBadgeStyles, UnitTypeIcons } from "@/constants/icons";
 import { Group } from "@/components/custom/group";
-import type { UnitWithId } from "@/app/quries/useUnits";
+import type { UnitWithIdOnly } from "@/app/quries/useUnits";
 import { useRouter } from "next/navigation";
 import type { BuildingWithStat } from "@/app/quries/useBuildings";
 import { Center } from "./center";
@@ -58,7 +58,7 @@ export interface UnitAction {
 }
 
 export interface UnitDetailsSheetProps {
-  unit: UnitWithId;
+  unit: UnitWithIdOnly;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   building: BuildingWithStat;

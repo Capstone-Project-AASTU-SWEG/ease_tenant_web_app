@@ -1,7 +1,14 @@
 "use client";
 
 import axiosClient from "@/lib/axios-client";
-import { APIResponse, Building, CommonUserData, Manager, Tenant } from "@/types";
+import {
+  APIResponse,
+  Building,
+  CommonUserData,
+  Manager,
+  Tenant,
+  Unit,
+} from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect } from "react";
@@ -14,6 +21,7 @@ type BuildingWithId = Building & {
 export type BuildingStat = {
   availableUnits: number;
   occupancy: number;
+  units: Unit[];
 };
 
 export type BuildingWithStat = BuildingWithId & BuildingStat;
@@ -44,7 +52,7 @@ export const useGetAllBuildingsQuery = () => {
 
 export type BuildingDetail = BuildingWithStat & {
   units: UnitWithId[];
-  tenants: Tenant[],
+  tenants: Tenant[];
   managerId:
     | ({
         userId: CommonUserData;

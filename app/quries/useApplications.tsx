@@ -16,6 +16,38 @@ export type ApplicationWithId = Application & {
   id: string;
 };
 
+export type ApplicationWithIdAndTS = Application & {
+  id: string;
+};
+
+export const useGetApplicationsQuery = () => {
+  const query = useQuery({
+    queryKey: ["getApplications"],
+    queryFn: async () => {
+      try {
+        const response =
+          await axiosClient.get<APIResponse<ApplicationWithIdAndTS[]>>(
+            `/applications`,
+          );
+        const applications = response.data.data;
+
+        return applications;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while getting applications.",
+          );
+        }
+        throw new Error(
+          "An unexpected error occurred while getting applications.",
+        );
+      }
+    },
+  });
+
+  return query;
+};
 export const useGetApplicationsOfBuildingQuery = (buildingId?: string) => {
   const query = useQuery({
     queryKey: ["getApplicationsOfBuilding"],
@@ -67,7 +99,7 @@ export const useGetApplicationByIdQuery = (applicationId?: string) => {
     queryFn: async () => {
       try {
         if (!applicationId) {
-          throw new Error("Application ID not provided.");
+          return undefined;
         }
         const response = await axiosClient.get<
           APIResponse<

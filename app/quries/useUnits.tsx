@@ -7,6 +7,9 @@ export type UnitWithId = Unit & {
   _id: string;
   id: string;
 };
+export type UnitWithIdOnly = Unit & {
+  id: string;
+};
 
 export type UnitWithBuilding = UnitWithId & { buildingId: Building };
 
@@ -38,6 +41,36 @@ export const useGetAllUnitsOfBuildingQuery = (buildingId?: string) => {
           );
         }
         throw new Error("An unexpected error occurred while getting units");
+      }
+    },
+  });
+};
+
+export const useGetUnitQuery = ({ unitId }: { unitId?: string }) => {
+  return useQuery({
+    queryKey: ["getUnit"],
+    queryFn: async () => {
+      try {
+        if (!unitId) {
+          throw new Error("Unit ID is required");
+        }
+
+        const response = await axiosClient.get<APIResponse<UnitWithBuilding>>(
+          `/units/${unitId}/unit`,
+        );
+
+        const unit = response.data.data;
+
+        return unit;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while getting unit",
+          );
+        }
+        throw new Error("An unexpected error occurred while getting unit");
       }
     },
   });
@@ -206,6 +239,7 @@ export const useDeleteUnitMutation = () => {
     },
   });
 };
+
 export const useSplitUnitMutation = () => {
   return useMutation({
     mutationKey: ["splitUnit"],

@@ -24,11 +24,15 @@ export const useGetAllTenants = () => {
             "/tenants",
           );
         const data = response.data;
+
         const refinedData =
           data.data?.map((tenant) => ({
             ...tenant,
             ...tenant.userId,
           })) || [];
+
+        console.log({ refinedData });
+
         return refinedData;
       } catch (error) {
         console.log({ error });
@@ -109,6 +113,46 @@ export const useGetAllManagers = () => {
   });
 };
 
+export const useGetManagerByIdQuery = (mId?: string) => {
+  const query = useQuery({
+    queryKey: ["getManager"],
+    queryFn: async () => {
+      if (!mId) {
+        return;
+      }
+
+      try {
+        const response = await axiosClient.get<
+          APIResponse<UserDetail & Manager & { user: CommonUserData }>
+        >(`/managers/${mId}`);
+        const data = response.data;
+
+        const refineData = {
+          ...data.data,
+          ...data.data?.user,
+        };
+
+        return refineData;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(errorMessage || "An error occurred");
+        }
+        throw new Error("An unexpected error occurred");
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (mId) {
+      query.refetch();
+    }
+  }, [mId, query]);
+
+  return query;
+};
+
 export const useManagerProfileUpdateMutation = () => {
   return useMutation({
     mutationKey: ["manageProfileUpdateMutation"],
@@ -174,7 +218,13 @@ export const useGetAllServiceProviders = () => {
             "/service-providers",
           );
         const data = response.data;
-        return data.data;
+
+        const refineData = data.data?.map((d) => ({
+          ...d,
+          ...d.userId,
+        }));
+
+        return refineData;
       } catch (error) {
         console.log({ error });
         if (axios.isAxiosError(error)) {
@@ -186,23 +236,32 @@ export const useGetAllServiceProviders = () => {
     },
   });
 };
-export const useGetAllMaintenanceWorkers = () => {
+export const useGetAllMaintenances = () => {
   return useQuery({
-    queryKey: ["getAllMaintenanceWorkers"],
+    queryKey: ["getAllMaintenances"],
     queryFn: async () => {
       try {
         const response = await axiosClient.get<
           APIResponse<(UserDetail & MaintenanceWorker)[]>
-        >("/maintenance-workers");
+        >("/maintenances/personals");
         const data = response.data;
-        return data.data;
+
+        const refineData = data.data?.map((d) => ({
+          ...d,
+          ...d.userId,
+        }));
+
+        return refineData;
       } catch (error) {
-        console.log({ error });
         if (axios.isAxiosError(error)) {
           const errorMessage = error.response?.data.message;
-          throw new Error(errorMessage || "An error occurred");
+          throw new Error(
+            errorMessage || "An error occurred while getting mainteners.",
+          );
         }
-        throw new Error("An unexpected error occurred");
+        throw new Error(
+          "An unexpected error occurred while getting mainteners.",
+        );
       }
     },
   });

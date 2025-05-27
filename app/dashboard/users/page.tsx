@@ -1,8 +1,8 @@
 "use client";
 
-import {  useState } from "react";
+import { useState } from "react";
 import {
-  useGetAllMaintenanceWorkers,
+  useGetAllMaintenances,
   useGetAllManagers,
   useGetAllServiceProviders,
   useGetAllTenants,
@@ -47,9 +47,7 @@ import {
   Mail,
   Phone,
   Calendar,
-  Clock,
   FileText,
-  MapPin,
   Shield,
   Eye,
   Pencil,
@@ -63,6 +61,7 @@ import {
   User2Icon,
   UserCog2Icon,
   UserPen,
+  InfoIcon,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { User, USER_TYPE, UserDetail } from "@/types";
@@ -71,6 +70,9 @@ import Stat from "@/components/custom/stat";
 // import LogJSON from "@/components/custom/log-json";
 import { useAuth } from "@/app/quries/useAuth";
 import { cn } from "@/lib/utils";
+import LogJSON from "@/components/custom/log-json";
+import { Group } from "@/components/custom/group";
+import { useRouter } from "next/navigation";
 // import LogJSON from "@/components/custom/log-json";
 
 // ===== Main Page Component =====
@@ -80,40 +82,24 @@ export default function Page() {
   const managers = useGetAllManagers();
   const serviceProviders = useGetAllServiceProviders();
 
-  const maintenanceWorkers = useGetAllMaintenanceWorkers();
+  const maintenanceWorkers = useGetAllMaintenances();
 
   const { isOwner, isManager } = useAuth();
-
-  // useEffect(() => {
-  //   if (isFetched && isManager && userData?.building?.id) {
-  //     // tenants.data = tenants.data?.filter(
-  //     //   (t) => t?.building.id === userData?.building?.id,
-  //     // );
-  //     console.log({tenants: tenants.data})
-  //   }
-  // }, [isFetched, isManager, tenants, userData?.building?.id]);
-
-  // useEffect(() => {
-  //   if (isFetched && isManager && userData?.building?.id) {
-  //     serviceProviders.data = serviceProviders.data?.filter(
-  //       (t) => t?.building.id === userData?.building?.id,
-  //     );
-  //   }
-  // }, [isFetched, isManager, serviceProviders, userData?.building?.id]);
-
-  // useEffect(() => {
-  //   if (isFetched && isManager && userData?.building?.id) {
-  //     maintenanceWorkers.data = maintenanceWorkers.data?.filter(
-  //       (t) => t?.building.id === userData.building?.id,
-  //     );
-  //   }
-  // }, [isFetched, isManager, maintenanceWorkers, userData?.building?.id]);
 
   return (
     <PageWrapper className="py-0">
       <PageHeader
         title="Building Clients"
         description="Manage all clients of your commercial building"
+      />
+
+      <LogJSON
+        data={{
+          tenants: tenants.data,
+          manages: managers.data,
+          serviceProviders: serviceProviders.data,
+          maintenanceWorkers: maintenanceWorkers.data,
+        }}
       />
 
       <section
@@ -233,6 +219,7 @@ function ClientActionsSheet({
   isOpen,
   onClose,
 }: ClientActionsSheetProps) {
+  const router = useRouter();
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -261,10 +248,7 @@ function ClientActionsSheet({
   };
 
   const handleSendMessage = () => {
-    toast({
-      title: "Message sent",
-      description: `Your message has been sent to ${fullName}.`,
-    });
+    router.push("/dashboard/messages");
   };
 
   return (
@@ -424,10 +408,10 @@ function ClientActionsSheet({
                 <Separator />
 
                 <div className="grid grid-cols-[20px_1fr] items-center gap-x-2 gap-y-3">
-                  {"company" in client && (
+                  {"businessName" in client && (
                     <>
                       <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span>{client.company}</span>
+                      <span>{client.businessName}</span>
                     </>
                   )}
 
@@ -435,13 +419,6 @@ function ClientActionsSheet({
                     <>
                       <Briefcase className="h-4 w-4 text-muted-foreground" />
                       <span>{client.serviceType}</span>
-                    </>
-                  )}
-
-                  {"contractDetails" in client && client.contractDetails && (
-                    <>
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span>{client.contractDetails}</span>
                     </>
                   )}
                 </div>
@@ -474,50 +451,45 @@ function ClientActionsSheet({
               </div>
             )}
 
-            <div className="space-y-2">
-              <h3 className="flex items-center gap-2 text-sm font-medium">
-                <Clock className="h-4 w-4" />
-                Activity & Notes
-              </h3>
-              <Separator />
-
-              <div className="text-sm italic text-muted-foreground">
-                No recent activity or notes available.
+            {clientType === USER_TYPE.SERVICE_PROVIDER && (
+              <div className="space-y-2">
+                <h3 className="flex items-center gap-2 text-sm font-medium">
+                  <InfoIcon className="h-4 w-4" />
+                  Service Description
+                </h3>
+                <Separator />
+                {"serviceDescription" in client &&
+                  client.serviceDescription && (
+                    <Group spacing={"sm"}>
+                      <span>{client.serviceDescription}</span>
+                    </Group>
+                  )}
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="flex items-center gap-2 text-sm font-medium">
-                <MapPin className="h-4 w-4" />
-                Location
-              </h3>
-              <Separator />
-
-              <div className="text-sm">
-                <p>Building: Main Tower</p>
-                <p>Floor: 3</p>
-                <p>Unit: 305</p>
-              </div>
-            </div>
+            )}
           </div>
 
           <SheetFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
-            <Button onClick={handleSendMessage}>Send Message</Button>
+            <Group
+              justify={"center"}
+              className="mt-6 rounded-lg bg-primary/5 p-4"
+            >
+              <Button onClick={handleSendMessage}>Send Message</Button>
 
-            <Button
-              variant="outline"
-              className="border-amber-500 text-amber-500 hover:bg-amber-50 hover:text-amber-600"
-              onClick={() => setSuspendDialogOpen(true)}
-            >
-              Suspend
-            </Button>
-            <Button
-              variant="outline"
-              className="border-destructive text-destructive hover:bg-destructive/10"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              Delete
-            </Button>
+              <Button
+                variant="outline"
+                className="border-amber-500 text-amber-500 hover:bg-amber-50 hover:text-amber-600"
+                onClick={() => setSuspendDialogOpen(true)}
+              >
+                Suspend
+              </Button>
+              <Button
+                variant="outline"
+                className="border-destructive text-destructive hover:bg-destructive/10"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                Delete
+              </Button>
+            </Group>
           </SheetFooter>
         </SheetContent>
       </Sheet>

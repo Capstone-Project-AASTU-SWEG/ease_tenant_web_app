@@ -47,7 +47,58 @@ interface LeasePDFGeneratorProps {
   onPdfGenerated?: (pdfBlob: Blob) => void;
   showPreview: boolean;
   generateOnMount?: boolean;
+  managerSignature?: string;
+  tenantSignature?: string;
 }
+
+// Helper function to detect if signature is SVG
+const isSignatureSVG = (signature: string): boolean => {
+  return signature?.trim().startsWith("<svg");
+};
+
+// Helper function to convert SVG to image data URL
+const svgToImageDataUrl = (svgString: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const svg = svgString.trim();
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        reject(new Error("Could not get canvas context"));
+        return;
+      }
+
+      // Set canvas size to match image
+      canvas.width = img.width || 150;
+      canvas.height = img.height || 80;
+
+      // Fill with white background
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the image
+      ctx.drawImage(img, 0, 0);
+
+      // Convert to data URL
+      const dataUrl = canvas.toDataURL("image/png");
+      URL.revokeObjectURL(url);
+      resolve(dataUrl);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Failed to load SVG image"));
+    };
+
+    img.src = url;
+  });
+};
 
 const LeasePDFGenerator: React.FC<LeasePDFGeneratorProps> = ({
   leaseTitle,
@@ -59,6 +110,8 @@ const LeasePDFGenerator: React.FC<LeasePDFGeneratorProps> = ({
   onPdfGenerated,
   showPreview: sp,
   generateOnMount = true,
+  managerSignature,
+  tenantSignature,
 }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -161,6 +214,136 @@ const LeasePDFGenerator: React.FC<LeasePDFGeneratorProps> = ({
         yPosition += splitContent.length * 7 + 15; // Adjust line height and spacing
       });
 
+      // Add signature section
+      // Check if we need a new page for signatures
+      if (yPosition > doc.internal.pageSize.height - 100) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
+      yPosition += 20; // Add some space before signatures
+
+      // Signature section title
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Signatures", margin, yPosition);
+      yPosition += 20;
+
+      // Manager signature
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+
+      if (managerSignature) {
+        doc.text("Manager/Landlord:", margin, yPosition);
+        yPosition += 10;
+
+        if (isSignatureSVG(managerSignature)) {
+          try {
+            // Convert SVG to image and add to PDF
+            const imageDataUrl = await svgToImageDataUrl(managerSignature);
+            const imgWidth = 60; // Adjust width as needed
+            const imgHeight = 30; // Adjust height as needed
+
+            doc.addImage(
+              imageDataUrl,
+              "PNG",
+              margin,
+              yPosition,
+              imgWidth,
+              imgHeight,
+            );
+            yPosition += imgHeight + 5;
+          } catch (error) {
+            console.error("Error converting SVG to image:", error);
+            // Fallback to text
+            doc.setFont("helvetica", "italic");
+            doc.text("[Digital Signature Applied]", margin, yPosition);
+            yPosition += 5;
+          }
+        } else {
+          doc.setFont("helvetica", "italic");
+          doc.text(managerSignature, margin, yPosition);
+          yPosition += 5;
+        }
+
+        doc.setFont("helvetica", "normal");
+        doc.line(margin, yPosition, margin + 80, yPosition); // Signature line
+        yPosition += 5;
+        doc.setFontSize(9);
+        doc.text("Signature", margin, yPosition);
+        yPosition += 15;
+      } else {
+        doc.text("Manager/Landlord:", margin, yPosition);
+        yPosition += 10;
+        doc.line(margin, yPosition, margin + 80, yPosition); // Signature line
+        yPosition += 5;
+        doc.setFontSize(9);
+        doc.text(
+          "Signature (Manager/Landlord to sign here)",
+          margin,
+          yPosition,
+        );
+        yPosition += 15;
+      }
+
+      // Tenant signature
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+
+      if (tenantSignature) {
+        doc.text("Tenant:", margin, yPosition);
+        yPosition += 10;
+
+        if (isSignatureSVG(tenantSignature)) {
+          try {
+            // Convert SVG to image and add to PDF
+            const imageDataUrl = await svgToImageDataUrl(tenantSignature);
+            const imgWidth = 60; // Adjust width as needed
+            const imgHeight = 30; // Adjust height as needed
+
+            doc.addImage(
+              imageDataUrl,
+              "PNG",
+              margin,
+              yPosition,
+              imgWidth,
+              imgHeight,
+            );
+            yPosition += imgHeight + 5;
+          } catch (error) {
+            console.error("Error converting SVG to image:", error);
+            // Fallback to text
+            doc.setFont("helvetica", "italic");
+            doc.text("[Digital Signature Applied]", margin, yPosition);
+            yPosition += 5;
+          }
+        } else {
+          doc.setFont("helvetica", "italic");
+          doc.text(tenantSignature, margin, yPosition);
+          yPosition += 5;
+        }
+
+        doc.setFont("helvetica", "normal");
+        doc.line(margin, yPosition, margin + 80, yPosition); // Signature line
+        yPosition += 5;
+        doc.setFontSize(9);
+        doc.text("Signature", margin, yPosition);
+        yPosition += 15;
+      } else {
+        doc.text("Tenant:", margin, yPosition);
+        yPosition += 10;
+        doc.line(margin, yPosition, margin + 80, yPosition); // Signature line
+        yPosition += 5;
+        doc.setFontSize(9);
+        doc.text("Signature (Tenant to sign here)", margin, yPosition);
+        yPosition += 15;
+      }
+
+      // Add date line
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text("Date: _______________", margin, yPosition);
+
       // Add footer with date
       const footerText = `Generated on ${format(new Date(), "PPP")}`;
       doc.setFontSize(8);
@@ -173,13 +356,14 @@ const LeasePDFGenerator: React.FC<LeasePDFGeneratorProps> = ({
       );
 
       // After generating the PDF content:
-      if (returnBlob || onPdfGenerated) {
+      if (returnBlob) {
         const pdfBlob = doc.output("blob");
         if (onPdfGenerated) {
           onPdfGenerated(pdfBlob);
         }
         return pdfBlob;
       } else {
+        // Download the PDF
         doc.save(`${leaseTitle || "Lease"}.pdf`);
         return null;
       }
@@ -204,6 +388,9 @@ const LeasePDFGenerator: React.FC<LeasePDFGeneratorProps> = ({
                 h1 { font-size: 24px; margin-bottom: 10px; }
                 h2 { font-size: 18px; margin-top: 20px; margin-bottom: 10px; }
                 p { font-size: 14px; line-height: 1.5; }
+                .signature-section { margin-top: 40px; }
+                .signature-line { border-bottom: 1px solid #000; width: 200px; display: inline-block; margin-bottom: 5px; }
+                .signature-placeholder { font-style: italic; color: #666; }
               </style>
             </head>
             <body>
@@ -227,7 +414,21 @@ const LeasePDFGenerator: React.FC<LeasePDFGeneratorProps> = ({
       )
       .join("\n\n");
 
-    const fullText = `${leaseTitle}\n\n${leaseDescription ? leaseDescription + "\n\n" : ""}${content}`;
+    const managerSig = managerSignature
+      ? isSignatureSVG(managerSignature)
+        ? "[Digital Signature Applied]"
+        : managerSignature
+      : "[Signature required]";
+
+    const tenantSig = tenantSignature
+      ? isSignatureSVG(tenantSignature)
+        ? "[Digital Signature Applied]"
+        : tenantSignature
+      : "[Signature required]";
+
+    const signatureSection = `\n\nSignatures:\n\nManager/Landlord: ${managerSig}\n\nTenant: ${tenantSig}\n\nDate: _______________`;
+
+    const fullText = `${leaseTitle}\n\n${leaseDescription ? leaseDescription + "\n\n" : ""}${content}${signatureSection}`;
 
     try {
       await navigator.clipboard.writeText(fullText);
@@ -376,6 +577,94 @@ const LeasePDFGenerator: React.FC<LeasePDFGeneratorProps> = ({
                         </motion.div>
                       ))}
 
+                      {/* Signature Section */}
+                      <motion.div
+                        className="space-y-4 border-t pt-6"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: sections.length * 0.1 }}
+                      >
+                        <h3 className="text-lg font-semibold">Signatures</h3>
+
+                        <div className="grid gap-6 md:grid-cols-2">
+                          {/* Manager Signature */}
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">
+                              Manager/Landlord:
+                            </p>
+                            {managerSignature ? (
+                              <div className="space-y-2">
+                                {isSignatureSVG(managerSignature) ? (
+                                  <div className="flex items-center justify-center rounded border bg-white p-2">
+                                    <div
+                                      dangerouslySetInnerHTML={{
+                                        __html: managerSignature,
+                                      }}
+                                      className="max-h-16 max-w-full"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="italic text-primary">
+                                    {managerSignature}
+                                  </div>
+                                )}
+                                <div className="border-b border-slate-300 pb-1"></div>
+                                <p className="text-xs text-muted-foreground">
+                                  Signature
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="border-b border-slate-300 pb-1"></div>
+                                <p className="text-xs italic text-muted-foreground">
+                                  Signature (Manager/Landlord to sign here)
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Tenant Signature */}
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Tenant:</p>
+                            {tenantSignature ? (
+                              <div className="space-y-2">
+                                {isSignatureSVG(tenantSignature) ? (
+                                  <div className="flex items-center justify-center rounded border bg-white p-2">
+                                    <div
+                                      dangerouslySetInnerHTML={{
+                                        __html: tenantSignature,
+                                      }}
+                                      className="max-h-16 max-w-full"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="italic text-primary">
+                                    {tenantSignature}
+                                  </div>
+                                )}
+                                <div className="border-b border-slate-300 pb-1"></div>
+                                <p className="text-xs text-muted-foreground">
+                                  Signature
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="border-b border-slate-300 pb-1"></div>
+                                <p className="text-xs italic text-muted-foreground">
+                                  Signature (Tenant to sign here)
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Date */}
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Date:</p>
+                          <div className="w-48 border-b border-slate-300 pb-1"></div>
+                        </div>
+                      </motion.div>
+
                       {sections?.length === 0 && (
                         <div className="flex flex-col items-center justify-center gap-3 py-12 text-center text-muted-foreground">
                           <FileText className="h-12 w-12 text-slate-300" />
@@ -475,6 +764,8 @@ const LeasePDFGenerator: React.FC<LeasePDFGeneratorProps> = ({
             <div className="text-xs text-muted-foreground">
               {sections.length} {sections.length === 1 ? "section" : "sections"}{" "}
               • {Object.keys(dataValues).length} data fields
+              {(managerSignature || tenantSignature) &&
+                " • Signatures included"}
             </div>
           </CardFooter>
         </Card>

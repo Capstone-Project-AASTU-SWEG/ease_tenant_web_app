@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -28,9 +28,9 @@ import { Group } from "@/components/custom/group";
 import {
   EmailFormField,
   PasswordFormField,
-  SelectFormField,
   TextFormField,
 } from "@/components/custom/form-field";
+import { useMaintainerSignUpMutation } from "../../_queries/useAuth";
 
 // ========== ANIMATIONS ==========
 const contentVariants = {
@@ -54,13 +54,7 @@ const maintainerFormSchema = z
     phone: z
       .string()
       .min(10, { message: "Please enter a valid phone number." }),
-    specialization: z
-      .string()
-      .min(1, { message: "Please select a specialization." }),
-    experience: z
-      .string()
-      .min(1, { message: "Please select your experience level." }),
-    certifications: z.string().optional(),
+
     password: z
       .string()
       .min(8, { message: "Password must be at least 8 characters." }),
@@ -75,7 +69,7 @@ const maintainerFormSchema = z
   });
 
 export default function MaintainerSignup() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const maintainerSignUpMutation = useMaintainerSignUpMutation();
 
   const form = useForm<z.infer<typeof maintainerFormSchema>>({
     resolver: zodResolver(maintainerFormSchema),
@@ -84,9 +78,6 @@ export default function MaintainerSignup() {
       lastName: "",
       email: "",
       phone: "",
-      specialization: "",
-      experience: "",
-      certifications: "",
       password: "",
       confirmPassword: "",
       termsAccepted: false,
@@ -94,34 +85,30 @@ export default function MaintainerSignup() {
   });
 
   async function onSubmit(values: z.infer<typeof maintainerFormSchema>) {
-    setIsSubmitting(true);
+    maintainerSignUpMutation.mutate({
+      ...values,
+    });
+  }
 
-    try {
-      // This would be replaced with your actual API call
-      console.log("Maintainer signup data:", values);
+  useEffect(() => {
+    if (maintainerSignUpMutation.isSuccess) {
+      successToast("Maintenace personal created successfully.");
+    }
+  }, [maintainerSignUpMutation.isSuccess]);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      successToast("", {
-        title: "Account created!",
-        description:
-          "You've successfully created your maintenance staff account.",
-      });
-
-      // Reset form
-      form.reset();
-    } catch (error: unknown) {
+  useEffect(() => {
+    if (maintainerSignUpMutation.isError) {
       errorToast("", {
         title: "Sign Up Error",
         description:
-          (error as Error).message ||
+          maintainerSignUpMutation.error.message ||
           "There was a problem creating your account.",
       });
-    } finally {
-      setIsSubmitting(false);
     }
-  }
+  }, [
+    maintainerSignUpMutation.error?.message,
+    maintainerSignUpMutation.isError,
+  ]);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -243,70 +230,6 @@ export default function MaintainerSignup() {
                           <h3 className="text-xl font-semibold">
                             Professional Details
                           </h3>
-                          <div className="grid gap-6">
-                            <SelectFormField
-                              control={form.control}
-                              name="specialization"
-                              label="Specialization"
-                              options={[
-                                {
-                                  value: "general",
-                                  label: "General Maintenance",
-                                },
-                                {
-                                  value: "plumbing",
-                                  label: "Plumbing",
-                                },
-                                {
-                                  value: "electrical",
-                                  label: "Electrical",
-                                },
-                              ]}
-                            />
-                            <SelectFormField
-                              control={form.control}
-                              name="experience"
-                              label="Experience Level"
-                              placeholder="Select your experience level"
-                              options={[
-                                {
-                                  value: "entry",
-                                  label: "Entry Level (0-2 years)",
-                                },
-                                {
-                                  value: "intermediate",
-                                  label: "Intermediate (3-5 years)",
-                                },
-                                {
-                                  value: "experienced",
-                                  label: "Experienced (6-10 years)",
-                                },
-                                {
-                                  value: "expert",
-                                  label: "Expert (10+ years)",
-                                },
-                              ]}
-                            />
-
-                            {/* <FormField
-                              control={form.control}
-                              name="certifications"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>
-                                    Certifications (Optional)
-                                  </FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="List any relevant certifications"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            /> */}
-                          </div>
                         </div>
 
                         {/* Account Section */}
@@ -365,7 +288,9 @@ export default function MaintainerSignup() {
                         </div>
 
                         <div className="flex justify-end">
-                          <SubmitButton isSubmitting={isSubmitting} />
+                          <SubmitButton
+                            isSubmitting={maintainerSignUpMutation.isPending}
+                          />
                         </div>
                       </div>
                     </CardContent>

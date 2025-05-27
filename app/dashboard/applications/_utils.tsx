@@ -141,8 +141,8 @@ export const getApplicationTypeLabel = (type: APPLICATION_TYPE): string => {
       return "Maintenance Request";
     // case "provider":
     //   return "Provider Registration";
-    // case "service":
-    //   return "Service Offering";
+    case "service":
+      return "Service Offering";
     // case "other":
     //   return "Other Request";
     default:

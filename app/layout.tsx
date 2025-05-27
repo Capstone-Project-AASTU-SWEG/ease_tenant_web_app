@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { QueryClientProvider } from "@/contexts/query-client-provider";
 import NextTopLoader from "nextjs-toploader";
 import AuthController from "@/components/custom/auth-controller";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <Script
+        src="https://js.chapa.co/v1/inline.js"
+        strategy="lazyOnload"
+      />
+
       <body
         className={`${geistSans.variable} ${geistSans.className} ${geistMono.variable} antialiased`}
       >

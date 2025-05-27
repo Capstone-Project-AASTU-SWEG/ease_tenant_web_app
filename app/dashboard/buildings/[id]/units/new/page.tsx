@@ -122,7 +122,7 @@ const Page = () => {
       });
 
       successToast("Unit updated successfully");
-      router.push(`/dashboard/buildings/${buildingID}/units`);
+      router.push(`/dashboard/buildings/${buildingID}`);
 
       return;
     }

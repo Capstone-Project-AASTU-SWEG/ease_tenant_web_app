@@ -19,8 +19,6 @@ import {
   Briefcase,
   ChevronRight,
   CheckCircle2,
-  Shield,
-  CreditCard,
   ArrowRight,
   FileSignature,
   Home,
@@ -187,66 +185,64 @@ export default function LeaseDetailsPage() {
 
   return (
     <PageWrapper className="py-0">
-      <div className="mb-6 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 p-6 shadow-sm">
-        <PageHeader
-          title="Lease Detail"
-          description={`Lease agreement for ${lease.tenant.userId?.firstName} ${lease.tenant.userId?.lastName}`}
-          withBackButton
-          rightSection={
-            <div className="flex items-center gap-2">
-              {getStatusBadge(lease.status)}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full bg-white shadow-sm"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuItem
-                    onClick={handleDownloadContract}
-                    className="cursor-pointer"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Contract
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handlePrintLease}
-                    className="cursor-pointer"
-                  >
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print Lease
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handleSendReminder}
-                    className="cursor-pointer"
-                  >
-                    <Send className="mr-2 h-4 w-4" />
-                    Send Reminder
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => router.push(`/leases/${lease.id}/renew`)}
-                    className="cursor-pointer"
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Renew Lease
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer text-destructive">
-                    <AlertCircle className="mr-2 h-4 w-4" />
-                    Terminate Lease
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          }
-        />
-      </div>
+      <PageHeader
+        title="Lease Detail"
+        description={`Lease agreement for ${lease.tenant.userId?.firstName} ${lease.tenant.userId?.lastName}`}
+        withBackButton
+        rightSection={
+          <div className="flex items-center gap-2">
+            {getStatusBadge(lease.status)}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full bg-white shadow-sm"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem
+                  onClick={handleDownloadContract}
+                  className="cursor-pointer"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Contract
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handlePrintLease}
+                  className="cursor-pointer"
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Lease
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleSendReminder}
+                  className="cursor-pointer"
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Reminder
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => router.push(`/leases/${lease.id}/renew`)}
+                  className="cursor-pointer"
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Renew Lease
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer text-destructive">
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  Terminate Lease
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        }
+      />
 
-      <main className="space-y-6">
+      <main className="mt-4 flex flex-col gap-6">
         {isExpiringSoon() && (
           <Alert className="border-b-0 border-l-4 border-r-0 border-t-0 border-l-amber-500 bg-gradient-to-r from-amber-50 to-amber-100/50 shadow-sm">
             <AlertDescription className="flex items-center text-amber-800">
@@ -431,10 +427,6 @@ export default function LeaseDetailsPage() {
                   <FileText className="mr-2 h-4 w-4" />
                   Document
                 </TabsTrigger>
-                <TabsTrigger value="payments" className="rounded-full">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Payments
-                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="details" className="mt-6 space-y-6">
@@ -583,129 +575,11 @@ export default function LeaseDetailsPage() {
                   </CardContent>
                 </Card>
               </TabsContent>
-
-              <TabsContent value="payments" className="mt-6">
-                <Card className="overflow-hidden border-0 shadow-sm">
-                  <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10 pb-4 pt-4">
-                    <CardTitle className="flex items-center text-base">
-                      <CreditCard className="mr-2 h-4 w-4 text-primary" />
-                      Payment Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-5">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                      <div className="rounded-xl bg-gradient-to-br from-green-50 to-green-100/50 p-4">
-                        <div className="mb-1 flex items-center text-xs text-muted-foreground">
-                          <CheckCircle2 className="mr-1 h-3.5 w-3.5 text-green-500" />
-                          Payment Status
-                        </div>
-                        <p className="font-medium text-green-700">Up to date</p>
-                      </div>
-                      <div className="rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 p-4">
-                        <div className="mb-1 flex items-center text-xs text-muted-foreground">
-                          <Calendar className="mr-1 h-3.5 w-3.5 text-primary" />
-                          Next Payment Due
-                        </div>
-                        <p className="font-medium">June 1, 2025</p>
-                      </div>
-                      <div className="rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 p-4">
-                        <div className="mb-1 flex items-center text-xs text-muted-foreground">
-                          <DollarSign className="mr-1 h-3.5 w-3.5 text-primary" />
-                          Amount Due
-                        </div>
-                        <p className="text-lg font-medium">
-                          ${lease.unit.monthlyRent}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-6">
-                      <h3 className="mb-3 text-sm font-medium">
-                        Recent Payments
-                      </h3>
-                      <div className="rounded-lg border">
-                        <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
-                          <span>Date</span>
-                          <span>Amount</span>
-                          <span>Status</span>
-                        </div>
-                        <div className="divide-y">
-                          <div className="flex items-center justify-between px-4 py-3">
-                            <span className="text-sm">May 1, 2025</span>
-                            <span className="text-sm font-medium">
-                              ${lease.unit.monthlyRent}
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className="bg-green-50 text-green-700"
-                            >
-                              Paid
-                            </Badge>
-                          </div>
-                          <div className="flex items-center justify-between px-4 py-3">
-                            <span className="text-sm">Apr 1, 2025</span>
-                            <span className="text-sm font-medium">
-                              ${lease.unit.monthlyRent}
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className="bg-green-50 text-green-700"
-                            >
-                              Paid
-                            </Badge>
-                          </div>
-                          <div className="flex items-center justify-between px-4 py-3">
-                            <span className="text-sm">Mar 1, 2025</span>
-                            <span className="text-sm font-medium">
-                              ${lease.unit.monthlyRent}
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className="bg-green-50 text-green-700"
-                            >
-                              Paid
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 flex justify-end">
-                      <Button className="rounded-full">
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Make a Payment
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
             </Tabs>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <Card className="overflow-hidden border-0 shadow-sm md:col-span-1">
-            <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10 pb-4 pt-4">
-              <CardTitle className="flex items-center text-base">
-                <Shield className="mr-2 h-4 w-4 text-primary" />
-                Security Deposit
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 p-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Amount</p>
-                  <p className="text-xl font-medium">
-                    ${lease.unit.monthlyRent}
-                  </p>
-                </div>
-                <Badge variant="outline" className="bg-white">
-                  Held in Escrow
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="overflow-hidden border-0 shadow-sm md:col-span-2">
             <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10 pb-4 pt-4">
               <CardTitle className="flex items-center text-base">

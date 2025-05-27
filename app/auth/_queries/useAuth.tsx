@@ -100,3 +100,31 @@ export const useManagerSignUp = () => {
     },
   });
 };
+
+export const useMaintainerSignUpMutation = () => {
+  return useMutation({
+    mutationKey: ["maintainerSignUp"],
+    mutationFn: async (payload: Omit<CommonUserData, "id" | "role"> & {}) => {
+      try {
+        const response = await axiosClient.post<APIResponse<null>>(
+          "/maintenances/sign-up",
+          payload,
+        );
+
+        const data = response.data;
+        return data;
+      } catch (error) {
+        console.log({ error });
+        if (axios.isAxiosError(error)) {
+          const errorMessage = error.response?.data.message;
+          throw new Error(
+            errorMessage || "An error occurred while maintenance signup",
+          );
+        }
+        throw new Error(
+          "An unexpected error occurred while maintenance signup",
+        );
+      }
+    },
+  });
+};

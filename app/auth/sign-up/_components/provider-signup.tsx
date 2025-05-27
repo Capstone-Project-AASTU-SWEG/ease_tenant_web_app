@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -14,15 +14,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+
 import { errorToast, successToast } from "@/components/custom/toasts";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
@@ -31,6 +24,26 @@ import Image from "next/image";
 import ASSETS from "../../_assets";
 import BackButton from "./back-btn";
 import SubmitButton from "./submit-btn";
+import {
+  EmailFormField,
+  NumberFormField,
+  SelectFormField,
+  TextareaFormField,
+  TextFormField,
+} from "@/components/custom/form-field";
+import Stack from "@/components/custom/stack";
+import { Group } from "@/components/custom/group";
+import { FileUploader } from "@/components/custom/file-upload";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import ChapaPayment from "@/components/custom/chapa/chapa-payment";
+import { genUUID } from "@/utils";
+import { useCreateServiceProvidersMutation } from "@/app/quries/useServiceProviders";
+import { useGetAllBuildingsQuery } from "@/app/quries/useBuildings";
 
 // ========== ANIMATIONS ==========
 const contentVariants = {
@@ -44,22 +57,26 @@ const contentVariants = {
 
 const providerFormSchema = z
   .object({
+    buildingId: z.string().min(2, { message: "Building info is required." }),
     businessName: z
       .string()
       .min(2, { message: "Business name must be at least 2 characters." }),
-    contactName: z
+    firstName: z
       .string()
-      .min(2, { message: "Contact name must be at least 2 characters." }),
+      .min(2, { message: "Contact first name must be at least 2 characters." }),
+    lastName: z
+      .string()
+      .min(2, { message: "Contact last must be at least 2 characters." }),
     email: z.string().email({ message: "Please enter a valid email address." }),
     phone: z
       .string()
       .min(10, { message: "Please enter a valid phone number." }),
-    businessAddress: z
-      .string()
-      .min(5, { message: "Please enter a valid address." }),
+    businessAddress: z.string(),
     serviceType: z
       .string()
       .min(1, { message: "Please select a service type." }),
+    servicePrice: z.coerce.number(),
+
     serviceDescription: z.string().min(10, {
       message: "Please provide a brief description of your services.",
     }),
@@ -69,9 +86,6 @@ const providerFormSchema = z
       .string()
       .min(8, { message: "Password must be at least 8 characters." }),
     confirmPassword: z.string(),
-    termsAccepted: z.boolean().refine((val) => val === true, {
-      message: "You must accept the terms and conditions.",
-    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -79,13 +93,30 @@ const providerFormSchema = z
   });
 
 export default function ProviderSignup() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [images, setImages] = useState<File[]>([]);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [submittedData, setSubmittedData] = useState<z.infer<
+    typeof providerFormSchema
+  > | null>(null);
+
+  const getAllBuildingsQuery = useGetAllBuildingsQuery();
+  const buildings = getAllBuildingsQuery.data;
+
+  const [tx, setTx] = useState(() => {
+    return genUUID("tx-");
+  });
+
+  const createServiceProvidersMutation = useCreateServiceProvidersMutation();
 
   const form = useForm<z.infer<typeof providerFormSchema>>({
     resolver: zodResolver(providerFormSchema),
     defaultValues: {
+      buildingId: "",
       businessName: "",
-      contactName: "",
+      firstName: "",
+      lastName: "",
+      servicePrice: 10,
       email: "",
       phone: "",
       businessAddress: "",
@@ -95,39 +126,71 @@ export default function ProviderSignup() {
       taxId: "",
       password: "",
       confirmPassword: "",
-      termsAccepted: false,
     },
   });
 
-  async function onSubmit(values: z.infer<typeof providerFormSchema>) {
-    setIsSubmitting(true);
+  async function onSubmit() {
+    setIsPaymentOpen(true);
+  }
 
-    try {
-      // This would be replaced with your actual API call
-      console.log("Provider signup data:", values);
+  const handleSuccessfulPayment = async () => {
+    const values = form.getValues();
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Store the submitted data for preview
+    setSubmittedData(values);
 
+    const formData = new FormData();
+    formData.append("buildingId", values.buildingId);
+    formData.append("firstName", values.firstName);
+    formData.append("lastName", values.lastName);
+    formData.append("password", values.password);
+    formData.append("email", values.email);
+    formData.append("phone", values.phone);
+    formData.append("businessName", values.businessName);
+    formData.append("businessAddress", values.businessAddress);
+    formData.append("taxId", values.taxId);
+    formData.append("website", values?.website || "");
+    formData.append("serviceType", values.serviceType);
+    formData.append("servicePrice", values.servicePrice.toString());
+    formData.append("serviceDescription", values.serviceDescription);
+
+    if (images.length > 0) {
+      images.forEach((img) => {
+        formData.append("images", img);
+      });
+    }
+
+    createServiceProvidersMutation.mutate(formData);
+    form.reset();
+
+    // Close payment dialog and show preview
+    setIsPaymentOpen(false);
+    setIsPreviewOpen(true);
+  };
+
+  useEffect(() => {
+    if (createServiceProvidersMutation.isSuccess) {
       successToast("", {
         title: "Account created!",
         description:
           "You've successfully created your service provider account.",
       });
+    }
+  }, [createServiceProvidersMutation.isSuccess]);
 
-      // Reset form
-      form.reset();
-    } catch (error: unknown) {
+  useEffect(() => {
+    if (createServiceProvidersMutation.isError) {
       errorToast("", {
         title: "Error",
         description:
-          (error as Error).message ||
+          createServiceProvidersMutation.error.message ||
           "There was a problem creating your account.",
       });
-    } finally {
-      setIsSubmitting(false);
     }
-  }
+  }, [
+    createServiceProvidersMutation.error?.message,
+    createServiceProvidersMutation.isError,
+  ]);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -137,7 +200,7 @@ export default function ProviderSignup() {
       <div className="relative hidden h-screen md:block md:w-1/2">
         <div className="absolute inset-0">
           <Image
-            src={ASSETS.IMAGES.BUILDING_IMAGE}
+            src={ASSETS.IMAGES.BUILDING_IMAGE || "/placeholder.svg"}
             alt="Service Provider Portal Background"
             fill
             priority
@@ -177,6 +240,228 @@ export default function ProviderSignup() {
         </div>
       </div>
 
+      <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
+        <DialogHeader>
+          <DialogTitle />
+        </DialogHeader>
+
+        <DialogContent>
+          <ChapaPayment
+            amount={10}
+            currency="ETB"
+            onClose={() => {}}
+            txRef={tx}
+            onSuccessfulPayment={() => {
+              handleSuccessfulPayment();
+            }}
+            setNewTxRef={() => {
+              setTx(genUUID("tx-"));
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Dialog */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <Sparkles className="h-6 w-6 text-primary" />
+              Registration Successful!
+            </DialogTitle>
+          </DialogHeader>
+
+          {submittedData && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-6"
+            >
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                <p className="font-medium text-green-800">
+                  🎉 Welcome to our service provider network! {`Here's`} a
+                  summary of your registration:
+                </p>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Business Information */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1, duration: 0.4 }}
+                  className="space-y-4"
+                >
+                  <h3 className="border-b pb-2 text-lg font-semibold text-primary">
+                    Business Information
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Contact Person
+                      </label>
+                      <p className="font-medium">
+                        {submittedData.firstName} {submittedData.lastName}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Business Name
+                      </label>
+                      <p className="font-medium">
+                        {submittedData.businessName}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Business Address
+                      </label>
+                      <p className="font-medium">
+                        {submittedData.businessAddress}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Tax ID
+                      </label>
+                      <p className="font-medium">{submittedData.taxId}</p>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Contact Information */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
+                  className="space-y-4"
+                >
+                  <h3 className="border-b pb-2 text-lg font-semibold text-primary">
+                    Contact Information
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Email
+                      </label>
+                      <p className="font-medium">{submittedData.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Phone
+                      </label>
+                      <p className="font-medium">{submittedData.phone}</p>
+                    </div>
+                    {submittedData.website && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Website
+                        </label>
+                        <p className="font-medium text-blue-600">
+                          {submittedData.website}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Service Details */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+                className="space-y-4"
+              >
+                <h3 className="border-b pb-2 text-lg font-semibold text-primary">
+                  Service Details
+                </h3>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Service Type
+                    </label>
+                    <p className="font-medium capitalize">
+                      {submittedData.serviceType}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Service Price
+                    </label>
+                    <p className="font-medium">
+                      {submittedData.servicePrice} ETB
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Images Uploaded
+                    </label>
+                    <p className="font-medium">{images.length} image(s)</p>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Service Description
+                  </label>
+                  <p className="mt-1 rounded-md bg-gray-50 p-3 font-medium">
+                    {submittedData.serviceDescription}
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Images */}
+              <Stack spacing={"md"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Service Images
+                </label>
+                <section className="relative h-[20rem] px-4">
+                  {images.map((img, ind) => {
+                    const objURL = URL.createObjectURL(img);
+                    return (
+                      <Image
+                        className="rounded-lg object-cover"
+                        alt="product image"
+                        src={objURL}
+                        key={ind}
+                        fill
+                      />
+                    );
+                  })}
+                </section>
+              </Stack>
+
+              {/* Next Steps */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+                className="rounded-lg border border-blue-200 bg-blue-50 p-4"
+              >
+                <h4 className="mb-2 font-semibold text-blue-900">
+                  {`What's`} Next?
+                </h4>
+                <ul className="space-y-1 text-sm text-blue-800">
+                  <li>• Your account is being reviewed by our team</li>
+                  <li>
+                    • {`You'll`} receive a confirmation email within 24 hours
+                  </li>
+                  <li>
+                    • Once approved, you can start receiving service requests
+                  </li>
+                  <li>• Check your dashboard for new opportunities</li>
+                </ul>
+              </motion.div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button onClick={() => setIsPreviewOpen(false)}>Close</Button>
+              </div>
+            </motion.div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Right Column - Form with proper scrolling */}
       <div className="flex h-screen flex-1 flex-col bg-background md:w-1/2">
         <div className="h-full overflow-y-auto px-6 py-12">
@@ -194,7 +479,7 @@ export default function ProviderSignup() {
             <form
               id="provider-signup-form"
               onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col gap-8"
+              className="flex flex-col gap-6"
             >
               <motion.div
                 initial="hidden"
@@ -204,137 +489,81 @@ export default function ProviderSignup() {
                 <Card className="border-none shadow-none">
                   <CardContent className="p-0">
                     <div className="space-y-10">
-                      {/* Business Information Section */}
-                      <div className="space-y-6">
-                        <h3 className="text-xl font-semibold">
-                          Business Information
-                        </h3>
-                        <div className="grid gap-6">
-                          <FormField
-                            control={form.control}
-                            name="businessName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Business Name</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Acme Services LLC"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="contactName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Contact Person Name</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="John Doe" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="businessAddress"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Business Address</FormLabel>
-                                <FormControl>
-                                  <Textarea
-                                    placeholder="123 Main St, City, State, ZIP"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="taxId"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Tax ID / Business License</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="XX-XXXXXXX" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-
+                      {/* Select building info */}
+                      <SelectFormField
+                        control={form.control}
+                        name="buildingId"
+                        label="Select building"
+                        options={
+                          buildings?.map((b) => ({
+                            label: b.name,
+                            value: b.id,
+                          })) || []
+                        }
+                      />
                       {/* Contact Information Section */}
                       <div className="space-y-6">
                         <h3 className="text-xl font-semibold">
                           Contact Information
                         </h3>
-                        <div className="grid gap-6">
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <FormField
+                        <Stack>
+                          <Group align={"start"} spacing={"lg"}>
+                            <TextFormField
+                              control={form.control}
+                              name="firstName"
+                              label="First Name"
+                            />
+                            <TextFormField
+                              control={form.control}
+                              name="lastName"
+                              label="Last Name"
+                            />
+                          </Group>
+                          <Group className="grid gap-4 sm:grid-cols-2">
+                            <EmailFormField
                               control={form.control}
                               name="email"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Email</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="email"
-                                      placeholder="contact@acmeservices.com"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
+                              label="Email"
                             />
 
-                            <FormField
+                            <TextFormField
                               control={form.control}
                               name="phone"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Phone Number</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="tel"
-                                      placeholder="(123) 456-7890"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
+                              label="Phone Number"
                             />
-                          </div>
+                          </Group>
 
-                          <FormField
+                          <TextFormField
                             control={form.control}
                             name="website"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Website (Optional)</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="https://www.acmeservices.com"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            label="Website (Optional)"
                           />
-                        </div>
+                        </Stack>
+                      </div>
+                      {/* Business Information Section */}
+                      <div className="space-y-6">
+                        <h3 className="text-xl font-semibold">
+                          Business Information
+                        </h3>
+                        <Stack>
+                          <TextFormField
+                            control={form.control}
+                            name="businessName"
+                            label="Business Name"
+                          />
+
+                          <TextFormField
+                            control={form.control}
+                            name="businessAddress"
+                            label="Business Address"
+                          />
+
+                          <TextFormField
+                            control={form.control}
+                            name="taxId"
+                            label="Tax ID"
+                          />
+                        </Stack>
                       </div>
 
                       {/* Service Details Section */}
@@ -342,75 +571,73 @@ export default function ProviderSignup() {
                         <h3 className="text-xl font-semibold">
                           Service Details
                         </h3>
-                        <div className="grid gap-6">
-                          <FormField
+                        <Stack>
+                          <SelectFormField
+                            label="Service Type"
                             control={form.control}
                             name="serviceType"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Service Type</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select your service type" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="cleaning">
-                                      Cleaning Services
-                                    </SelectItem>
-                                    <SelectItem value="plumbing">
-                                      Plumbing Services
-                                    </SelectItem>
-                                    <SelectItem value="electrical">
-                                      Electrical Services
-                                    </SelectItem>
-                                    <SelectItem value="hvac">
-                                      HVAC Services
-                                    </SelectItem>
-                                    <SelectItem value="landscaping">
-                                      Landscaping Services
-                                    </SelectItem>
-                                    <SelectItem value="security">
-                                      Security Services
-                                    </SelectItem>
-                                    <SelectItem value="pest">
-                                      Pest Control
-                                    </SelectItem>
-                                    <SelectItem value="renovation">
-                                      Renovation Services
-                                    </SelectItem>
-                                    <SelectItem value="other">
-                                      Other Services
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            options={[
+                              {
+                                label: "Cleaning Services",
+                                value: "cleaning",
+                              },
+                              {
+                                label: "Plumbing Services",
+                                value: "plumbing",
+                              },
+                              {
+                                label: "HVAC Services",
+                                value: "hvac",
+                              },
+                              {
+                                label: "Landscaping Services",
+                                value: "landscaping",
+                              },
+                              {
+                                label: "Security Services",
+                                value: "security",
+                              },
+                              {
+                                label: "Pest Control",
+                                value: "pest",
+                              },
+                              {
+                                label: "Renovation Services",
+                                value: "renovation",
+                              },
+                              {
+                                label: "Other Services",
+                                value: "other",
+                              },
+                            ]}
                           />
 
-                          <FormField
+                          <NumberFormField
+                            control={form.control}
+                            name="servicePrice"
+                            label="Service Price"
+                          />
+
+                          <TextareaFormField
                             control={form.control}
                             name="serviceDescription"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Service Description</FormLabel>
-                                <FormControl>
-                                  <Textarea
-                                    placeholder="Briefly describe the services you offer..."
-                                    className="min-h-[100px]"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            label="Service Description"
                           />
-                        </div>
+
+                          <section>
+                            <FileUploader
+                              onFilesChange={(files) => {
+                                setImages(files);
+                              }}
+                              label="Upload Service/Product Images"
+                              acceptedFormats={[
+                                "image/png",
+                                "image/jpg",
+                                "image/jpeg",
+                              ]}
+                            />
+                          </section>
+                        </Stack>
                       </div>
 
                       {/* Account Section */}
@@ -458,43 +685,14 @@ export default function ProviderSignup() {
                               )}
                             />
                           </div>
-
-                          <FormField
-                            control={form.control}
-                            name="termsAccepted"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg bg-white/20 p-4">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                                  />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
-                                  <FormLabel>
-                                    I accept the{" "}
-                                    <a
-                                      href="/terms"
-                                      className="text-primary underline underline-offset-4"
-                                    >
-                                      terms and conditions
-                                    </a>
-                                  </FormLabel>
-                                  <FormDescription>
-                                    By creating an account, you agree to our
-                                    terms of service and privacy policy.
-                                  </FormDescription>
-                                  <FormMessage />
-                                </div>
-                              </FormItem>
-                            )}
-                          />
                         </div>
                       </div>
 
                       <div className="flex justify-end">
-                        <SubmitButton isSubmitting={isSubmitting} />
+                        <SubmitButton
+                          text="Submit Service Info"
+                          isSubmitting={false}
+                        />
                       </div>
                     </div>
                   </CardContent>

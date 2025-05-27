@@ -8,9 +8,9 @@ const buttonVariants = {
   tap: { scale: 0.98 },
 };
 
-type Props = { isSubmitting: boolean };
+type Props = { isSubmitting: boolean; text?: string };
 
-const SubmitButton = ({ isSubmitting }: Props) => (
+const SubmitButton = ({ isSubmitting, text }: Props) => (
   <motion.button
     type="submit"
     className="flex items-center space-x-2 rounded-md bg-gradient-to-r from-primary to-primary/80 px-6 py-2 text-primary-foreground shadow-md"
@@ -19,7 +19,11 @@ const SubmitButton = ({ isSubmitting }: Props) => (
     whileHover="hover"
     whileTap="tap"
   >
-    <span>{isSubmitting ? "Creating Account..." : "Create Account"}</span>
+    {text ? (
+      <span>{text}</span>
+    ) : (
+      <span>{isSubmitting ? "Creating Account..." : "Create Account"}</span>
+    )}
     <Sparkles className="h-4 w-4" />
   </motion.button>
 );
