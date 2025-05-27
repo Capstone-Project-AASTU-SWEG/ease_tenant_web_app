@@ -15,7 +15,11 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 // import { signIn } from "@/lib/auth-client";
 import { CustomButton } from "@/components/custom/button";
-import { errorToast, successToast } from "@/components/custom/toasts";
+import {
+  errorToast,
+  successToast,
+  warningToast,
+} from "@/components/custom/toasts";
 import { useRouter } from "next/navigation";
 import {
   EmailFormField,
@@ -26,7 +30,7 @@ import { USER_TYPE } from "@/types";
 
 const signInSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8).max(20),
+  password: z.string().min(1),
 });
 
 type SignInSchema = z.infer<typeof signInSchema>;
@@ -54,14 +58,19 @@ const SignIn = () => {
 
       localStorage.setItem("token", token);
       successToast("You signed in successfully.");
-      if (userData.user.role === USER_TYPE.TENANT) {
+      if (userData.user.role.toLowerCase() === USER_TYPE.TENANT.toLowerCase()) {
         router.push("/dashboard/tenant");
-      } else if (userData.user.role === USER_TYPE.MANAGER) {
+      } else if (
+        userData.user.role.toLowerCase() == USER_TYPE.MANAGER.toLowerCase()
+      ) {
         router.push("/dashboard/management");
-      } else if (userData.user.role === USER_TYPE.OWNER) {
+      } else if (
+        userData.user.role.toLowerCase() == USER_TYPE.OWNER.toLowerCase()
+      ) {
         router.push("/dashboard");
+      } else {
+        warningToast(userData.user.role + " is not defined role.");
       }
-      router.push("/dashboard");
     }
   }, [router, userSignInMutation.data, userSignInMutation.isSuccess]);
 

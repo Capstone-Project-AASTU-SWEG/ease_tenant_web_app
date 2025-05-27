@@ -20,6 +20,7 @@ import {
   DollarSign,
   ArrowUpDown,
   XIcon,
+  IdCard,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -110,16 +111,16 @@ export default function LeasesPage() {
   const leases = getAllLeaseQuery.data || [];
 
   const appFound = !!leases.find((l) => {
-    return l.application.id === appId;
+    return l.application?.id === appId;
   });
 
   // Filter leases based on search query
   const filteredLeases = leases.filter(
     (lease) =>
-      lease.tenant.firstName
+      lease.tenant?.firstName
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
-      lease.unit.unitNumber?.toLowerCase().includes(searchQuery.toLowerCase()),
+      lease.unit?.unitNumber?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Filter templates based on search query
@@ -180,7 +181,7 @@ export default function LeasesPage() {
 
     const totalRent = leases
       .filter((lease) => lease.status === LEASE_STATUS.ACTIVE)
-      .reduce((sum, lease) => sum + lease.unit.monthlyRent, 0);
+      .reduce((sum, lease) => sum + lease.unit?.monthlyRent || 0, 0);
 
     return { active, pending, expired, totalRent };
   };
@@ -267,7 +268,9 @@ export default function LeasesPage() {
               leaseTitle={selectedTemplate?.name || "Lease Agreement"}
               leaseDescription={selectedTemplate?.description}
               sections={selectedTemplate?.sections || []}
-              dataValues={generateLeaseDataValues(application as RentalApplication)}
+              dataValues={generateLeaseDataValues(
+                application as RentalApplication,
+              )}
               onPdfGenerated={(blob) => {
                 setPDFBlob(blob);
                 setIsPDFBlobSet(true);
@@ -376,6 +379,12 @@ export default function LeasesPage() {
                       <TableRow className="hover:bg-transparent">
                         <TableHead className="w-[200px]">
                           <div className="flex items-center gap-1">
+                            <IdCard className="h-4 w-4 text-muted-foreground" />
+                            <span>Lease ID</span>
+                          </div>
+                        </TableHead>
+                        <TableHead className="w-[200px]">
+                          <div className="flex items-center gap-1">
                             <Users className="h-4 w-4 text-muted-foreground" />
                             <span>Tenant</span>
                             <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />
@@ -432,10 +441,18 @@ export default function LeasesPage() {
                               router.push(`/dashboard/leases/${lease.id}`)
                             }
                           >
-                            <TableCell className="font-medium">
-                              {getFullNameFromObj(lease.tenant.userId || {})}
+                            <TableCell
+                              className="font-medium"
+                              onClick={() => {
+                                navigator.clipboard.writeText(lease.id);
+                              }}
+                            >
+                              {lease.id?.slice(0, 4)}..
                             </TableCell>
-                            <TableCell>{lease.unit.unitNumber}</TableCell>
+                            <TableCell className="font-medium">
+                              {getFullNameFromObj(lease.tenant?.userId || {})}
+                            </TableCell>
+                            <TableCell>{lease.unit?.unitNumber}</TableCell>
                             <TableCell className="max-w-[200px] truncate">
                               {lease.leaseTemplate?.name || "Not Defined"}
                             </TableCell>
@@ -459,7 +476,7 @@ export default function LeasesPage() {
                               </div>
                             </TableCell>
                             <TableCell className="font-medium">
-                              ${lease.unit.monthlyRent.toLocaleString()}
+                              ${lease.unit?.monthlyRent.toLocaleString()}
                             </TableCell>
                             <TableCell>
                               {getStatusBadge(lease.status)}
@@ -727,7 +744,7 @@ export default function LeasesPage() {
         onOpenChange={setCreateLeaseDialogOpen}
         templates={templates}
         onCreateLease={handleCreateLease}
-        application={(getApplicationByIdQuery.data as RentalApplication)}
+        application={getApplicationByIdQuery.data as RentalApplication}
       />
     </PageWrapper>
   );

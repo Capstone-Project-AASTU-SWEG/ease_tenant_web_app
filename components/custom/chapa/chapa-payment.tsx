@@ -49,8 +49,8 @@ const ChapaPayment = ({
         publicKey: ENV.CHAPA_PUBLIC_KEY,
         amount: roundedAmount + "",
         currency: "ETB",
-        tx_ref: txRef,
-        showPaymentMethodsNames: false,
+        tx_ref: txRef.replace("tx-", ""),
+        showPaymentMethodsNames: true,
         availablePaymentMethods: ["telebirr", "cbebirr", "ebirr", "mpesa"],
         customizations: {
           buttonText: "Pay Now",

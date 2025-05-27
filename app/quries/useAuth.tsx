@@ -21,7 +21,7 @@ export type UserDetail = {
   building: BuildingFromAPI | null;
   manager: Manager | null;
   application: Application | null;
-  maintenanceRequests: MaintenanceRequest[]
+  maintenanceRequests: MaintenanceRequest[];
 };
 
 export function useVerifyUserQuery() {
@@ -54,6 +54,7 @@ export function useVerifyUserQuery() {
         throw new Error("An unexpected error occurred");
       }
     },
+    refetchOnWindowFocus: true,
   });
 }
 

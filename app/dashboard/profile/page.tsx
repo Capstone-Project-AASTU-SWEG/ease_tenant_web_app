@@ -61,6 +61,10 @@ import { EmailFormField, TextFormField } from "@/components/custom/form-field";
 import { Group } from "@/components/custom/group";
 import Stack from "@/components/custom/stack";
 import LogJSON from "@/components/custom/log-json";
+import {
+  useGetAppConfig,
+  useUpdateAppConfigMutation,
+} from "@/app/quries/useAppConfig";
 
 // Form schema for profile information
 const profileFormSchema = z.object({
@@ -76,6 +80,8 @@ const profileFormSchema = z.object({
   department: z.string().optional(),
   notificationsEmail: z.boolean().default(true),
   notificationsSMS: z.boolean().default(false),
+  isMaintenaceStaffSignUpOpen: z.boolean().default(false),
+  isServiceProvidersSignUpOpen: z.boolean().default(false),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -98,6 +104,9 @@ const ProfilePage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSignatureSaved, setIsSignatureSaved] = useState(false);
 
+  const appConfig = useGetAppConfig().data;
+  const updateAppConfig = useUpdateAppConfigMutation();
+
   // Initialize form with user data
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -110,6 +119,8 @@ const ProfilePage = () => {
       occupation: user?.tenant?.occupation || "",
       notificationsEmail: true,
       notificationsSMS: false,
+      isMaintenaceStaffSignUpOpen: appConfig?.isMaintenaceStaffSignUpOpen,
+      isServiceProvidersSignUpOpen: appConfig?.isServiceProvidersSignUpOpen,
     },
   });
 
@@ -127,6 +138,21 @@ const ProfilePage = () => {
       });
     }
   }, [form, user?.tenant?.occupation, user?.user]);
+
+  useEffect(() => {
+    form.setValue(
+      "isMaintenaceStaffSignUpOpen",
+      appConfig?.isMaintenaceStaffSignUpOpen || false,
+    );
+    form.setValue(
+      "isServiceProvidersSignUpOpen",
+      appConfig?.isServiceProvidersSignUpOpen || true,
+    );
+  }, [
+    appConfig?.isMaintenaceStaffSignUpOpen,
+    appConfig?.isServiceProvidersSignUpOpen,
+    form,
+  ]);
 
   // Handle profile form submission
   const onSubmit = async (data: ProfileFormValues) => {
@@ -646,8 +672,74 @@ const ProfilePage = () => {
                 </CardHeader>
                 <CardContent>
                   <Form {...form}>
-                    <form className="space-y-6">
+                    <form
+                      className="space-y-6"
+                      onSubmit={form.handleSubmit(
+                        (values: ProfileFormValues) => {
+                          if (isOwner) {
+                            if (appConfig) {
+                              updateAppConfig.mutate({
+                                id: appConfig.id,
+                                isMaintenaceStaffSignUpOpen:
+                                  values.isMaintenaceStaffSignUpOpen,
+                                isServiceProvidersSignUpOpen:
+                                  values.isServiceProvidersSignUpOpen,
+                              });
+                            }
+                          }
+                        },
+                      )}
+                    >
                       <div className="space-y-4">
+                        {isOwner && (
+                          <div className="rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
+                            <h3 className="mb-4 text-base font-medium">
+                              App Configs
+                            </h3>
+                            <div className="space-y-4">
+                              <FormField
+                                control={form.control}
+                                name="isMaintenaceStaffSignUpOpen"
+                                render={({ field }) => (
+                                  <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                      <FormLabel className="text-base">
+                                        Is Maintenance Staff Sign Up Open
+                                      </FormLabel>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </div>
+                                )}
+                              />
+                              <Separator />
+                              <FormField
+                                control={form.control}
+                                name="isServiceProvidersSignUpOpen"
+                                render={({ field }) => (
+                                  <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                      <FormLabel className="text-base">
+                                        Is Service Providers Sign Up Open
+                                      </FormLabel>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </div>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        )}
+
                         <div className="rounded-lg border bg-slate-50 p-6 dark:bg-slate-900/50">
                           <h3 className="mb-4 text-base font-medium">
                             Communication Channels

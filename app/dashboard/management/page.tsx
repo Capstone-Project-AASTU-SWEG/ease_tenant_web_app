@@ -5,6 +5,7 @@ import PageHeader from "@/components/custom/page-header";
 import PageWrapper from "@/components/custom/page-wrapper";
 import Stack from "@/components/custom/stack";
 import { getFullNameFromObj } from "@/utils";
+
 import {
   BuildingIcon,
   Home,
@@ -12,7 +13,6 @@ import {
   Plus,
   FileText,
   AlertTriangle,
-  MapPin,
   Clock,
   MoreVerticalIcon,
 } from "lucide-react";
@@ -29,14 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { BuildingFromAPI } from "@/types";
 import Stat from "@/components/custom/stat";
-import {
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from "recharts";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,16 +39,10 @@ import {
 import { useRouter } from "next/navigation";
 import { warningToast } from "@/components/custom/toasts";
 import LogJSON from "@/components/custom/log-json";
-
-const maintenanceData = [
-  { name: "Plumbing", value: 8 },
-  { name: "Electrical", value: 5 },
-  { name: "HVAC", value: 3 },
-  { name: "Structural", value: 1 },
-  { name: "Other", value: 4 },
-];
-
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+import { useGetAllMaintenanceRequestsQuery } from "@/app/quries/useMaintenance";
+import { Group } from "@/components/custom/group";
+import { Title } from "@/components/custom/title";
+import MapWrapper from "@/components/custom/map-location-wrapper";
 
 const Page = () => {
   const auth = useAuth();
@@ -65,13 +52,13 @@ const Page = () => {
 
   return (
     <PageWrapper className="py-0">
-      <LogJSON
+      {/* <LogJSON
         data={{
           isManager: auth.isManager,
           isOwner: auth.isOwner,
           data: auth.data,
         }}
-      />
+      /> */}
       <PageHeader
         title="Manager Dashboard"
         description={`Welcome back, ${getFullNameFromObj(userData?.user)}`}
@@ -139,9 +126,22 @@ const BuildingAnalytics = ({ building }: { building: BuildingFromAPI }) => {
     },
   );
 
+  const router = useRouter();
+
+  const getAllMaintenanceRequestsQuery = useGetAllMaintenanceRequestsQuery();
+
+  const buildingMaintenanceRequests =
+    getAllMaintenanceRequestsQuery.data?.filter(
+      (r) => r.unit?.buildingId === building.id,
+    ) || [];
 
   return (
     <div className="space-y-6">
+      <LogJSON
+        data={{
+          buildingMaintenanceRequests,
+        }}
+      />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Stat
           layout="horizontal"
@@ -314,7 +314,15 @@ const BuildingAnalytics = ({ building }: { building: BuildingFromAPI }) => {
               </div>
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  router.push(
+                    `/dashboard/buildings/new?buildingId=${building.id}`,
+                  );
+                }}
+              >
                 <FileText className="mr-2 h-4 w-4" />
                 Update Lease Terms
               </Button>
@@ -331,7 +339,7 @@ const BuildingAnalytics = ({ building }: { building: BuildingFromAPI }) => {
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
-                <div className="flex flex-col items-center justify-center py-6 text-center">
+                <section className="flex flex-col items-center justify-center py-6 text-center">
                   <AlertTriangle className="mb-4 h-10 w-10 text-muted-foreground" />
                   <h3 className="text-lg font-medium">
                     No active maintenance requests
@@ -344,42 +352,27 @@ const BuildingAnalytics = ({ building }: { building: BuildingFromAPI }) => {
                     <Plus className="mr-2 h-4 w-4" />
                     Create Maintenance Request
                   </Button>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">
-                    Historical Maintenance Issues
-                  </h3>
-                  <div className="h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsPieChart>
-                        <Pie
-                          data={maintenanceData}
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={80}
-                          dataKey="value"
-                          label={({ name, value }) => `${name}: ${value}`}
-                        >
-                          {maintenanceData.map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={COLORS[index % COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "hsl(var(--background))",
-                            borderColor: "hsl(var(--border))",
-                          }}
-                          formatter={(value) => [`${value} issues`]}
-                        />
-                        <Legend />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
+                </section>
+                <Stack>
+                  {buildingMaintenanceRequests.length > 0 ? (
+                    buildingMaintenanceRequests.map((mr) => (
+                      <Group
+                        key={mr.id}
+                        justify={"between"}
+                        className="rounded-md bg-primary/5 p-2"
+                      >
+                        <p>{mr.description}</p>
+                        <Badge>{mr.status}</Badge>
+                      </Group>
+                    ))
+                  ) : (
+                    <section className="rounded-md bg-primary/5 p-4">
+                      <Title size={"h5"}>
+                        No maintenace requests found yet.
+                      </Title>
+                    </section>
+                  )}
+                </Stack>
               </div>
             </CardContent>
           </Card>
@@ -393,12 +386,15 @@ const BuildingAnalytics = ({ building }: { building: BuildingFromAPI }) => {
             <CardDescription>Location information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex h-[200px] items-center justify-center overflow-hidden rounded-md border bg-muted">
-              <MapPin className="h-8 w-8 text-muted-foreground" />
-              <span className="ml-2 text-muted-foreground">
-                Map view unavailable
-              </span>
-            </div>
+            <section>
+              <MapWrapper
+                position={[
+                  building.address.latitude || 0,
+                  building.address.longitude || 0,
+                ]}
+              />
+            </section>
+
             <div className="mt-4 space-y-1">
               <p className="text-sm font-medium">Address</p>
               <p className="text-sm text-muted-foreground">

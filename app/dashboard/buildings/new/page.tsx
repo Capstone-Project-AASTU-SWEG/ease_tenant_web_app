@@ -48,6 +48,8 @@ import { motion } from "framer-motion";
 import { Form } from "@/components/ui/form";
 import LogJSON from "@/components/custom/log-json";
 
+import MapWrapper from "@/components/custom/map-location-wrapper";
+
 const TAB_TYPES = {
   BASIC: "Basic Info",
   ADDRESS: "Address",
@@ -316,6 +318,51 @@ const Page = () => {
     }
   }, [updateBuildingMutation.isSuccess, router]);
 
+  useEffect(() => {
+    if (isEditting) {
+      form.reset({
+        name: buildingToBeUpdated?.name || "",
+        description: buildingToBeUpdated?.description || "",
+        address: {
+          country: buildingToBeUpdated?.address.country || "",
+          street: buildingToBeUpdated?.address.street || "",
+          city: buildingToBeUpdated?.address.city || "",
+          state: buildingToBeUpdated?.address.state || "",
+          postalCode: buildingToBeUpdated?.address.postalCode || "",
+          latitude: buildingToBeUpdated?.address.latitude || 0,
+          longitude: buildingToBeUpdated?.address.longitude || 0,
+        },
+        managerId: buildingToBeUpdated?.managerId || "",
+        totalFloors: buildingToBeUpdated?.totalFloors || 1,
+        totalUnits: buildingToBeUpdated?.totalUnits || 1,
+        amenities: buildingToBeUpdated?.amenities || [],
+        accessibilityFeatures: buildingToBeUpdated?.accessibilityFeatures || [],
+        elevators: buildingToBeUpdated?.elevators || 0,
+        emergencyExits: buildingToBeUpdated?.emergencyExits || 0,
+        fireSafetyCertified: buildingToBeUpdated?.fireSafetyCertified || false,
+        status: buildingToBeUpdated?.status || BUILDING_STATUS.ACTIVE,
+        yearBuilt: buildingToBeUpdated?.yearBuilt || 2010,
+        operatingHours: buildingToBeUpdated?.operatingHours || "",
+        parkingSpaces: buildingToBeUpdated?.parkingSpaces || 0,
+        leaseTerms: {
+          minLeasePeriodMonths:
+            buildingToBeUpdated?.leaseTerms.minLeasePeriodMonths || 1,
+          maxLeasePeriodMonths:
+            buildingToBeUpdated?.leaseTerms.maxLeasePeriodMonths || 1,
+          latePaymentPenalty:
+            buildingToBeUpdated?.leaseTerms.latePaymentPenalty || 0,
+          leaseRenewalPolicy: "",
+          paymentFrequency:
+            buildingToBeUpdated?.leaseTerms.paymentFrequency ||
+            PAYMENT_FREQUENCY.MONTHLY,
+          securityDeposit: buildingToBeUpdated?.leaseTerms.securityDeposit || 0,
+          petPolicy: buildingToBeUpdated?.leaseTerms.petPolicy || "",
+        },
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditting]);
+
   return (
     <PageWrapper className="py-0">
       <PageHeader
@@ -506,18 +553,19 @@ const Page = () => {
                               <div className="border-b bg-white p-4 dark:bg-slate-900">
                                 <h4 className="font-medium">Map Preview</h4>
                               </div>
-                              <div className="flex h-[250px] items-center justify-center bg-slate-100 dark:bg-slate-800/50">
-                                <div className="flex flex-col items-center text-center">
-                                  <MapPin className="h-10 w-10 text-primary/60" />
-                                  <p className="mt-2 text-sm text-muted-foreground">
-                                    Address map preview will appear here
-                                  </p>
-                                  <p className="mt-1 text-xs text-muted-foreground">
-                                    Map will update when you save the building
-                                    information
-                                  </p>
-                                </div>
-                              </div>
+                              <section>
+                                <MapWrapper
+                                  position={[
+                                    form.watch("address.latitude") || 0,
+                                    form.watch("address.longitude") || 0,
+                                  ]}
+                                  onClick={(pos) => {
+                                    form.setValue("address.latitude", pos[0]);
+                                    form.setValue("address.longitude", pos[1]);
+                                  }}
+                                  interactive
+                                />
+                              </section>
                             </div>
                           </Stack>
                         </motion.div>

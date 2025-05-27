@@ -15,7 +15,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Search,
   Star,
-  Filter,
   Clock,
   Calendar,
   ArrowBigRight,
@@ -165,15 +164,6 @@ export default function MarketplacePage() {
               searchQuery={searchQuery}
               onSearchQuery={setSearchQuery}
             />
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full border-neutral-200/50 bg-background/60 backdrop-blur-sm hover:bg-primary/10"
-              onClick={() => setIsFilterOpen(true)}
-            >
-              <Filter className="h-4 w-4" />
-              <span className="sr-only">Filter</span>
-            </Button>
           </div>
         </motion.div>
 

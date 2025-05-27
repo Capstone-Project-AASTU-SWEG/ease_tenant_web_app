@@ -18,7 +18,7 @@ import {
   ChevronRight,
   LucideProps,
   Building,
-  Building2,
+  // Building2,
 } from "lucide-react";
 import Stack from "@/components/custom/stack";
 import { Title } from "@/components/custom/title";
@@ -30,6 +30,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { useGetAppConfig } from "@/app/quries/useAppConfig";
 
 // Create motion components
 const MotionCard = motion(Card);
@@ -327,19 +328,19 @@ const userTypes = [
     iconColor: "text-emerald-500",
     buttonGradient: "bg-gradient-to-r from-emerald-500 to-emerald-500/80",
   },
-  {
-    id: "manager",
-    title: "Property Manager",
-    description:
-      "Register as a property manager to oversee properties, manage tenants, and streamline building operations.",
-    icon: Building2,
-    color: "bg-gradient-to-br from-indigo-500/5 to-indigo-500/20",
-    borderColor: "border-indigo-500/30",
-    hoverBorderColor: "group-hover:border-indigo-500/60",
-    iconBg: "bg-indigo-500/20",
-    iconColor: "text-indigo-500",
-    buttonGradient: "bg-gradient-to-r from-indigo-500 to-indigo-500/80",
-  },
+  // {
+  //   id: "manager",
+  //   title: "Property Manager",
+  //   description:
+  //     "Register as a property manager to oversee properties, manage tenants, and streamline building operations.",
+  //   icon: Building2,
+  //   color: "bg-gradient-to-br from-indigo-500/5 to-indigo-500/20",
+  //   borderColor: "border-indigo-500/30",
+  //   hoverBorderColor: "group-hover:border-indigo-500/60",
+  //   iconBg: "bg-indigo-500/20",
+  //   iconColor: "text-indigo-500",
+  //   buttonGradient: "bg-gradient-to-r from-indigo-500 to-indigo-500/80",
+  // },
 ];
 
 // Animation variants
@@ -400,6 +401,17 @@ export default function SignupSelector() {
   const [mounted, setMounted] = useState(false);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [focusedType, setFocusedType] = useState<string>("tenant"); // Default to tenant
+  const appConfig = useGetAppConfig().data;
+
+  let users = userTypes;
+
+  if (appConfig?.isMaintenaceStaffSignUpOpen === false) {
+    users = users.filter((u) => u.id !== "maintainer");
+  }
+
+  if (appConfig?.isServiceProvidersSignUpOpen === false) {
+    users = users.filter((u) => u.id !== "provider");
+  }
 
   // Enable animations after mount to prevent hydration issues
   useEffect(() => {
@@ -432,7 +444,7 @@ export default function SignupSelector() {
         >
           <div className="relative flex w-full max-w-xl justify-center gap-4">
             <AnimatePresence>
-              {userTypes.map((type, index) => (
+              {users.map((type, index) => (
                 <UserTypeCard
                   key={type.id}
                   type={type}

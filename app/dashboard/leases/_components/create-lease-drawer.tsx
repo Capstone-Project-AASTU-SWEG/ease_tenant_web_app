@@ -43,14 +43,14 @@ import { generateLeaseDataValues } from "@/utils/lease-data-mapper";
 import { Label } from "@/components/ui/label";
 import LogJSON from "@/components/custom/log-json";
 import { useAuth } from "@/app/quries/useAuth";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 
 interface CreateLeaseDrawerProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   templates: (LeaseTemplate & { id: string })[];
   onCreateLease: (lease: Partial<CreateLease>) => void;
-  application: RentalApplication
+  application: RentalApplication;
 }
 
 export function CreateLeaseDrawer({
@@ -65,15 +65,9 @@ export function CreateLeaseDrawer({
     useState<LeaseTemplate | null>(null);
   const getAllTenantsQuery = useGetAllTenants();
 
-  const router = useRouter();
-
-  const { data, isManager } = useAuth();
+  const { data } = useAuth();
 
   const tenants = getAllTenantsQuery.data || [];
-
-  if (data && !isManager) {
-    router.replace("/dashboard/tenant");
-  }
 
   // Form for the lease
   const form = useForm<CreateLease>({
@@ -92,7 +86,7 @@ export function CreateLeaseDrawer({
   const { reset } = form;
 
   useEffect(() => {
-    if (templates.length ) {
+    if (templates.length) {
       reset({
         templateId: templates.find((t) => t.isDefault)?.id || "",
         tenantId: application?.submittedBy.id,
@@ -144,7 +138,7 @@ export function CreateLeaseDrawer({
             // formData: form.getValues(),
             // application,
             building: data?.building,
-            defaultValues: form.getValues()
+            defaultValues: form.getValues(),
             // tenants,
 
             // abc: getBuildingTenantsQuery.data,

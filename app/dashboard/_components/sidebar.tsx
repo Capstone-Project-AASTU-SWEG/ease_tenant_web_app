@@ -92,7 +92,7 @@ const tenantNavigationItems: NavigationItem[] = [
     icon: ShoppingBasket,
     label: "Marketplace",
   },
-  { href: "/dashboard/maintenance", icon: Wrench, label: "Maintenance" },
+  // { href: "/dashboard/maintenance", icon: Wrench, label: "Maintenance" },
   { href: "/dashboard/messages", icon: MessageCircle, label: "Chat" },
 ];
 
@@ -283,8 +283,16 @@ export default function AppSidebar() {
   } = useAuth();
   let navigationItems: NavigationItem[] = [];
 
+  const hasUnit = !!userData?.unit;
+
   if (isTenant) {
     navigationItems = tenantNavigationItems;
+
+    if (!hasUnit) {
+      navigationItems = navigationItems.filter(
+        (i) => !i.href.includes("/messages"),
+      );
+    }
   } else if (isManager) {
     navigationItems = managerNavigationItems;
   } else if (isOwner) {

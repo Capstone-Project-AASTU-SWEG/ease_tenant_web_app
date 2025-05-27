@@ -59,7 +59,7 @@ export type BuildingDetail = BuildingWithStat & {
       } & Manager)
     | null;
 };
-export const useGetBuildingQuery = (id?: string) => {
+export function useGetBuildingQuery(id?: string) {
   const query = useQuery({
     queryKey: ["getBuilding", id],
     queryFn: async () => {
@@ -100,7 +100,7 @@ export const useGetBuildingQuery = (id?: string) => {
     }
   }, [id, query]);
   return query;
-};
+}
 
 export const useCreateBuildingMutation = () => {
   const queryClient = useQueryClient();

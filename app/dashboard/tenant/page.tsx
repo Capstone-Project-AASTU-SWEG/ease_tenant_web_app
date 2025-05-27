@@ -49,10 +49,17 @@ import { PageLoader } from "@/components/custom/page-loader";
 import { PageError } from "@/components/custom/page-error";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getFullFileURL } from "@/utils";
+import { genUUID, getFullFileURL } from "@/utils";
 import { warningToast } from "@/components/custom/toasts";
 import type { MaintenanceRequest, RentalApplication, Unit } from "@/types";
 import { formatDate } from "../applications/_utils";
+import ChapaPayment from "@/components/custom/chapa/chapa-payment";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Helper function to calculate lease progress
 const calculateLeaseProgress = (userData: UserDetail) => {
@@ -361,6 +368,10 @@ const Page = () => {
   const verifyUserQuery = useVerifyUserQuery();
   const router = useRouter();
   const { isManager } = useAuth();
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [tx, setTx] = useState(() => {
+    return genUUID("tx-");
+  });
 
   if (isManager) {
     router.push("/dashboard/buildings");
@@ -392,6 +403,8 @@ const Page = () => {
   // Check if user has a unit assigned
   const hasUnit = !!userData?.tenant?.unit;
   const hasApplication = userData?.application !== null;
+
+  const handleSuccessfulPayment = () => {};
 
   return (
     <PageWrapper className="relative py-0">
@@ -540,7 +553,9 @@ const Page = () => {
                     icon={<CreditCard className="h-5 w-5" />}
                     label="Pay Rent"
                     variant="default"
-                    onClick={() => {}}
+                    onClick={() => {
+                      setIsPaymentOpen(true);
+                    }}
                     index={0}
                   />
 
@@ -574,60 +589,87 @@ const Page = () => {
       )}
 
       {/* Main Content Tabs */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="mt-6"
-      >
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="relative z-10"
+      {hasUnit && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mt-6"
         >
-          <TabsList className="rounded-full bg-background/50 backdrop-blur-sm">
-            <TabsTrigger
-              value="overview"
-              className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-            >
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="maintenance"
-              className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-            >
-              Maintenance
-            </TabsTrigger>
-          </TabsList>
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="relative z-10"
+          >
+            <TabsList className="rounded-full bg-background/50 backdrop-blur-sm">
+              <TabsTrigger
+                value="overview"
+                className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+              >
+                Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="maintenance"
+                className="rounded-full px-5 data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+              >
+                Maintenance
+              </TabsTrigger>
+            </TabsList>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* Overview Tab Content */}
-              <TabsContent value="overview" className="mt-4">
-                {userData && <LeaseInformation userData={userData} />}
-              </TabsContent>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {/* Overview Tab Content */}
+                <TabsContent value="overview" className="mt-4">
+                  {userData && <LeaseInformation userData={userData} />}
+                </TabsContent>
 
-              {/* Maintenance Tab Content */}
-              <TabsContent value="maintenance" className="mt-4">
-                {userUnit ? (
-                  <MaintenanceRequests
-                    unit={userUnit}
-                    maintenanceRequests={maintenanceRequests}
-                  />
-                ) : (
-                  <p>UNIT NOT FOUND</p>
-                )}
-              </TabsContent>
-            </motion.div>
-          </AnimatePresence>
-        </Tabs>
-      </motion.div>
+                {/* Maintenance Tab Content */}
+                <TabsContent value="maintenance" className="mt-4">
+                  {userUnit ? (
+                    <MaintenanceRequests
+                      unit={userUnit}
+                      maintenanceRequests={maintenanceRequests}
+                    />
+                  ) : (
+                    <section className="rounded-lg bg-red-100 p-4">
+                      <p>Unit Info not found</p>
+                    </section>
+                  )}
+                </TabsContent>
+              </motion.div>
+            </AnimatePresence>
+          </Tabs>
+        </motion.div>
+      )}
+
+      <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
+        <DialogHeader>
+          <DialogTitle />
+        </DialogHeader>
+
+        <DialogContent>
+          {userData?.unit && (
+            <ChapaPayment
+              amount={userData?.unit?.monthlyRent}
+              currency="ETB"
+              onClose={() => {}}
+              txRef={tx}
+              onSuccessfulPayment={() => {
+                handleSuccessfulPayment();
+              }}
+              setNewTxRef={() => {
+                setTx(genUUID("tx-"));
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Show Unit Information if unit is assigned */}
       {hasUnit && userData && <UnitInformation userData={userData} />}
@@ -862,67 +904,6 @@ const LeaseInformation = ({ userData }: { userData: UserDetail }) => {
             </Badge>
           </motion.div>
         </div>
-
-        {/* Dynamic Lease progress indicator */}
-        {(() => {
-          const leaseProgress = calculateLeaseProgress(userData);
-          const progressColor =
-            leaseProgress.status === "ended"
-              ? "text-amber-600"
-              : leaseProgress.status === "not-started"
-                ? "text-gray-600"
-                : "text-green-600";
-          const barColor =
-            leaseProgress.status === "ended"
-              ? "bg-amber-500"
-              : leaseProgress.status === "not-started"
-                ? "bg-gray-400"
-                : "bg-green-500";
-
-          const getStatusMessage = () => {
-            switch (leaseProgress.status) {
-              case "not-started":
-                return `Lease starts in ${leaseProgress.daysUntilStart} days`;
-              case "ended":
-                return "Lease has ended";
-              case "active":
-                return `${leaseProgress.daysRemaining} days remaining in current lease term`;
-              default:
-                return "No lease information available";
-            }
-          };
-
-          return (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.9 }}
-              className="mt-6 space-y-2"
-            >
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Lease Progress</span>
-                <span className={`font-medium ${progressColor}`}>
-                  {leaseProgress.status === "not-started"
-                    ? "Not Started"
-                    : leaseProgress.status === "ended"
-                      ? "Ended"
-                      : `${leaseProgress.progress}% Complete`}
-                </span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
-                <motion.div
-                  className={`h-full ${barColor}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${leaseProgress.progress}%` }}
-                  transition={{ duration: 1, delay: 1 }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {getStatusMessage()}
-              </p>
-            </motion.div>
-          );
-        })()}
       </CardContent>
     </Card>
   );

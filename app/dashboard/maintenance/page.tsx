@@ -57,7 +57,6 @@ import {
   useGetAllMaintenanceRequestsQuery,
   useUpdateMaintenanceStatusMutation,
 } from "@/app/quries/useMaintenance";
-import LogJSON from "@/components/custom/log-json";
 import { getFullFileURL } from "@/utils";
 import { MaintenanceRequest } from "@/types";
 
@@ -117,14 +116,14 @@ export default function MaintenancePage() {
       searchQuery === "" ||
       req.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.unit.unitNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      req.unit?.unitNumber.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesPriority =
       priorityFilter === "all" || req.priority.toLowerCase() === priorityFilter;
 
     // For property filter, we'll use unit type or building info
     const matchesProperty =
-      propertyFilter === "all" || req.unit.type === propertyFilter;
+      propertyFilter === "all" || req.unit?.type === propertyFilter;
 
     return matchesSearch && matchesPriority && matchesProperty;
   });
@@ -134,18 +133,18 @@ export default function MaintenancePage() {
       searchQuery === "" ||
       req.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.unit.unitNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      req.unit?.unitNumber.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesPriority =
       priorityFilter === "all" || req.priority.toLowerCase() === priorityFilter;
     const matchesProperty =
-      propertyFilter === "all" || req.unit.type === propertyFilter;
+      propertyFilter === "all" || req.unit?.type === propertyFilter;
 
     return matchesSearch && matchesPriority && matchesProperty;
   });
 
   const properties = [
-    ...new Set(maintenanceRequests.map((req) => req.unit.type)),
+    ...new Set(maintenanceRequests.map((req) => req.unit?.type)),
   ];
 
   const handleViewRequest = (request: MaintenanceRequest) => {
@@ -172,8 +171,7 @@ export default function MaintenancePage() {
 
   return (
     <PageWrapper className="relative min-h-screen">
-      <div className="space-y-8 pb-16">
-        <LogJSON data={{ maintenanceRequests }} position="bottom-left" />
+      <div className="space-y-8">
         <PageHeader />
         <StatisticsSection
           totalActive={totalActive}
@@ -328,6 +326,7 @@ function StatisticsSection({
         moreInfo="Total pending requests"
         icon={ClipboardList}
         // color="primary"
+        layout="horizontal"
       />
       <Stat
         title="High Priority"
@@ -335,6 +334,7 @@ function StatisticsSection({
         moreInfo="Urgent attention needed"
         icon={AlertCircle}
         // color="destructive"
+        layout="horizontal"
       />
       <Stat
         title="In Progress"
@@ -342,6 +342,7 @@ function StatisticsSection({
         moreInfo="Currently being worked on"
         icon={Wrench}
         // color="blue"
+        layout="horizontal"
       />
       <Stat
         title="In "
@@ -349,6 +350,7 @@ function StatisticsSection({
         moreInfo="Upcoming maintenance"
         icon={CalendarClock}
         // color="amber"
+        layout="horizontal"
       />
     </motion.div>
   );
@@ -404,7 +406,7 @@ function RequestsTable({
                       {request.category}
                     </TableCell>
                     <TableCell>
-                      Unit {request.unit.unitNumber}, {request.unit.type}
+                      Unit {request.unit?.unitNumber}, {request.unit?.type}
                     </TableCell>
                     <TableCell>
                       {isActive
@@ -421,7 +423,9 @@ function RequestsTable({
                       )}
                     </TableCell>
                     <TableCell>
-                      <StatusBadge status={request.status as MaintenanceStatus} />
+                      <StatusBadge
+                        status={request.status as MaintenanceStatus}
+                      />
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -568,7 +572,7 @@ function RequestDetailPanel({
           </div>
           <div className="flex items-center text-sm text-muted-foreground">
             <Building className="mr-2 h-4 w-4" />
-            Unit {request.unit.unitNumber}, {request.unit.type}
+            Unit {request.unit?.unitNumber}, {request.unit?.type}
           </div>
         </div>
 
@@ -591,12 +595,12 @@ function RequestDetailPanel({
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Unit Details</p>
-            <p className="font-medium">{request.unit.sizeSqFt} sq ft</p>
+            <p className="font-medium">{request.unit?.sizeSqFt} sq ft</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Tenant</p>
             <p className="font-medium">
-              {request.tenant.businessName || "N/A"}
+              {request.tenant?.businessName || "N/A"}
             </p>
           </div>
           <div className="space-y-1">

@@ -217,9 +217,9 @@ const RentUnitPage = () => {
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("eth", {
       style: "currency",
-      currency: "USD",
+      currency: "ETB",
       minimumFractionDigits: 2,
     }).format(amount);
   };
@@ -688,8 +688,7 @@ const RentUnitPage = () => {
                                   Security Deposit:
                                 </span>{" "}
                                 <span className="text-slate-600 dark:text-slate-300">
-                                  Equal to one {`month's`} rent, refundable upon
-                                  lease completion.
+                                  Is included in the montly payment
                                 </span>
                               </div>
                             </div>
@@ -703,26 +702,6 @@ const RentUnitPage = () => {
                                   Building maintenance is included in the
                                   service fee. Tenant is responsible for
                                   unit-specific maintenance.
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                              <Check className="mt-0.5 h-4 w-4 text-green-500" />
-                              <div>
-                                <span className="font-medium">Insurance:</span>{" "}
-                                <span className="text-slate-600 dark:text-slate-300">
-                                  Tenant must maintain commercial liability
-                                  insurance with minimum coverage of $1,000,000.
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/30">
-                              <Check className="mt-0.5 h-4 w-4 text-green-500" />
-                              <div>
-                                <span className="font-medium">Renewal:</span>{" "}
-                                <span className="text-slate-600 dark:text-slate-300">
-                                  Option to renew with 60-day notice before
-                                  lease expiration.
                                 </span>
                               </div>
                             </div>
@@ -915,12 +894,7 @@ const RentUnitPage = () => {
                                         {formatCurrency(calculateMonthlyCost())}
                                       </span>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                      <span>Security Deposit</span>
-                                      <span className="font-medium">
-                                        {formatCurrency(unit.monthlyRent)}
-                                      </span>
-                                    </div>
+
                                     <Separator className="bg-white/20" />
                                     <div className="flex items-center justify-between">
                                       <span>Due at Signing</span>
